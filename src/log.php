@@ -7,7 +7,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    // Checked against the stored hash                    (koobdFindLogin, auth.php).
+    // Checked against the stored hash (koobdFindLogin, auth.php).
     $row = koobdFindLogin(trim($email), $password, 'student');
     if ($row) {
         session_regenerate_id(true);
