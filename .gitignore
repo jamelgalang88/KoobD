@@ -1,0 +1,15 @@
+# JavaScript dependencies
+mobile-app/node_modules/
+
+# Android build output and local configuration
+mobile-app/android/.gradle/
+mobile-app/android/.idea/
+mobile-app/android/local.properties
+mobile-app/android/**/build/
+mobile-app/android/**/outputs/
+mobile-app/android/**/*.apk
+mobile-app/android/**/*.aab
+
+# Local signing material
+mobile-app/**/*.jks
+mobile-app/**/*.keystore

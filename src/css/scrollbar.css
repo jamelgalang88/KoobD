@@ -1,0 +1,65 @@
+/* KoobD's scrollbar, used by every page and every scrolling box in it: a
+   slim rounded pill in the app's blue-to-mint colours, floating in a quiet
+   track. It is soft at rest, brighter under the pointer and full colour while
+   dragged. Linked on every page before its own styles, so a page can still
+   hide a scrollbar where it wants none (the swipeable story rows on phones). */
+:root{
+  --koobd-scroll-size: 12px;
+  --koobd-scroll-track: rgba(98, 119, 195, .07);
+  --koobd-scroll-thumb: linear-gradient(180deg, rgba(98, 119, 195, .55), rgba(116, 221, 177, .55));
+  --koobd-scroll-thumb-hover: linear-gradient(180deg, rgba(98, 119, 195, .8), rgba(116, 221, 177, .8));
+  --koobd-scroll-thumb-active: linear-gradient(180deg, #6277c3, #74ddb1);
+}
+
+/* Chrome, Edge, Safari and other WebKit / Blink browsers. */
+::-webkit-scrollbar{
+  width: var(--koobd-scroll-size);
+  height: var(--koobd-scroll-size);
+}
+
+::-webkit-scrollbar-track{
+  margin: 6px;
+  border-radius: 999px;
+  background: var(--koobd-scroll-track);
+  /* the track sits inside the gutter, leaving air on both sides */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb{
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background: var(--koobd-scroll-thumb) padding-box;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+
+::-webkit-scrollbar-thumb:hover{
+  border-width: 2px;
+  background: var(--koobd-scroll-thumb-hover) padding-box;
+}
+
+::-webkit-scrollbar-thumb:active{
+  border-width: 2px;
+  background: var(--koobd-scroll-thumb-active) padding-box;
+}
+
+::-webkit-scrollbar-button{
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-corner{
+  background: transparent;
+}
+
+/* Firefox: the same colours through its own scrollbar settings (Chrome and
+   Edge would drop the design above if they saw these, so only Firefox does). */
+@supports (-moz-appearance: none){
+  *{
+    scrollbar-width: thin;
+    scrollbar-color: rgba(98, 119, 195, .6) rgba(98, 119, 195, .07);
+  }
+}

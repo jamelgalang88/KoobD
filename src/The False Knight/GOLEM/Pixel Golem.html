@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Golem</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#2b2038;--panel:#3a2c4a;--ink:#f4e9d3;--dim:#b9a8c9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:10px/1.8 'Press Start 2P',ui-monospace,monospace;padding:20px 16px 40px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:18px;margin:0 0 6px}
+p{color:var(--dim);margin:0 0 18px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.card{background:var(--panel);padding:12px;text-align:center;flex:1 1 150px}
+canvas{image-rendering:pixelated;display:block;margin:8px auto 0;max-width:100%}
+.sky{background:#7ec8ec}
+.scene{width:100%;height:auto;margin:0 0 10px}
+.ctl{display:flex;gap:8px;margin-bottom:22px}
+button{font:inherit;background:var(--ink);color:var(--bg);border:0;padding:12px 14px;flex:1;cursor:pointer;touch-action:none}
+button:active{background:#0ee80e}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pixel Golem</h1>
+<p>32x46 sprites, 16 frames. Facing right, flip for left.</p>
+
+<div class="row">
+ <div class="card">Idle<canvas id="a0" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Run<canvas id="a1" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Jump<canvas id="a2" width="32" height="46" style="width:128px"></canvas></div>
+</div>
+
+<p>Try it: arrows or A/D to run, Space to jump.</p>
+<canvas id="scene" class="scene sky" width="160" height="72"></canvas>
+<div class="ctl"><button id="bl">Left</button><button id="bj">Jump</button><button id="br">Right</button></div>
+
+<p>Sprite sheet (rows: idle, run, jump). Save the image to use it in your game.</p>
+<div class="wrap"><canvas id="sheet" width="192" height="138" style="width:576px;margin:0"></canvas></div>
+</main>
+<script>
+const C={o:'#2a2a30',g:'#7a7a7a',gs:'#5f5f62',gd:'#4e4e52',gl:'#9a9aa0',hl:'#b0b0b8',eye:'#d4d4dc',
+  gr:'#0ee80e',gg:'#09b809',red:'#e8112d',st:'#1e9a1e',lf:'#33d633'};
+const CW=32,CH=46,BASE=14;
+const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+const blob=(g,x,y,w,h,c)=>{px(g,x+1,y,w-2,h,c);px(g,x,y+1,w,h-2,c)};
+const blobO=(g,x,y,w,h,c)=>{blob(g,x-1,y-1,w+2,h+2,C.o);blob(g,x,y,w,h,c)};
+const foot=(g,x,y)=>{blobO(g,x-3,y-2,6,4,C.gd);px(g,x-2,y-1,2,1,C.gs)};
+const arm=(g,x,y,c)=>{blobO(g,x-3,y-3,6,6,c);px(g,x-2,y-2,2,1,C.hl)};
+function eye(g,x,y,blink){
+  if(blink){px(g,x,y+1,5,1,C.gd);return}
+  px(g,x,y,5,2,C.eye);px(g,x+1,y+2,3,1,C.eye);px(g,x+1,y-1,3,1,C.gs);
+}
+function golem(g,X,Y,P){
+  const b=P.b,hx=P.hx,H=Y+b+P.hy;
+  foot(g,X+P.lf[0],Y+P.lf[1]);foot(g,X+P.rf[0],Y+P.rf[1]);
+  px(g,X+12,Y+18+b,8,2,C.gd);                              // neck
+  blobO(g,X+8,Y+19+b,16,8,C.g);                            // body
+  px(g,X+9,Y+25+b,14,1,C.gs);px(g,X+11,Y+19+b,10,2,C.gg);
+  px(g,X+11,Y+22+b,1,1,C.gd);px(g,X+20,Y+22+b,1,2,C.gd);
+  arm(g,X+P.al[0],Y+P.al[1]+b,C.gd);arm(g,X+P.ar[0],Y+P.ar[1]+b,C.gl);
+  blobO(g,X+5+hx,H+5,22,13,C.g);                           // head
+  px(g,X+24+hx,H+8,2,8,C.gs);px(g,X+8+hx,H+9,2,1,C.hl);px(g,X+7+hx,H+11,1,1,C.hl);
+  px(g,X+7+hx,H+5,18,1,C.gr);px(g,X+6+hx,H+6,20,2,C.gr);  // grass cap
+  px(g,X+9+hx,H+8,3,1,C.gr);px(g,X+17+hx,H+8,4,1,C.gr);px(g,X+6+hx,H+7,20,1,C.gg);
+  eye(g,X+9+hx,H+11,P.blink);eye(g,X+18+hx,H+11,P.blink);
+  const fx=X+16+hx;                                         // tulip
+  for(let i=0;i<5;i++)px(g,fx+Math.round(P.fw*i/4),H+4-i,1,1,C.st);
+  const tx=fx+P.fw;
+  px(g,tx-3,H+2,2,1,C.lf);px(g,tx+2,H+3,2,1,C.lf);
+  px(g,tx-1,H-3,3,3,C.red);px(g,tx,H-4,1,1,C.red);
+}
+const pose=o=>Object.assign({dy:0,b:0,hx:0,hy:0,blink:0,fw:0,lf:[12,27],rf:[21,27],al:[5,22],ar:[27,22]},o);
+const IDLE=[pose({}),pose({fw:1,al:[5,23],ar:[27,23]}),pose({b:1,al:[5,23],ar:[27,23]}),pose({b:1,fw:-1,blink:1})];
+const RUN=[0,1,2,3,4,5].map(i=>{
+  const ph=i/6*Math.PI*2,q=ph+Math.PI;
+  return pose({b:-Math.round(Math.abs(Math.sin(ph))*2),hx:1,fw:-2,
+    lf:[12+4*Math.cos(ph),27-Math.max(0,-Math.sin(ph))*4],
+    rf:[21+4*Math.cos(q),27-Math.max(0,-Math.sin(q))*4],
+    al:[5+2*Math.cos(q),22+2*Math.sin(q)],ar:[27+2*Math.cos(ph),22+2*Math.sin(ph)]});
+});
+const JUMP=[
+  pose({b:3,lf:[10,27],rf:[22,27],al:[5,23],ar:[27,24]}),
+  pose({dy:-3,b:-1,fw:1,lf:[12,28],rf:[20,28],al:[4,17],ar:[27,17]}),
+  pose({dy:-9,b:-1,fw:-2,lf:[12,25],rf:[20,25],al:[4,14],ar:[27,14]}),
+  pose({dy:-12,fw:-1,lf:[12,24],rf:[20,24],al:[4,19],ar:[27,19]}),
+  pose({dy:-6,fw:2,lf:[11,28],rf:[21,28],al:[4,15],ar:[27,15]}),
+  pose({b:3,lf:[10,27],rf:[22,27],al:[4,23],ar:[27,24]})
+];
+const ROWS=[IDLE,RUN,JUMP],FPS=[5,12,8],JD=JUMP.map(p=>p.dy);
+
+const sheet=document.getElementById('sheet'),sg=sheet.getContext('2d');
+ROWS.forEach((fr,r)=>fr.forEach((p,c)=>golem(sg,c*CW,r*CH+BASE+p.dy,p)));
+
+ROWS.forEach((fr,r)=>{
+  const g=document.getElementById('a'+r).getContext('2d');let i=0;
+  const f=()=>{g.clearRect(0,0,CW,CH);g.drawImage(sheet,i*CW,r*CH,CW,CH,0,0,CW,CH);i=(i+1)%fr.length};
+  f();setInterval(f,1000/FPS[r]);
+});
+
+const sc=document.getElementById('scene'),g=sc.getContext('2d'),G=60;
+const k={l:0,r:0,j:0};let scroll=0,face=1,jy=0,vy=0,land=0,t=0;
+function tick(){
+  const dir=k.r-k.l;if(dir)face=dir;
+  if(k.j&&jy===0&&vy===0)vy=-4.2;
+  if(jy<0||vy<0){vy+=.4;jy+=vy;if(jy>=0){jy=0;vy=0;land=5}}
+  scroll+=dir*1.6;t++;
+  let row,col;
+  if(jy<0){row=2;col=vy<-2?2:vy<=2?3:4}
+  else if(land>0){land--;row=2;col=5}
+  else if(dir){row=1;col=Math.floor(t/2.5)%6}
+  else{row=0;col=Math.floor(t/6)%4}
+  g.clearRect(0,0,160,72);
+  g.fillStyle='#fff';
+  for(const [cx,cy] of [[20,12],[90,20],[140,8]]){const x=((cx-scroll*.3)%200+200)%200-20;g.fillRect(x,cy,16,4);g.fillRect(x+3,cy-3,10,3)}
+  g.fillStyle='#b5653a';g.fillRect(0,G,160,12);
+  g.fillStyle='#5fbf4a';g.fillRect(0,G,160,3);
+  g.fillStyle='#8a4a2a';
+  for(let x=-16;x<176;x+=16){const bx=x-((scroll%16)+16)%16;g.fillRect(bx,G+3,1,9);g.fillRect(bx,G+8,16,1)}
+  const dy=G-43+jy-(row===2?JD[col]:0);
+  g.save();g.translate(80,0);g.scale(face,1);
+  g.drawImage(sheet,col*CW,row*CH,CW,CH,-16,dy,CW,CH);
+  g.restore();
+}
+setInterval(tick,1000/30);
+const K={ArrowLeft:'l',a:'l',ArrowRight:'r',d:'r',ArrowUp:'j',w:'j',' ':'j'};
+addEventListener('keydown',e=>{const m=K[e.key];if(m){k[m]=1;e.preventDefault()}});
+addEventListener('keyup',e=>{const m=K[e.key];if(m)k[m]=0});
+[['bl','l'],['br','r'],['bj','j']].forEach(([id,m])=>{
+  const b=document.getElementById(id);
+  b.addEventListener('pointerdown',()=>k[m]=1);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>k[m]=0));
+});
+</script>
+</body>
+</html>

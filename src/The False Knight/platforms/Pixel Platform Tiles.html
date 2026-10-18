@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Platform Tiles</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#2b2038;--panel:#3a2c4a;--ink:#f4e9d3;--dim:#b9a8c9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:10px/1.8 'Press Start 2P',ui-monospace,monospace;padding:20px 16px 40px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:18px;margin:0 0 6px}
+p{color:var(--dim);margin:0 0 18px}
+canvas{image-rendering:pixelated;display:block;max-width:100%;height:auto}
+.sky{background:#7ec8ec;width:100%;margin-bottom:22px}
+.wrap{overflow-x:auto;background:var(--panel);padding:12px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Pixel Platform Tiles</h1>
+<p>16x16 tiles, 16 in the set, same palette family as the characters.</p>
+
+<canvas id="level" class="sky" width="320" height="160"></canvas>
+
+<p>Tileset (8 columns x 2 rows). Save the image to use it in your game.</p>
+<div class="wrap"><canvas id="sheet" width="128" height="32" style="width:512px"></canvas></div>
+<p>Row 1: grass top, grass left, grass right, dirt, dirt left, dirt right, stone brick, crate. Row 2: plank left, plank middle, plank right, stone block, spikes, spring, ladder, coin.</p>
+</main>
+<script>
+const O='#3a2218';
+const P=(g,ox,oy)=>(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(ox+x,oy+y,w,h)};
+function dirt(p){p(0,0,16,16,'#b5653a');[[3,4],[10,3],[6,10],[12,12],[2,13],[13,7]].forEach(([x,y])=>p(x,y,2,1,'#8a4a2a'));[[8,7],[5,2],[11,14]].forEach(([x,y])=>p(x,y,2,1,'#c9784a'))}
+function grass(p,L,R){dirt(p);p(0,0,16,1,O);p(0,1,16,1,'#86d86b');p(0,2,16,2,'#5fbf4a');p(0,4,16,1,'#3f9a33');
+  [2,6,10,14].forEach(x=>p(x,5,2,1,'#3f9a33'));if(L)p(0,0,1,16,O);if(R)p(15,0,1,16,O)}
+const T=[
+ p=>grass(p,0,0),p=>grass(p,1,0),p=>grass(p,0,1),
+ p=>dirt(p),p=>{dirt(p);p(0,0,1,16,O)},p=>{dirt(p);p(15,0,1,16,O)},
+ p=>{p(0,0,16,16,'#8a8a96');const M='#5b5b66',H='#a8a8b4';p(0,7,16,1,M);p(0,15,16,1,M);p(7,0,1,7,M);[3,11].forEach(x=>p(x,8,1,7,M));
+     p(0,0,7,1,H);p(8,0,8,1,H);p(0,8,3,1,H);p(4,8,7,1,H);p(12,8,4,1,H)},
+ p=>{p(0,0,16,16,'#8a5a22');p(2,2,12,12,'#c98b3c');for(let i=0;i<12;i++){p(2+i,2+i,1,1,'#8a5a22');p(13-i,2+i,1,1,'#8a5a22')}
+     p(0,0,16,1,O);p(0,15,16,1,O);p(0,0,1,16,O);p(15,0,1,16,O)},
+ p=>{plank(p);p(0,0,1,6,O);p(3,6,1,4,'#8a6a3a')},
+ p=>plank(p),
+ p=>{plank(p);p(15,0,1,6,O);p(12,6,1,4,'#8a6a3a')},
+ p=>{p(0,0,16,16,O);p(1,1,14,14,'#8a8a96');p(1,1,14,1,'#b4b4c0');p(1,1,1,14,'#b4b4c0');p(1,14,14,1,'#5b5b66');p(14,1,1,14,'#5b5b66');p(4,4,8,8,'#7a7a86')},
+ p=>{p(0,13,16,3,'#5b5b66');for(let k=0;k<4;k++)for(let j=0;j<8;j++){const w=j<2?1:j<4?2:j<6?3:4;p(k*4+Math.floor((4-w)/2),5+j,w,1,'#d4d4dc');p(k*4+Math.floor((4-w)/2)+w-1,5+j,1,1,'#9a9aa8')}},
+ p=>{p(2,6,12,3,O);p(3,6,10,2,'#e8112d');[[4,9,8],[5,10,6],[4,11,8],[5,12,6]].forEach(([x,y,w])=>p(x,y,w,1,'#d4d4dc'));p(2,13,12,3,'#5b5b66')},
+ p=>{p(2,0,2,16,'#c98b3c');p(12,0,2,16,'#c98b3c');p(2,0,1,16,'#8a5a22');p(12,0,1,16,'#8a5a22');
+     [2,7,12].forEach(y=>{p(3,y,10,2,'#8a5a22');p(3,y,10,1,'#e0a850')})},
+ p=>{p(5,2,6,1,O);p(3,4,10,8,O);p(4,3,8,10,O);p(5,13,6,1,O);p(5,3,6,10,'#ffc400');p(4,4,8,8,'#ffc400');p(5,4,2,6,'#ffe066');p(8,5,1,6,'#e69a00')}
+];
+function plank(p){p(0,0,16,1,O);p(0,1,16,1,'#e0a850');p(0,2,16,2,'#c98b3c');p(0,4,16,1,'#8a5a22');p(0,5,16,1,O)}
+const tile=(g,i,x,y)=>T[i](P(g,x,y));
+
+const sg=document.getElementById('sheet').getContext('2d');
+T.forEach((_,i)=>tile(sg,i,(i%8)*16,Math.floor(i/8)*16));
+
+const M=['....................','..o.o.........o.o...','.<=>.......<==>.....','............H.......',
+ '..o....kk...H.....o.','..........cc.H.......','....c...o...H.s.p...',
+ 'l'+'g'.repeat(12)+'r..lggg','['+'d'.repeat(12)+']..['+'ddd','['+'d'.repeat(12)+']..['+'ddd'];
+const K={g:0,l:1,r:2,d:3,'[':4,']':5,b:6,c:7,'<':8,'=':9,'>':10,k:11,s:12,p:13,H:14,o:15};
+const lg=document.getElementById('level').getContext('2d');
+M.forEach((row,y)=>[...row].forEach((ch,x)=>{if(K[ch]!==undefined)tile(lg,K[ch],x*16,y*16)}));
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+/* The profile page (profile.php): a header card (cover band in the reader's
+   colours, character, name, numbers), an About card, and their favourites. */
+.profile-page{
+  --pf-ink:#1b2440;
+  --pf-muted:#69728c;
+  --pf-line:#e6eaf3;
+  --pf-soft:#f5f7fc;
+  --pf-accent:#4f63d6;
+}
+/* The page's background stays put behind the content, however long the page is. */
+.profile-page.app-bg{background-attachment:fixed;}
+.profile-page .main-inner.profile-main{max-width:1120px;margin:0 auto;padding:24px 28px 48px;}
+.profile-page .hidden{display:none !important;}
+
+/* A plain white card with a hairline border. */
+.pf-card{background:#fff;border:1px solid var(--pf-line);border-radius:20px;box-shadow:0 1px 2px rgba(27,36,64,.04),0 12px 32px rgba(27,36,64,.06);}
+.pf-card-title{margin:0;color:var(--pf-ink);font-size:16px;font-weight:800;letter-spacing:-.01em;}
+.pf-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px;}
+.pf-card-count{color:var(--pf-muted);font-size:13px;font-weight:700;}
+
+/* Buttons. */
+.pf-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid var(--pf-line);border-radius:12px;background:#fff;color:var(--pf-ink);font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 1px 2px rgba(27,36,64,.06);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;}
+.pf-btn:hover{background:var(--pf-soft);border-color:#d5dbea;}
+.pf-btn:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.pf-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-btn-soft{border-color:transparent;background:rgba(79,99,214,.1);color:var(--pf-accent);box-shadow:none;}
+.pf-btn-soft:hover{background:rgba(79,99,214,.16);border-color:transparent;}
+
+/* --- Header --------------------------------------------------------------------------- */
+.pf-header{overflow:hidden;}
+.pf-cover{height:120px;background:
+  radial-gradient(circle at 85% -20%,rgba(255,255,255,.35) 0 90px,transparent 91px),
+  radial-gradient(circle at 12% 140%,rgba(255,255,255,.22) 0 110px,transparent 111px),
+  linear-gradient(120deg,var(--profile-top,#c7d2fe),var(--profile-bottom,#a5f3fc));}
+.pf-header-body{display:flex;align-items:flex-start;gap:20px;padding:0 28px;margin-top:-52px;}
+.pf-avatar{flex:none;display:grid;place-items:center;width:116px;height:116px;border-radius:28px;background:linear-gradient(160deg,#fff,var(--pf-soft));border:4px solid #fff;box-shadow:0 10px 24px rgba(27,36,64,.14);}
+.pf-avatar img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.14));}
+.pf-identity{flex:1;min-width:0;padding-top:64px;}
+.pf-name{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;color:var(--pf-ink);font-size:clamp(22px,2.6vw,28px);line-height:1.15;font-weight:800;letter-spacing:-.02em;}
+.pf-name > span:first-child{overflow-wrap:anywhere;}
+.pf-role{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:999px;background:rgba(79,99,214,.1);color:var(--pf-accent);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.pf-handle{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0;color:var(--pf-muted);font-size:14px;font-weight:600;}
+.pf-dot{color:#b4bbcd;}
+.pf-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:66px;}
+.pf-btn-primary{border-color:transparent;background:var(--pf-accent);color:#fff;box-shadow:0 6px 14px rgba(79,99,214,.28);}
+.pf-btn-primary:hover{background:#4255c4;border-color:transparent;}
+
+.pf-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0 0;border-top:1px solid var(--pf-line);}
+.pf-stats > div{display:flex;flex-direction:column-reverse;align-items:center;gap:2px;padding:16px 12px 18px;}
+.pf-stats > div + div{border-left:1px solid var(--pf-line);}
+.pf-stats dt{color:var(--pf-muted);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-align:center;}
+.pf-stats dd{margin:0;color:var(--pf-ink);font-size:24px;line-height:1.1;font-weight:800;}
+
+/* --- About and favourites, side by side --------------------------------------------------- */
+.pf-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start;margin-top:20px;}
+.pf-about{padding:22px 22px 10px;}
+.pf-about .pf-card-title{margin-bottom:10px;}
+.pf-facts{display:flex;flex-direction:column;margin:0;padding:0;list-style:none;}
+.pf-facts li{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--pf-line);}
+.pf-facts li:first-child{border-top:0;}
+.pf-facts svg{flex:none;width:34px;height:34px;padding:8px;border-radius:10px;background:var(--pf-soft);color:var(--pf-accent);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-facts li > div{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.pf-fact-label{color:var(--pf-muted);font-size:12px;font-weight:600;}
+.pf-fact-value{color:var(--pf-ink);font-size:14.5px;font-weight:700;overflow-wrap:break-word;}
+
+.pf-favorites{padding:22px;}
+.profile-fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px;}
+/* Each card keeps its layers to itself, so its × never shows above the app's
+   navigation bar. */
+.profile-fav-item{position:relative;isolation:isolate;}
+.profile-fav-item[hidden]{display:none;}
+.profile-fav-card{display:flex;flex-direction:column;height:100%;overflow:hidden;border:1px solid var(--pf-line);border-radius:16px;background:#fff;color:var(--pf-ink);text-decoration:none;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.profile-fav-card:hover{transform:translateY(-2px);border-color:#d5dbea;box-shadow:0 14px 28px rgba(27,36,64,.12);}
+.profile-fav-card:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.profile-fav-cover{position:relative;aspect-ratio:4/3;overflow:hidden;background:linear-gradient(135deg,#5862d6,#16966e);}
+.profile-fav-cover img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease;}
+.profile-fav-card:hover .profile-fav-cover img{transform:scale(1.04);}
+.profile-fav-cover .story-mode-badge{position:absolute;left:8px;bottom:8px;top:auto;max-width:calc(100% - 16px);box-shadow:none;}
+.profile-fav-cover .story-mode-badge span{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.profile-fav-body{display:flex;flex-direction:column;gap:3px;padding:11px 12px 13px;}
+.profile-fav-title{font-size:14.5px;line-height:1.3;font-weight:800;}
+.profile-fav-meta{color:var(--pf-muted);font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* The × : shown on hover (always shown on touch screens). */
+.profile-fav-remove{position:absolute;top:8px;right:8px;z-index:3;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.92);color:var(--pf-ink);cursor:pointer;box-shadow:0 2px 8px rgba(27,36,64,.18);opacity:0;transition:opacity .15s ease,background .15s ease,color .15s ease;}
+.profile-fav-item:hover .profile-fav-remove,.profile-fav-remove:focus-visible{opacity:1;}
+.profile-fav-remove:hover{background:#e5486a;color:#fff;}
+.profile-fav-remove:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.profile-fav-remove svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;}
+@media (hover:none){.profile-fav-remove{opacity:1;}}
+
+.profile-fav-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:36px 16px 30px;border:1px dashed #d5dbea;border-radius:16px;background:var(--pf-soft);text-align:center;}
+.profile-fav-empty svg{width:44px;height:44px;margin-bottom:4px;padding:10px;border-radius:14px;background:#fff;color:#e5486a;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;box-shadow:0 4px 12px rgba(27,36,64,.08);}
+.profile-fav-empty strong{color:var(--pf-ink);font-size:15px;font-weight:800;}
+.profile-fav-empty p{margin:0 0 8px;color:var(--pf-muted);font-size:13.5px;font-weight:600;}
+
+/* "Removed from Favorites · Undo". */
+.profile-fav-toast{position:fixed;left:50%;bottom:24px;z-index:900;display:flex;align-items:center;gap:14px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--pf-ink);color:#fff;font-size:13.5px;font-weight:700;box-shadow:0 14px 30px rgba(20,30,60,.3);transform:translateX(-50%);}
+.profile-fav-toast[hidden]{display:none;}
+.profile-fav-toast button{min-height:32px;padding:0 14px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:13px;font-weight:800;cursor:pointer;}
+.profile-fav-toast button:hover{background:rgba(255,255,255,.24);}
+.profile-fav-toast button:focus-visible{outline:3px solid #8fb0ff;outline-offset:2px;}
+
+/* --- Smaller screens -------------------------------------------------------------------- */
+/* Tablets: the buttons get their own row under the name, and the About card
+   (now full width) lists its details in two columns. */
+@media (max-width:980px){
+  .pf-layout{grid-template-columns:1fr;}
+  .pf-header-body{flex-wrap:wrap;row-gap:14px;}
+  .pf-actions{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,230px));margin-top:0;}
+  .pf-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;}
+  .pf-facts li:nth-child(2){border-top:0;}
+}
+@media (max-width:640px){
+  .profile-page .main-inner.profile-main{padding:14px 16px 28px;}
+  .pf-cover{height:96px;}
+  .pf-header-body{flex-direction:column;align-items:center;gap:12px;padding:0 18px;margin-top:-48px;text-align:center;}
+  .pf-avatar{width:100px;height:100px;border-radius:24px;}
+  .pf-identity{padding-top:0;}
+  /* Portrait phones: the name alone on its line, exactly centred; the role badge beneath it. */
+  .pf-identity{width:100%;}
+  .pf-name{flex-direction:column;align-items:center;gap:6px;text-align:center;}
+  .pf-name > span:first-child{display:block;max-width:100%;}
+  .pf-handle{justify-content:center;}
+  .pf-handle{flex-direction:column;gap:2px;}
+  .pf-dot{display:none;}
+  .pf-actions{flex-basis:auto;grid-template-columns:1fr 1fr;width:100%;}
+  .pf-actions .pf-btn{padding:0 10px;}
+  .pf-stats > div{padding:14px 6px 16px;}
+  .pf-stats dt{font-size:10.5px;}
+  .pf-stats dd{font-size:20px;}
+  .pf-about,.pf-favorites{padding:18px 16px;}
+  .pf-facts{display:flex;}
+  .pf-facts li:nth-child(2){border-top:1px solid var(--pf-line);}
+  .pf-facts li{padding:10px 0;}
+  .pf-facts svg{width:32px;height:32px;padding:7px;}
+  .profile-fav-cover .story-mode-badge{left:6px;bottom:6px;max-width:calc(100% - 12px);padding:3px 7px 3px 5px;font-size:9px;letter-spacing:.03em;}
+  .profile-fav-cover .story-mode-badge svg{width:11px;height:11px;}
+  .profile-fav-title{font-size:13.5px;}
+  .profile-fav-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  /* Above the bottom bar on phones. */
+  .profile-fav-toast{bottom:96px;max-width:calc(100vw - 24px);}
+}
+/* Small phones: the two buttons stack. */
+@media (max-width:400px){
+  .pf-actions{grid-template-columns:1fr;}
+}
+@media (prefers-reduced-motion: reduce){
+  .profile-fav-card,.profile-fav-cover img,.pf-btn,.profile-fav-remove{transition:none;}
+}
+
+/* --- Edit Profile: the account popup ------------------------------------------------------- */
+button.pf-btn{font-family:inherit;cursor:pointer;}
+.pf-about-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.pf-about-head .pf-card-title{margin-bottom:0;}
+.pf-link-btn{min-height:32px;padding:0 10px;border:0;border-radius:9px;background:rgba(79,99,214,.1);color:var(--pf-accent);font:inherit;font-size:13px;font-weight:800;cursor:pointer;}
+.pf-link-btn:hover{background:rgba(79,99,214,.16);}
+.pf-notice{margin:0 0 14px;padding:12px 16px;border-radius:14px;background:#e3f7ee;color:#1f7a52;font-weight:800;}
+.pf-modal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(27,36,64,.45);}
+.pf-modal.is-open{display:flex;}
+body.pf-modal-open{overflow:hidden;}
+.pf-modal-card{position:relative;display:flex;flex-direction:column;gap:14px;width:min(480px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;padding:24px;border-radius:22px;background:#fff;box-shadow:0 30px 70px rgba(20,30,60,.3);color:var(--pf-ink);}
+.pf-modal-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--pf-muted);font-size:26px;line-height:1;cursor:pointer;}
+.pf-modal-close:hover{background:var(--pf-soft);color:var(--pf-ink);}
+.pf-modal-title{margin:0;padding-right:40px;font-size:20px;font-weight:800;}
+.pf-modal-copy{margin:-6px 0 0;color:var(--pf-muted);font-size:13.5px;font-weight:600;line-height:1.5;}
+.pf-field{display:flex;flex-direction:column;gap:6px;}
+.pf-field[hidden]{display:none;}
+.pf-field-label{font-size:12.5px;font-weight:800;color:var(--pf-ink);}
+.pf-field input{min-height:44px;padding:0 14px;border:1.5px solid var(--pf-line);border-radius:12px;background:var(--pf-soft);color:var(--pf-ink);font:inherit;font-size:15px;font-weight:600;outline:none;}
+.pf-field input:focus{border-color:var(--pf-accent);background:#fff;box-shadow:0 0 0 3px rgba(79,99,214,.14);}
+.pf-field.has-error input{border-color:#d0566f;background:#fff6f8;}
+.pf-field-hint{font-size:12px;font-weight:600;color:var(--pf-muted);}
+.pf-field-error{font-size:12.5px;font-weight:800;color:#b4465f;}
+.pf-modal-facts{display:flex;flex-wrap:wrap;gap:6px 18px;padding:10px 12px;border-radius:12px;background:var(--pf-soft);color:var(--pf-muted);font-size:12.5px;font-weight:600;}
+.pf-modal-facts strong{color:var(--pf-ink);font-weight:800;margin-right:4px;}
+.pf-modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+.pf-modal-actions .pf-btn{min-width:120px;}
+.pf-modal-actions .pf-btn:disabled{opacity:.6;}
+@media (max-width:640px){
+  .pf-modal{align-items:flex-end;padding:0;}
+  .pf-modal-card{width:100%;max-height:92dvh;border-radius:22px 22px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));}
+  .pf-modal-actions .pf-btn{flex:1;min-width:0;}
+}
+
+/* Change password: a section of the Edit Profile popup that opens when wanted. */
+.pf-password-box{border:1.5px solid var(--pf-line);border-radius:14px;}
+.pf-password-box.is-open{border-color:#d5dbea;background:#fbfcff;}
+.pf-password-toggle{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0 14px;border:0;border-radius:14px;background:none;color:var(--pf-ink);font:inherit;font-size:14px;font-weight:800;text-align:left;cursor:pointer;}
+.pf-password-toggle:hover{background:var(--pf-soft);}
+.pf-password-toggle:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.pf-password-toggle svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--pf-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-password-toggle span:nth-child(2){flex:1;}
+.pf-password-chevron{width:8px;height:8px;border-right:2px solid var(--pf-muted);border-bottom:2px solid var(--pf-muted);transform:rotate(45deg);transition:transform .15s ease;}
+.pf-password-box.is-open .pf-password-chevron{transform:rotate(-135deg);}
+.pf-password-fields{display:flex;flex-direction:column;gap:12px;padding:4px 14px 14px;}
+.pf-password-fields[hidden]{display:none;}
+.pf-show-passwords{display:inline-flex;align-items:center;gap:8px;min-height:32px;color:var(--pf-muted);font-size:13px;font-weight:700;cursor:pointer;}
+.pf-show-passwords input{width:18px;height:18px;accent-color:var(--pf-accent);}

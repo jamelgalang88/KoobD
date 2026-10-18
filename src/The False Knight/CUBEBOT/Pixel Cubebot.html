@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Cubebot</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#2b2038;--panel:#3a2c4a;--ink:#f4e9d3;--dim:#b9a8c9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:10px/1.8 'Press Start 2P',ui-monospace,monospace;padding:20px 16px 40px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:18px;margin:0 0 6px}
+p{color:var(--dim);margin:0 0 18px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.card{background:var(--panel);padding:12px;text-align:center;flex:1 1 150px}
+canvas{image-rendering:pixelated;display:block;margin:8px auto 0;max-width:100%}
+.sky{background:#7ec8ec}
+.scene{width:100%;height:auto;margin:0 0 10px}
+.ctl{display:flex;gap:8px;margin-bottom:22px}
+button{font:inherit;background:var(--ink);color:var(--bg);border:0;padding:12px 14px;flex:1;cursor:pointer;touch-action:none}
+button:active{background:#fbbb3c}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pixel Cubebot</h1>
+<p>32x46 sprites, 16 frames. Facing right, flip for left.</p>
+
+<div class="row">
+ <div class="card">Idle<canvas id="a0" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Run<canvas id="a1" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Jump<canvas id="a2" width="32" height="46" style="width:128px"></canvas></div>
+</div>
+
+<p>Try it: arrows or A/D to run, Space to jump.</p>
+<canvas id="scene" class="scene sky" width="160" height="72"></canvas>
+<div class="ctl"><button id="bl">Left</button><button id="bj">Jump</button><button id="br">Right</button></div>
+
+<p>Sprite sheet (rows: idle, run, jump). Save the image to use it in your game.</p>
+<div class="wrap"><canvas id="sheet" width="192" height="138" style="width:576px;margin:0"></canvas></div>
+</main>
+<script>
+const C={o:'#6b4310',y:'#fbbb3c',s:'#e0a021',g:'#a9a8a3',d:'#77746f',e:'#3d3d3d'};
+const CW=32,CH=46,BASE=14;
+const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+const blob=(g,x,y,w,h,c)=>{px(g,x+1,y,w-2,h,c);px(g,x,y+1,w,h-2,c)};
+const blobO=(g,x,y,w,h,c)=>{blob(g,x-1,y-1,w+2,h+2,C.o);blob(g,x,y,w,h,c)};
+function glimb(g,x0,y0,x1,y1){
+  const n=Math.max(1,Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-2,y0+(y1-y0)*i/n-2,4,4,C.o);
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-1,y0+(y1-y0)*i/n-1,2,2,C.g);
+}
+function foot(g,x,y){blobO(g,x-3,y-2,7,4,C.y);px(g,x-1,y-1,2,1,C.s)}
+function hand(g,x,y){blobO(g,x-2,y-2,5,5,C.y);px(g,x-1,y-1,1,1,C.s);px(g,x+1,y+1,1,1,C.s)}
+function bot(g,X,Y,P){
+  const b=P.b,hx=P.hx,hy=P.hy,cx=v=>Math.min(28,Math.max(3,v)),la=[cx(P.la[0]),P.la[1]],ra=[cx(P.ra[0]),P.ra[1]];
+  glimb(g,X+12,Y+22+b,X+P.lf[0],Y+P.lf[1]);
+  glimb(g,X+20,Y+22+b,X+P.rf[0],Y+P.rf[1]);
+  foot(g,X+P.lf[0],Y+P.lf[1]);foot(g,X+P.rf[0],Y+P.rf[1]);
+  glimb(g,X+9,Y+16+b,X+la[0],Y+la[1]+b);
+  glimb(g,X+23,Y+16+b,X+ra[0],Y+ra[1]+b);
+  px(g,X+14,Y+12+b,4,2,C.d);                              // neck
+  blobO(g,X+8,Y+13+b,16,9,C.y);                           // body
+  px(g,X+8,Y+14+b,1,7,C.s);px(g,X+11,Y+15+b,3,1,C.s);px(g,X+21,Y+19+b,1,2,C.s);
+  hand(g,X+la[0],Y+la[1]+b);hand(g,X+ra[0],Y+ra[1]+b);
+  blobO(g,X+7+hx,Y+1+b+hy,18,11,C.y);                     // head
+  px(g,X+8+hx,Y+2+b+hy,1,9,C.s);px(g,X+10+hx,Y+3+b+hy,3,1,C.s);px(g,X+20+hx,Y+3+b+hy,3,1,C.s);
+  const ex=X+hx+P.look,ey=Y+5+b+hy;
+  if(P.blink){px(g,ex+11,ey+2,2,1,C.e);px(g,ex+19,ey+2,2,1,C.e)}
+  else{px(g,ex+11,ey,2,4,C.e);px(g,ex+19,ey,2,4,C.e)}
+}
+const pose=o=>Object.assign({dy:0,b:0,hx:0,hy:0,look:0,blink:0,lf:[11,27],rf:[21,27],la:[4,20],ra:[28,20]},o);
+const IDLE=[pose({}),pose({la:[4,21],ra:[28,21]}),pose({b:1,hy:1,la:[4,21],ra:[28,21]}),pose({b:1,blink:1})];
+const RUN=[0,1,2,3,4,5].map(i=>{
+  const ph=i/6*Math.PI*2,q=ph+Math.PI;
+  return pose({b:-Math.round(Math.abs(Math.sin(ph))*2),hx:1,look:1,
+    lf:[11+5*Math.cos(ph),27-Math.max(0,-Math.sin(ph))*4],
+    rf:[21+5*Math.cos(q),27-Math.max(0,-Math.sin(q))*4],
+    la:[4+3*Math.cos(q),19+2*Math.sin(q)],ra:[28+3*Math.cos(ph),19+2*Math.sin(ph)]});
+});
+const JUMP=[
+  pose({b:3,lf:[10,27],rf:[22,27],la:[4,21],ra:[28,21]}),
+  pose({dy:-3,b:-1,lf:[11,28],rf:[21,28],la:[3,14],ra:[29,14]}),
+  pose({dy:-9,b:-1,hy:-1,lf:[11,25],rf:[21,25],la:[3,12],ra:[29,12]}),
+  pose({dy:-12,lf:[11,24],rf:[21,24],la:[3,16],ra:[29,16]}),
+  pose({dy:-6,hy:1,lf:[10,28],rf:[22,28],la:[3,12],ra:[29,12]}),
+  pose({b:3,hy:1,lf:[9,27],rf:[23,27],la:[3,21],ra:[29,21]})
+];
+const ROWS=[IDLE,RUN,JUMP],FPS=[5,12,8],JD=JUMP.map(p=>p.dy);
+
+const sheet=document.getElementById('sheet'),sg=sheet.getContext('2d');
+ROWS.forEach((fr,r)=>fr.forEach((p,c)=>bot(sg,c*CW,r*CH+BASE+p.dy,p)));
+
+ROWS.forEach((fr,r)=>{
+  const g=document.getElementById('a'+r).getContext('2d');let i=0;
+  const f=()=>{g.clearRect(0,0,CW,CH);g.drawImage(sheet,i*CW,r*CH,CW,CH,0,0,CW,CH);i=(i+1)%fr.length};
+  f();setInterval(f,1000/FPS[r]);
+});
+
+const sc=document.getElementById('scene'),g=sc.getContext('2d'),G=60;
+const k={l:0,r:0,j:0};let scroll=0,face=1,jy=0,vy=0,land=0,t=0;
+function tick(){
+  const dir=k.r-k.l;if(dir)face=dir;
+  if(k.j&&jy===0&&vy===0)vy=-4.2;
+  if(jy<0||vy<0){vy+=.4;jy+=vy;if(jy>=0){jy=0;vy=0;land=5}}
+  scroll+=dir*1.6;t++;
+  let row,col;
+  if(jy<0){row=2;col=vy<-2?2:vy<=2?3:4}
+  else if(land>0){land--;row=2;col=5}
+  else if(dir){row=1;col=Math.floor(t/2.5)%6}
+  else{row=0;col=Math.floor(t/6)%4}
+  g.clearRect(0,0,160,72);
+  g.fillStyle='#fff';
+  for(const [cx,cy] of [[20,12],[90,20],[140,8]]){const x=((cx-scroll*.3)%200+200)%200-20;g.fillRect(x,cy,16,4);g.fillRect(x+3,cy-3,10,3)}
+  g.fillStyle='#b5653a';g.fillRect(0,G,160,12);
+  g.fillStyle='#5fbf4a';g.fillRect(0,G,160,3);
+  g.fillStyle='#8a4a2a';
+  for(let x=-16;x<176;x+=16){const bx=x-((scroll%16)+16)%16;g.fillRect(bx,G+3,1,9);g.fillRect(bx,G+8,16,1)}
+  const dy=G-43+jy-(row===2?JD[col]:0);
+  g.save();g.translate(80,0);g.scale(face,1);
+  g.drawImage(sheet,col*CW,row*CH,CW,CH,-16,dy,CW,CH);
+  g.restore();
+}
+setInterval(tick,1000/30);
+const K={ArrowLeft:'l',a:'l',ArrowRight:'r',d:'r',ArrowUp:'j',w:'j',' ':'j'};
+addEventListener('keydown',e=>{const m=K[e.key];if(m){k[m]=1;e.preventDefault()}});
+addEventListener('keyup',e=>{const m=K[e.key];if(m)k[m]=0});
+[['bl','l'],['br','r'],['bj','j']].forEach(([id,m])=>{
+  const b=document.getElementById(id);
+  b.addEventListener('pointerdown',()=>k[m]=1);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>k[m]=0));
+});
+</script>
+</body>
+</html>

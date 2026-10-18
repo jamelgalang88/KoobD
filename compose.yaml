@@ -1,0 +1,59 @@
+services:
+  web:
+    container_name: koobd-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: koobd-db
+    image: mysql:8.0.36
+    platform: linux/amd64
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: game_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    ports:
+      - "3306:3306"
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/db-start.sh
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - ./db-start.sh:/usr/local/bin/db-start.sh:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    container_name: koobd-phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    platform: linux/amd64
+    restart: always
+    environment:
+      PMA_HOST: db   # ← fixed to match service name
+      PMA_PORT: 3306
+      PMA_USER: user
+      PMA_PASSWORD: pass
+    ports:
+      - "8081:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

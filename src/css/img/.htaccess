@@ -1,0 +1,16 @@
+RewriteEngine On
+
+RewriteRule ^banner/(.*)$ /assets/images/banners/$1 [L]
+RewriteRule ^char/(.*)$ /assets/images/characters/$1 [L]
+RewriteRule ^logo/1\.png$ /assets/images/icons/favicon.png [L]
+RewriteRule ^logo/logo\x20koobd\.png$ /assets/images/logos/logo.png [L]
+RewriteRule ^logo/(.*)$ /assets/images/logos/$1 [L]
+RewriteRule ^1\.png$ /assets/images/icons/favicon.png [L]
+RewriteRule ^banner([1-3])\.(png|jpg)$ /assets/images/banners/banner$1.$2 [L]
+RewriteRule ^((book1|book2)(_cover)?\.(jpg|png))$ /assets/images/books/$1 [L]
+RewriteRule ^forest\.png$ /assets/images/backgrounds/forest.png [L]
+RewriteRule ^forest\.jpg$ /assets/images/backgrounds/forest.png [L]
+RewriteRule ^(facebook|instagram|X)\.jpg$ /assets/images/social/$1.jpg [L]
+RewriteRule ^logo\.png$ /assets/images/logos/logo.png [L]
+RewriteRule ^(MV5.*)$ /assets/images/posters/$1 [L]
+RewriteRule ^(.*)$ /assets/images/$1 [L]

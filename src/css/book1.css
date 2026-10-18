@@ -1,0 +1,475 @@
+body.story-page {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  background: #0d1220;
+  overflow: hidden;
+}
+
+.vn-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+.vn-background {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+/* While a story card (title, narration, storyboard frame) covers the scene,
+   the dialogue box steps aside. */
+.vn-dialogue {
+  transition: opacity 0.4s ease;
+}
+
+.vn-dialogue.is-under-card {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vn-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(14, 20, 35, 0.18), rgba(8, 13, 24, 0.08) 58%, rgba(6, 10, 19, 0.34) 100%);
+}
+
+.vn-characters {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.vn-char {
+  position: absolute;
+  bottom: 24px;
+  width: min(34vw, 360px);
+  max-height: 78%;
+  object-fit: contain;
+  opacity: 0.38;
+  /* Characters hold perfectly still in dialogue: the speaker is shown by
+     brightness alone, never by sliding or scaling the figure. */
+  transform: none;
+  filter: drop-shadow(0 20px 30px rgba(31, 45, 76, 0.18));
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.vn-char.is-empty {
+  visibility: hidden;
+}
+
+.vn-char.left,
+.vn-char.active-left.left {
+  left: 2.5%;
+}
+
+.vn-char.right,
+.vn-char.active-right.right {
+  right: 2.5%;
+}
+
+.vn-char.active-left,
+.vn-char.active-right {
+  opacity: 1;
+  filter: drop-shadow(0 26px 34px rgba(31, 45, 76, 0.24));
+}
+
+.vn-dialogue {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 0 22px 22px;
+  box-sizing: border-box;
+}
+
+.vn-names {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto 10px;
+  padding: 0 10px;
+}
+
+.name-box {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(21, 29, 49, 0.74);
+  color: #dfe7ff;
+  box-shadow: 0 12px 22px rgba(9, 14, 27, 0.28);
+  font-size: 14px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.name-box.active {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.dialogue-box {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 22px 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(173, 191, 244, 0.16);
+  background: rgba(10, 16, 30, 0.46);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 24px 46px rgba(10, 16, 30, 0.26);
+  color: #f8fbff;
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.62;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dialogue-box.visible {
+  opacity: 1;
+}
+
+.vn-dialogue.hidden {
+  display: none;
+}
+
+.teacher-story-scene-title {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.teacher-story-scene-title.hidden {
+  display: none;
+}
+
+.teacher-story-scene-title-text {
+  max-width: min(100%, 720px);
+  padding: 24px 28px;
+  border-radius: 24px;
+  background: rgba(10, 16, 30, 0.52);
+  color: #fff;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 1000;
+  line-height: 1.06;
+  text-align: center;
+  text-shadow: 0 6px 18px rgba(0,0,0,.3);
+  backdrop-filter: blur(10px);
+}
+
+.teacher-story-text-narration {
+  font-style: italic;
+}
+
+.vn-choices {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100% - 32px, 340px);
+  transform: translate(-50%, -50%);
+}
+
+.vn-choices:empty {
+  display: none;
+}
+
+.choice-timer {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  z-index: 7;
+  width: min(100% - 28px, 1120px);
+  transform: translateX(-50%);
+}
+
+.choice-timer.hidden {
+  display: none;
+}
+
+.choice-timer-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(173, 191, 244, 0.08);
+}
+
+.choice-timer-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6277c3, #74ddb1);
+  transform-origin: left center;
+}
+
+.choice-btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6277c3, #74ddb1);
+  color: #fff;
+  box-shadow: 0 16px 28px rgba(98, 119, 195, 0.22);
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.22s ease, filter 0.22s ease;
+  animation: fadeInUp 0.4s ease forwards;
+  opacity: 0;
+}
+
+.choice-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ending-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(14, 20, 35, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.ending-screen.hidden {
+  display: none;
+}
+
+.ending-content {
+  width: min(100%, 620px);
+  padding: 28px 26px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(17, 24, 40, 0.96), rgba(12, 19, 32, 0.94));
+  border: 1px solid rgba(126, 145, 199, 0.2);
+  box-shadow: 0 28px 56px rgba(7, 12, 23, 0.34);
+  text-align: center;
+  color: #f5f8ff;
+}
+
+.ending-content h1 {
+  margin: 0 0 18px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.04;
+  font-weight: 1000;
+}
+
+.ending-lesson {
+  max-width: 560px;
+  margin: 0 auto 24px;
+  font-size: 16px;
+  line-height: 1.58;
+  color: rgba(236, 242, 255, 0.82);
+}
+
+.ending-lesson.hidden,
+.ending-buttons.hidden {
+  display: none;
+}
+
+.ending-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Ending actions sit side by side as equal pills with centred labels, whether
+   they are <button>s or links (The False Knight's are links). */
+.ending-buttons .choice-btn {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 150px;
+  max-width: 240px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 12px 22px;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ending-buttons .choice-btn:focus-visible {
+  outline: 3px solid rgba(116, 221, 177, 0.75);
+  outline-offset: 3px;
+}
+
+.top-right.story-exit-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(126, 145, 199, 0.18);
+  border-radius: 16px;
+  background: rgba(17, 24, 40, 0.86);
+  box-shadow: 0 12px 24px rgba(7, 12, 23, 0.24);
+  cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.top-right.story-exit-btn img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.88;
+}
+
+.top-right.story-exit-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+@media (max-width: 1024px) {
+  .vn-char {
+    width: min(39vw, 300px);
+    max-height: 72%;
+  }
+
+  .vn-char.left,
+  .vn-char.active-left.left {
+    left: 1.2%;
+  }
+
+  .vn-char.right,
+  .vn-char.active-right.right {
+    right: 1.2%;
+  }
+
+  .vn-dialogue {
+    padding: 0 14px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .dialogue-box {
+    padding: 18px 20px;
+    font-size: 16px;
+    line-height: 1.52;
+  }
+
+  .choice-btn {
+    min-width: 180px;
+    font-size: 12px;
+  }
+
+  .choice-timer {
+    width: min(100% - 24px, 920px);
+  }
+}
+
+@media (max-width: 767px) and (orientation: landscape) {
+  .vn-char {
+    width: min(34vw, 210px);
+    max-height: 68%;
+    bottom: 12px;
+  }
+
+  .vn-names {
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+
+  .name-box {
+    min-height: 30px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .dialogue-box {
+    padding: 14px 16px;
+    border-radius: 22px;
+    font-size: 14px;
+  }
+
+  .teacher-story-scene-title {
+    padding: 18px;
+  }
+
+  .teacher-story-scene-title-text {
+    padding: 18px 20px;
+    border-radius: 18px;
+    font-size: 28px;
+  }
+
+  .vn-choices {
+    gap: 8px;
+    top: 50%;
+    width: min(100% - 24px, 300px);
+  }
+
+  .choice-btn {
+    min-width: 150px;
+    min-height: 40px;
+    padding: 10px 14px;
+    font-size: 11px;
+  }
+
+  .top-right.story-exit-btn {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 14px;
+  }
+
+  .top-right.story-exit-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .choice-timer {
+    width: min(100% - 20px, 820px);
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}

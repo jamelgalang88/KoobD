@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>KoobD</title>
+  <style>
+    :root{
+      color-scheme: light;
+      --bg-a: #edf9ff;
+      --bg-b: #d7efff;
+      --ink: #33446f;
+      --muted: #6d7fa8;
+      --accent-a: #6176d6;
+      --accent-b: #6fdcb6;
+      --panel: rgba(255,255,255,.9);
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(98,119,195,.2), transparent 34%),
+        radial-gradient(circle at top right, rgba(111,220,182,.22), transparent 26%),
+        linear-gradient(180deg, var(--bg-a), var(--bg-b));
+      color:var(--ink);
+    }
+
+    .screen{
+      width:min(100%, 430px);
+      padding:28px 24px;
+      border-radius:28px;
+      background:var(--panel);
+      box-shadow:0 24px 60px rgba(62,88,144,.16);
+      text-align:center;
+      backdrop-filter:blur(14px);
+    }
+
+    .logo{
+      width:84px;
+      height:84px;
+      margin:0 auto 16px;
+      border-radius:24px;
+      background:linear-gradient(135deg, var(--accent-a), var(--accent-b));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-size:32px;
+      font-weight:900;
+      letter-spacing:.06em;
+      box-shadow:0 16px 36px rgba(97,118,214,.24);
+    }
+
+    h1{
+      margin:0 0 8px;
+      font-size:34px;
+      line-height:1;
+      font-weight:1000;
+    }
+
+    p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.6;
+      font-weight:700;
+    }
+
+    .hint{
+      margin-top:18px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:rgba(97,118,214,.08);
+      color:var(--ink);
+      font-size:14px;
+      line-height:1.5;
+      font-weight:800;
+    }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="logo">K</div>
+    <h1>KoobD</h1>
+    <p>The mobile shell is ready, but it still needs a live KoobD server URL so the app can load your stories, classrooms, and accounts.</p>
+    <div class="hint">
+      Set <strong>KOOBD_APP_URL</strong> in the Capacitor config workflow before building Android or iPhone packages.
+    </div>
+  </main>
+</body>
+</html>

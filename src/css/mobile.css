@@ -1,0 +1,680 @@
+/* KoobD on phones and tablets.
+   Loaded last on every page, so it only refines what the page's own styles
+   do at small sizes: a labelled bottom tab bar, comfortable touch targets
+   (44px and up), 16px form text (no zoom-on-focus on iOS), swipeable story
+   rows, and content that respects the device's safe areas. Desktop is left
+   as it is. */
+
+/* ---------------------------------------------------------------------------
+   Everywhere on touch screens
+   --------------------------------------------------------------------------- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+a,button,input,select,textarea,label{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+
+@media (max-width:1024px){
+  /* Form fields: 16px text so mobile browsers do not zoom in on focus. */
+  input[type="text"],input[type="email"],input[type="password"],input[type="search"],
+  input[type="number"],input[type="url"],input:not([type]),select,textarea{font-size:16px !important;}
+}
+
+/* ---------------------------------------------------------------------------
+   The app's navigation: a labelled bottom tab bar on phones and small tablets
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  .sidebar{
+    height:auto !important;
+    min-height:0;
+    padding:0 0 env(safe-area-inset-bottom) !important;
+    border-top:1px solid rgba(40,52,96,.08);
+    border-radius:22px 22px 0 0;
+    background:rgba(255,255,255,.96) !important;
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+    box-shadow:0 -8px 28px rgba(34,46,90,.12) !important;
+  }
+  .sidebar-inner{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:stretch !important;
+    justify-content:space-around !important;
+    gap:0 !important;
+    flex:1 1 auto;
+    width:100% !important;
+    height:66px;
+    padding:4px 6px !important;
+  }
+  /* Every tab sits directly in the bar, evenly spaced. */
+  .sidebar-top,.sidebar-nav,.sidebar-bottom,.sidebar-account{display:contents !important;}
+  .sidebar-brand-mark,.sidebar-brand-text,.sidebar-divider,.sidebar-user-text{display:none !important;}
+
+  .sidebar .sidebar-link,
+  .sidebar .sidebar-profile-link,
+  .sidebar .sidebar-logout-form{
+    flex:1 1 0;
+    min-width:0 !important;
+    width:auto !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    border-radius:14px;
+    background:none !important;
+    box-shadow:none !important;
+    text-decoration:none;
+    color:#7a84a6;
+    opacity:1 !important;
+  }
+  /* Tab labels, taken from where each tab leads. */
+  .sidebar .sidebar-link::after,
+  .sidebar .sidebar-profile-link::after{
+    font:800 10.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+    letter-spacing:.01em;
+    color:inherit;
+    white-space:nowrap;
+  }
+  .sidebar-link[href^="home"]::after{content:"Home";}
+  .sidebar-link[href*="classroom"]::after{content:"Classroom";}
+  .sidebar-link-stories::after{content:"My Stories";}
+  .sidebar-link-add::after{content:"Create";}
+  .sidebar .sidebar-profile-link::after{content:"Profile";}
+  /* The same labels in Tagalog (js/i18n.js sets html[lang]). */
+  html[lang="tl"] .sidebar-link[href*="classroom"]::after{content:"Klase";}
+  html[lang="tl"] .sidebar-link-add::after{content:"Gumawa";}
+  html[lang="tl"] .sidebar-link-stories::after{content:"Kuwento Ko";}
+  html[lang="tl"] .sidebar .sidebar-profile-link::after{content:"Profile";}
+  .sidebar-icon-svg{width:22px !important;height:22px !important;opacity:.75;}
+  .sidebar-link.active .sidebar-icon-svg{opacity:1;filter:none;}
+  /* The profile tab's menu opens above the bar. */
+  .sidebar-profile-popover{min-width:200px;}
+  .sidebar .sidebar-profile-link[aria-expanded="true"]{color:#4d5fb3;}
+  /* The language switch: a tab of its own - a small EN | TL pill with the
+     tab's label underneath. */
+  .sidebar .sidebar-language{
+    flex:1 1 0;
+    min-width:0;
+    width:auto !important;
+    display:grid !important;
+    grid-template-columns:repeat(2,22px);
+    justify-content:center;
+    align-content:center;
+    row-gap:4px;
+    padding:0 !important;
+    background:none !important;
+    box-shadow:none !important;
+  }
+  .sidebar .sidebar-language::after{
+    content:"Language";
+    grid-column:1 / -1;
+    justify-self:center;
+    font:800 10.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:#7a84a6;
+    white-space:nowrap;
+  }
+  html[lang="tl"] .sidebar .sidebar-language::after{content:"Wika";}
+  .sidebar .sidebar-lang-btn{
+    height:24px;
+    font-size:9.5px;
+    letter-spacing:.02em;
+    background:rgba(100,116,179,.12);
+    border-radius:0;
+  }
+  .sidebar .sidebar-lang-btn:first-child{border-radius:999px 0 0 999px;}
+  .sidebar .sidebar-lang-btn:last-child{border-radius:0 999px 999px 0;}
+  .sidebar .sidebar-lang-btn.is-active{background:#6277c3;color:#fff;box-shadow:none;}
+
+  .sidebar-icon-box{
+    width:48px !important;
+    height:30px !important;
+    border-radius:999px !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    display:grid !important;
+    place-items:center;
+    transition:background-color .18s ease;
+  }
+  .sidebar-icon-box img{width:24px !important;height:24px !important;object-fit:contain;transform:none !important;filter:grayscale(.35) opacity(.75) !important;}
+  .sidebar-link.active{color:#4d5fb3;}
+  .sidebar-link.active .sidebar-icon-box{background:rgba(98,119,195,.14) !important;}
+  .sidebar-link.active .sidebar-icon-box img{filter:none !important;}
+
+  /* Create: the raised round action in the middle of the bar. */
+  .sidebar .sidebar-link.sidebar-link-add .sidebar-icon-add{
+    width:40px !important;
+    height:40px !important;
+    border-radius:50% !important;
+    background:linear-gradient(135deg,#6277c3,#74ddb1) !important;
+    color:#fff !important;
+    font-size:26px !important;
+    line-height:1;
+    box-shadow:0 8px 16px rgba(98,119,195,.32) !important;
+    transform:translateY(-6px);
+  }
+  .sidebar-link-add{gap:0;}
+  .sidebar .sidebar-link.sidebar-link-add.active .sidebar-icon-add{box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(98,119,195,.45),0 8px 16px rgba(98,119,195,.32) !important;}
+  .sidebar-link-add.active{color:#4d5fb3;}
+
+  /* Profile: the reader's avatar as a small round tab icon. */
+  .sidebar .sidebar-profile-card{
+    width:32px !important;
+    height:32px !important;
+    min-height:0 !important;
+    padding:0 !important;
+    border-radius:50% !important;
+    border:2px solid #fff !important;
+    box-shadow:0 2px 8px rgba(34,46,90,.18) !important;
+    margin:0 !important;
+    gap:0 !important;
+    overflow:hidden;
+    transform:none !important;
+  }
+  .sidebar .sidebar-profile-avatar{width:100% !important;max-width:none !important;height:100% !important;border-radius:50% !important;background:transparent !important;box-shadow:none !important;}
+  .sidebar .sidebar-profile-avatar img{width:86% !important;height:86% !important;}
+  .sidebar .sidebar-profile-name{display:none !important;}
+
+  /* Log out: a quiet tab at the end of the bar. */
+  .sidebar-logout-btn{
+    display:flex !important;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    width:100%;
+    height:100%;
+    min-width:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:14px;
+    background:none !important;
+    box-shadow:none !important;
+    color:#9aa1bb !important;
+    font:800 10.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif !important;
+    text-transform:none !important;
+    letter-spacing:.01em;
+  }
+  .sidebar-logout-btn img{width:22px !important;height:22px !important;opacity:.6;}
+  .sidebar-logout-btn span{display:block !important;}
+
+  .sidebar-link:active .sidebar-icon-box,
+  .sidebar-logout-btn:active{transform:scale(.94);}
+
+  /* Room for the bar under every page's content. */
+  .main{padding-bottom:calc(86px + env(safe-area-inset-bottom)) !important;}
+}
+
+/* ---------------------------------------------------------------------------
+   Home: search, the banner, Continue Reading, then swipeable story rows
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  .dashboard-home .main-inner{padding:14px 16px 24px !important;}
+  .dashboard-grid{display:flex !important;flex-direction:column;align-items:stretch !important;gap:18px !important;}
+  .dash-search-wrap,.dash-hero,.dash-lastread,.dash-category-wrap,.dash-shared-wrap,.dash-side-col > .dash-panel{width:100% !important;max-width:none !important;margin-left:0 !important;margin-right:0 !important;}
+  .dash-main-col,.dash-side-col{display:contents !important;}
+  .dash-search-wrap{order:1;}
+  .dash-hero{order:2;height:clamp(150px,42vw,230px) !important;border-radius:20px !important;}
+  .dash-lastread{order:3;}
+  .dash-category-wrap{order:4;}
+  .dash-shared-wrap{order:5;}
+  .dash-side-col > .dash-panel{order:6;}
+
+  /* The left padding keeps the text clear of the magnifier icon. */
+  .dash-search{height:46px !important;border-radius:16px !important;padding:0 16px 0 42px !important;background-position:15px center !important;background-size:17px !important;}
+
+  .dash-category-label,.dash-shared-label,.dash-lastread-label{font-size:12px !important;letter-spacing:.1em;margin:0 0 10px !important;}
+
+  /* Story rows scroll sideways, a card and a bit showing so it reads as a row. */
+  .dash-category-art{padding:0 !important;background:none !important;box-shadow:none !important;}
+  .dash-category-grid,
+  .dash-shared-grid{
+    display:flex !important;
+    gap:12px !important;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x mandatory;
+    scroll-padding:0 16px;
+    margin:0 -16px;
+    padding:2px 16px 10px;
+    scrollbar-width:none;
+  }
+  .dash-category-grid::-webkit-scrollbar,.dash-shared-grid::-webkit-scrollbar{display:none;}
+  .dash-story-tile,
+  .dash-shared-card{
+    flex:0 0 clamp(150px,42vw,220px);
+    scroll-snap-align:start;
+    aspect-ratio:4 / 5 !important;
+    border-radius:18px !important;
+  }
+  .dash-story-tile:hover,.dash-shared-card:hover{transform:none !important;}
+  .dash-story-title{font-size:13px !important;left:12px !important;right:12px !important;bottom:12px !important;line-height:1.25;}
+  .dash-shared-card{display:flex !important;flex-direction:column;overflow:hidden;}
+  .dash-shared-cover{flex:1 1 auto;min-height:0;}
+  .dash-shared-body{padding:10px 12px !important;}
+  .dash-shared-body h3{font-size:14px !important;margin:0 0 2px !important;}
+
+  .dash-progress-card{width:100%;border-radius:18px !important;padding:16px !important;}
+  .dash-panel{border-radius:18px !important;}
+  .dash-lastread-actions{flex-direction:column;}
+  .dash-lastread-btn{width:100%;min-height:48px;}
+}
+
+/* Tablets with the side rail: a roomier grid. */
+@media (min-width:769px) and (max-width:1180px){
+  .dash-category-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr)) !important;gap:16px !important;}
+  .dash-shared-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important;gap:16px !important;}
+  .dash-story-tile:hover{transform:translateY(-4px);}
+}
+
+@media (min-width:601px) and (max-width:768px){
+  .sidebar-inner{max-width:560px;margin:0 auto;}
+}
+
+/* ---------------------------------------------------------------------------
+   Choose a reader: one calm screen, big targets, a clear "Choose" button
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  .reader-layout{
+    padding:max(18px,env(safe-area-inset-top)) 18px max(24px,env(safe-area-inset-bottom)) !important;
+    gap:14px !important;
+    justify-content:center !important;
+    background:linear-gradient(180deg,#f4f6ff 0%,#eefbf5 100%) !important;
+  }
+  .reader-decor{display:none !important;}
+  .reader-topbar{
+    position:absolute;
+    top:max(14px,env(safe-area-inset-top));
+    left:16px;
+    right:16px;
+    width:auto !important;
+    justify-content:flex-start !important;
+    margin:0 !important;
+    z-index:5 !important;
+  }
+  .reader-back-link{
+    min-height:44px;
+    padding:0 18px !important;
+    font-size:13px !important;
+    background:#fff !important;
+    color:#4d5fb3 !important;
+    box-shadow:0 6px 16px rgba(60,72,120,.14);
+  }
+  .reader-back-link::before{content:"\2190";margin-right:8px;font-size:15px;}
+  .reader-title{margin:0 0 4px !important;}
+  .reader-title h2{font-size:20px !important;}
+  .reader-carousel{margin-top:6px !important;gap:6px !important;}
+  .reader-stage{height:196px !important;}
+  .reader-card{top:26px !important;}
+  .reader-arrow{
+    flex:none;
+    width:44px !important;
+    height:44px !important;
+    font-size:24px !important;
+    box-shadow:0 6px 16px rgba(60,72,120,.16) !important;
+    z-index:4;
+  }
+  .reader-dots{gap:4px !important;margin:2px 0 !important;}
+  /* Small dots, but each sits in a full-size touch target. */
+  .reader-dot{
+    width:28px !important;
+    height:28px !important;
+    border:0 !important;
+    background:transparent !important;
+    position:relative;
+  }
+  .reader-dot::before{
+    content:"";
+    position:absolute;
+    inset:9px;
+    border-radius:50%;
+    border:2px solid rgba(100,116,179,.6);
+    background:#fff;
+    transition:background-color .2s ease,transform .2s ease;
+  }
+  .reader-dot.is-active::before{background:#6474b3;border-color:#6474b3;transform:scale(1.15);}
+  .reader-selected{gap:10px !important;}
+  .reader-selected-avatar{display:none !important;}
+  .reader-selected-name{font-size:22px !important;}
+  .reader-selected-cta{
+    min-height:52px !important;
+    min-width:min(280px,82vw);
+    padding:0 28px !important;
+    font-size:14px !important;
+    background:linear-gradient(135deg,#6277c3,#74ddb1) !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Customize your reader: a shorter preview, and Save always within reach
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  .customize-standalone{padding:max(14px,env(safe-area-inset-top)) 14px 24px !important;}
+  .customize-shell{gap:14px !important;}
+  .customize-hero,.customize-preview-panel,.customize-controls{border-radius:22px !important;padding:18px !important;}
+  .customize-title{font-size:clamp(22px,6.4vw,30px) !important;line-height:1.15 !important;}
+  .customize-preview-card{min-height:0 !important;height:auto !important;aspect-ratio:auto !important;padding:18px !important;}
+  .customize-preview-avatar{height:clamp(150px,44vw,230px) !important;}
+  .customize-preview-avatar img{max-height:100%;}
+  .customize-preview-name{font-size:24px !important;}
+  .customize-field input[type="text"]{min-height:48px;border-radius:14px !important;}
+  .color-swatches{gap:12px;}
+  .color-swatch{width:42px;height:42px;}
+  .customize-actions{
+    position:sticky;
+    bottom:max(10px,env(safe-area-inset-bottom));
+    z-index:5;
+    display:flex !important;
+    gap:10px !important;
+    padding:10px;
+    margin:0 -10px;
+    border-radius:20px;
+    background:rgba(255,255,255,.94);
+    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px);
+    box-shadow:0 10px 26px rgba(40,52,96,.16);
+  }
+  .customize-save-btn{flex:2 1 0;min-height:50px;}
+  .customize-reset-btn{flex:1 1 0;min-height:50px;}
+}
+
+/* ---------------------------------------------------------------------------
+   Stories on a phone or tablet held upright: a calm "turn sideways" card (the
+   story waits, softly blurred, behind it). Built by js/story-orientation.js on
+   every story page; it goes away by itself once the device is turned.
+   --------------------------------------------------------------------------- */
+.story-rotate-prompt{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:5000;
+  align-items:center;
+  justify-content:center;
+  padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% 35%,rgba(54,68,128,.55),rgba(10,14,30,.82));
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+}
+body.story-compact-device.story-portrait-active .story-rotate-prompt{display:flex;animation:storyRotateFade .35s ease both;}
+/* The story itself waits behind the card: blurred, and not reacting to taps. */
+body.story-compact-device.story-portrait-active > :not(.story-rotate-prompt):not(script){filter:blur(6px);pointer-events:none;user-select:none;}
+.story-rotate-card{
+  width:min(100%,340px);
+  padding:28px 24px 22px !important;
+  border-radius:28px !important;
+  background:linear-gradient(180deg,#ffffff,#f3f6ff);
+  color:#24314a;
+  text-align:center;
+  box-shadow:0 24px 50px rgba(6,10,24,.35);
+  animation:storyRotateRise .45s cubic-bezier(.2,.8,.2,1) both;
+}
+.story-rotate-card h2{margin:0 0 8px;font-size:22px;line-height:1.2;font-weight:900;color:#2b3a63;}
+.story-rotate-card p{margin:0;font-size:15px;line-height:1.55;color:rgba(36,49,74,.78);}
+/* A phone that turns on its side, again and again. */
+.story-rotate-icon{
+  position:relative;
+  width:46px;height:74px;margin:6px auto 22px;
+  border:4px solid #5a6fc4;border-radius:12px;
+  background:linear-gradient(180deg,#eef2ff,#e3fbf2);
+  animation:storyRotateHint 2.6s ease-in-out infinite;
+}
+.story-rotate-icon::after{content:"";position:absolute;left:50%;bottom:5px;width:10px;height:3px;margin-left:-5px;border-radius:2px;background:#5a6fc4;}
+.story-rotate-icon::before{
+  content:"";position:absolute;right:-30px;top:-14px;width:22px;height:22px;
+  border:3px solid #74ddb1;border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;
+  transform:rotate(20deg);
+}
+.story-rotate-home{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;margin-top:18px;padding:0 20px;
+  border-radius:999px;background:transparent;color:#5a6fc4;
+  font-weight:800;font-size:14px;text-decoration:none;
+}
+.story-rotate-home:hover,.story-rotate-home:focus-visible{background:#eef1fb;outline:none;}
+@keyframes storyRotateHint{0%,22%{transform:rotate(0);}50%,78%{transform:rotate(-90deg);}100%{transform:rotate(0);}}
+@keyframes storyRotateFade{from{opacity:0;}to{opacity:1;}}
+@keyframes storyRotateRise{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}
+@media (prefers-reduced-motion: reduce){
+  .story-rotate-icon{animation:none;transform:rotate(-90deg);}
+  .story-rotate-card,body.story-compact-device.story-portrait-active .story-rotate-prompt{animation:none;}
+}
+
+/* ---------------------------------------------------------------------------
+   Stories in landscape on phones: the reading UI fits short screens
+   --------------------------------------------------------------------------- */
+@media (max-height:500px) and (orientation:landscape){
+  .story-exit-btn,.top-right:not(.teacher-story-top-right-link){width:42px !important;height:42px !important;min-width:42px !important;}
+  /* The preview's "Continue Editing" link is text: a compact pill, not an icon circle. */
+  .teacher-story-top-right-link{width:auto !important;height:auto !important;min-height:34px;padding:0 14px !important;font-size:10.5px !important;white-space:nowrap;display:inline-flex !important;align-items:center;}
+  .modal-content{max-height:calc(100vh - 24px);overflow:auto;padding:18px 18px 16px !important;}
+  .modal-title{font-size:22px !important;}
+  .ending-content h1{font-size:clamp(30px,9vh,56px) !important;}
+  .ending-buttons .choice-btn{min-height:44px !important;}
+}
+
+/* Platformer touch controls on phones and tablets: sized to the screen (a
+   comfortable thumb target on a phone, larger on a tablet), tucked into the
+   bottom corners clear of rounded screen edges, and never selectable or
+   long-press-able. Desktop keeps its own layout. */
+.platformer-story-controls,.platformer-control{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.platformer-control{touch-action:none !important;}
+@media (pointer:coarse), (any-pointer:coarse){
+  .platformer-story-controls{
+    --ctl:clamp(64px,17vmin,104px);
+    left:max(16px,env(safe-area-inset-left)) !important;
+    right:max(16px,env(safe-area-inset-right)) !important;
+    bottom:max(14px,env(safe-area-inset-bottom)) !important;
+    z-index:11 !important;
+  }
+  .platformer-move-pad,.platformer-action-pad{gap:calc(var(--ctl) * .22) !important;}
+  .platformer-control{width:calc(var(--ctl) * 1.12) !important;height:var(--ctl) !important;}
+  .platformer-control.jump{width:var(--ctl) !important;height:calc(var(--ctl) * 1.12) !important;}
+  .platformer-control.chat{width:calc(var(--ctl) * 1.1) !important;height:calc(var(--ctl) * 1.1) !important;}
+}
+
+/* A phone held sideways: a slimmer HUD, more game. */
+@media (max-height:500px) and (orientation:landscape){
+  .platformer-story-hud{top:max(8px,env(safe-area-inset-top)) !important;left:max(12px,env(safe-area-inset-left)) !important;}
+  .platformer-story-hud .teacher-story-player-badge,.platformer-story-mode{font-size:9px !important;padding:6px 10px !important;}
+  .platformer-area-title{transform:scale(.78);transform-origin:top center;}
+}
+
+/* ---------------------------------------------------------------------------
+   Sign in and register: edge to edge, tall fields, one clear main button
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  body.auth-bg{padding:0 !important;}
+  .auth-stage{min-height:100svh;padding:max(18px,env(safe-area-inset-top)) 16px max(22px,env(safe-area-inset-bottom)) !important;border-radius:0 !important;}
+  .auth-card{border-radius:26px !important;padding:20px 18px !important;}
+  .auth-role-pill{min-height:44px;display:inline-flex !important;align-items:center;justify-content:center;}
+  .auth-input{min-height:50px !important;border-radius:16px !important;padding:0 18px !important;}
+  .auth-form{gap:12px !important;}
+  .auth-btn{min-height:50px !important;border-radius:16px !important;display:inline-flex !important;align-items:center;justify-content:center;}
+  .auth-btn.primary{background:linear-gradient(135deg,#6277c3,#74ddb1) !important;color:#fff !important;border-color:transparent !important;box-shadow:0 10px 20px rgba(98,119,195,.28) !important;}
+  .social-circle{width:44px !important;height:44px !important;}
+  .auth-mascot{display:none !important;}
+}
+
+/* ---------------------------------------------------------------------------
+   Classroom pages
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  /* The teacher's profile on the classroom page: a tidy chip, not a squashed card. */
+  .classroom-teacher-profile{
+    display:inline-flex !important;
+    flex-direction:row !important;
+    align-items:center;
+    gap:10px !important;
+    width:auto !important;
+    height:auto !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    padding:6px 16px 6px 6px !important;
+    border-radius:999px !important;
+    margin:14px 0 0 !important;
+    align-self:flex-start !important;
+    justify-self:start !important;
+  }
+  .classroom-teacher-profile .sidebar-profile-avatar{width:40px !important;height:40px !important;max-width:none !important;border-radius:50% !important;flex:none;}
+  .classroom-teacher-profile .sidebar-profile-name{display:block !important;width:auto !important;font-size:12px !important;}
+  .classroom-teacher-btn,.classroom-join-btn,.classroom-action-create,.classroom-action-library{min-height:48px;display:inline-flex;align-items:center;justify-content:center;}
+  .classroom-teacher-grid{grid-template-columns:1fr !important;}
+  .classroom-card-grid{grid-template-columns:1fr !important;}
+  .classroom-story-card{width:100% !important;max-width:none !important;}
+  .panel{border-radius:22px;}
+}
+
+@media (min-width:600px) and (max-width:1180px){
+  .classroom-card-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr)) !important;}
+  .classroom-story-card{width:auto !important;max-width:none !important;}
+}
+
+/* ---------------------------------------------------------------------------
+   Forms across the app (create story, classroom, profile)
+   --------------------------------------------------------------------------- */
+@media (max-width:1024px){
+  textarea{font-family:inherit !important;line-height:1.5;}
+  input[type="file"]{font-size:14px !important;max-width:100%;}
+  input[type="file"]::file-selector-button{
+    margin-right:12px;padding:10px 16px;border:0;border-radius:12px;
+    background:#eef1fb;color:#4d5fb3;font:800 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;
+  }
+  select{min-height:48px;}
+  a[class*="back-link"],.classroom-back-link{min-height:44px;display:inline-flex !important;align-items:center;}
+}
+
+/* ---------------------------------------------------------------------------
+   Story editor
+   --------------------------------------------------------------------------- */
+/* Tablets in landscape: keep the assets beside the page being built. */
+@media (min-width:900px) and (max-width:1180px){
+  .story-builder-layout{grid-template-columns:270px minmax(0,1fr) !important;gap:14px !important;}
+  .story-builder-layout.is-sidebar-collapsed{grid-template-columns:0 minmax(0,1fr) !important;gap:0 !important;}
+  .story-builder-layout.is-sidebar-collapsed .story-builder-sidebar{max-height:none !important;}
+  .story-builder-assets-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px !important;}
+  .story-builder-asset{padding:6px !important;border-radius:16px !important;}
+  .story-builder-asset-media{border-radius:12px !important;}
+  .story-builder-asset span{font-size:10px !important;margin-top:6px !important;}
+}
+/* Smaller screens: the asset picker becomes one swipeable row, so the page
+   being built is right below it instead of a long scroll away. */
+@media (max-width:899px){
+  .story-builder-assets-grid{
+    display:flex !important;
+    gap:10px !important;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;
+    padding:2px 2px 10px;
+  }
+  .story-builder-assets-grid::-webkit-scrollbar{height:8px;}
+  .story-builder-asset{flex:0 0 112px;scroll-snap-align:start;padding:6px !important;border-radius:16px !important;}
+  .story-builder-asset.background{flex-basis:160px;}
+  .story-builder-asset-media{border-radius:12px !important;}
+  .story-builder-asset span{font-size:10px !important;margin-top:6px !important;}
+  .story-builder-topbar{flex-wrap:wrap;gap:10px;}
+  .story-builder-topbar button,.story-builder-topbar a{min-height:44px;}
+}
+
+/* Tablets with the side rail, used by touch: bigger targets in the rail. */
+@media (min-width:769px) and (max-width:1180px) and (pointer:coarse){
+  .sidebar-link{min-height:56px;}
+  .sidebar-icon-box{width:48px !important;height:48px !important;}
+  .sidebar-icon-box img{width:26px !important;height:26px !important;}
+  .sidebar-logout-btn{min-height:48px;}
+}
+
+/* ---------------------------------------------------------------------------
+   Story-mode reading (The Hare and the Tortoise, teacher and shared stories)
+   --------------------------------------------------------------------------- */
+/* Fit the visible screen, not the full height behind a phone's address bar,
+   so the dialogue at the bottom is never pushed off-screen. */
+.vn-wrapper{height:100vh;height:100svh;}
+@supports (height:100dvh){
+  .vn-wrapper{height:100dvh;}
+  body.story-page{height:100dvh;}
+}
+
+/* Short landscape screens (phones held sideways): a compact, readable
+   dialogue box between the characters, and characters scaled to fit. */
+@media (max-height:540px) and (orientation:landscape){
+  .vn-char{width:min(30vw,250px) !important;max-height:70% !important;bottom:8px !important;}
+  .vn-dialogue{padding:0 max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left)) !important;}
+  .vn-names{max-width:min(100%,760px) !important;margin:0 auto 6px !important;padding:0 6px !important;}
+  .name-box{min-height:28px !important;padding:0 12px !important;font-size:11px !important;}
+  .dialogue-box{
+    max-width:min(100%,760px) !important;
+    padding:10px 18px !important;
+    border-radius:18px !important;
+    font-size:clamp(13px,3.6vh,16px) !important;
+    line-height:1.45 !important;
+    background:rgba(10,16,30,.62) !important;
+  }
+  .vn-choices{gap:8px !important;}
+  .choice-btn{min-height:44px;}
+}
+
+/* ---------------------------------------------------------------------------
+   Idle platformer controls (state set by js/platformer-story-player.js)
+   PC: fade right out after 5s without control input. Touch: dim slowly but
+   stay visible. Back to full at once on any input. Pointer events are never
+   turned off, so a hidden or dimmed button still answers the first press.
+   Cutscenes and the ending keep their own rules for hiding the controls.
+   --------------------------------------------------------------------------- */
+.platformer-story-stage:not(.is-cutscene):not(.is-story-ended) .platformer-story-controls{transition:opacity .3s ease;}
+.platformer-story-stage:not(.is-cutscene):not(.is-story-ended) .platformer-story-controls.is-pc-mode.is-idle{
+  opacity:0;
+  transition:opacity .9s ease;
+}
+.platformer-story-stage:not(.is-cutscene):not(.is-story-ended) .platformer-story-controls.is-touch-mode.is-idle{
+  opacity:.38;
+  transition:opacity 4s ease;
+}
+
+/* ---------------------------------------------------------------------------
+   The side menu on short screens (a phone held sideways, a small laptop
+   window): tighter, so its items never overlap; it scrolls if still too tall.
+   --------------------------------------------------------------------------- */
+@media (min-width:769px) and (max-height:540px){
+  .sidebar{overflow-y:auto;scrollbar-width:none;}
+  .sidebar::-webkit-scrollbar{display:none;}
+  .sidebar-inner{height:auto;min-height:100%;gap:10px;padding:10px 8px;}
+  .sidebar-brand-mark{width:40px;height:40px;}
+  .sidebar-divider{margin-bottom:10px;}
+  .sidebar-nav{gap:14px;}
+  .sidebar-bottom{gap:8px;}
+  .sidebar-profile-card{margin-bottom:2px;padding:4px 4px 5px;gap:3px;border-radius:14px;}
+  .sidebar-profile-avatar{max-width:38px;border-radius:10px;}
+  .sidebar-user-text{display:none;}
+}
+
+/* ---------------------------------------------------------------------------
+   Lite mode (html.koobd-lite, set by js/performance-mode.js on slower devices
+   such as the Galaxy Tab A7 Lite). Only effects that make a weak graphics chip
+   redraw large areas go: background blurs (recomputed whenever anything moves
+   behind them), drop shadows on moving characters, and decorative sway, nod,
+   glow and drift. Characters, hazards, platforms, dialogue and every story
+   moment look and work the same.
+   --------------------------------------------------------------------------- */
+html.koobd-lite *,
+html.koobd-lite *::before,
+html.koobd-lite *::after{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
+/* Without the blur, overlays are a little more solid so what is on them stays easy to read. */
+html.koobd-lite .story-details.is-open{background:rgba(10,14,28,.78);}
+html.koobd-lite .koobd-pause,
+html.koobd-lite .logout-confirm-modal,
+html.koobd-lite .classroom-confirm-modal{background-color:rgba(30,40,70,.6);}
+html.koobd-lite .platformer-story-hud .teacher-story-player-badge,
+html.koobd-lite .platformer-story-mode{background:rgba(15,28,59,.88);}
+/* Platform stories: no drop shadows on characters and scenery, no blurred controls. */
+html.koobd-lite .platformer-story-player:not(.is-hurt),
+html.koobd-lite .platformer-npc img,
+html.koobd-lite .platformer-npc-sprite,
+html.koobd-lite .platformer-decor img,
+html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-controls{filter:none !important;}
+/* The player moves every frame already; smoothing its position as well is extra work. */
+html.koobd-lite .platformer-story-player{transition:none !important;}
+/* Scenery holds still (torches, flowers, grass, banners, floating lights). */
+html.koobd-lite .platformer-decor,
+html.koobd-lite .platformer-decor img,
+html.koobd-lite .platformer-flower-head{animation:none !important;}
+

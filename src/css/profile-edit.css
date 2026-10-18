@@ -1,0 +1,103 @@
+/* The name-and-colours page (customize_character.php, teacher_profile.php),
+   in the same style as the profile page (css/profile.css): white cards with a
+   hairline border, calm type, and a preview that looks like the profile's
+   header (cover band in the chosen colours, character, name). Loaded after
+   mobile.css, so it has the last word. */
+body.customize-page{
+  --pf-ink:#1b2440;
+  --pf-muted:#69728c;
+  --pf-line:#e6eaf3;
+  --pf-soft:#f5f7fc;
+  --pf-accent:#4f63d6;
+  background-attachment:fixed;
+}
+body.customize-page .customize-standalone{padding:24px 28px 48px;}
+body.customize-page .customize-shell{width:min(100%,1080px);gap:20px;}
+
+/* Cards. */
+body.customize-page .customize-hero,
+body.customize-page .customize-preview-panel,
+body.customize-page .customize-controls{background:#fff;border:1px solid var(--pf-line);border-radius:20px !important;box-shadow:0 1px 2px rgba(27,36,64,.04),0 12px 32px rgba(27,36,64,.06);-webkit-backdrop-filter:none;backdrop-filter:none;}
+
+/* --- Header ------------------------------------------------------------------------ */
+body.customize-page .customize-hero{flex-direction:row !important;align-items:center !important;padding:22px 24px !important;}
+body.customize-page .customize-kicker{margin-bottom:6px;color:var(--pf-accent);font-size:11px;font-weight:800;letter-spacing:.1em;}
+body.customize-page .customize-title{color:var(--pf-ink);font-size:clamp(22px,2.6vw,28px) !important;font-weight:800;letter-spacing:-.02em;}
+body.customize-page .customize-copy{margin-top:6px;color:var(--pf-muted);font-size:14px;font-weight:600;line-height:1.55;}
+body.customize-page .customize-back-link{min-height:40px;padding:0 16px;border:1px solid var(--pf-line);border-radius:12px;background:#fff;color:var(--pf-ink);font-size:13.5px;font-weight:700;box-shadow:0 1px 2px rgba(27,36,64,.06);}
+body.customize-page .customize-back-link:hover{background:var(--pf-soft);}
+
+/* --- Preview: like the profile's header -------------------------------------------- */
+body.customize-page .customize-grid{grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;}
+body.customize-page .customize-preview-panel{flex-direction:column;align-items:stretch;gap:12px;padding:20px !important;}
+body.customize-page .customize-preview-card{position:relative;max-width:none;min-height:0 !important;height:auto !important;padding:0 0 22px !important;overflow:hidden;justify-content:flex-start;gap:0;border:1px solid var(--pf-line);border-radius:18px;background:#fff;box-shadow:none;}
+body.customize-page .customize-preview-cover{align-self:stretch;height:110px;background:
+  radial-gradient(circle at 85% -20%,rgba(255,255,255,.35) 0 80px,transparent 81px),
+  radial-gradient(circle at 12% 140%,rgba(255,255,255,.22) 0 100px,transparent 101px),
+  linear-gradient(120deg,var(--card-top,#c7d2fe),var(--card-bottom,#a5f3fc));transition:background .2s ease;}
+body.customize-page .customize-preview-avatar{display:grid;place-items:center;width:132px;min-height:0;height:132px !important;margin-top:-62px;border:4px solid #fff;border-radius:30px;background:linear-gradient(160deg,#fff,var(--pf-soft));box-shadow:0 10px 24px rgba(27,36,64,.14);}
+body.customize-page .customize-preview-avatar img{width:82%;max-width:none;height:82%;max-height:none;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.14));}
+body.customize-page .customize-preview-copy{margin-top:14px;padding:0 16px;}
+body.customize-page .customize-preview-name{color:var(--pf-ink);font-size:24px !important;font-weight:800;letter-spacing:-.02em;text-transform:none;overflow-wrap:anywhere;}
+body.customize-page .customize-preview-note{margin-top:4px;color:var(--pf-muted);font-size:13.5px;font-weight:600;}
+body.customize-page .customize-preview-hint{margin:0;color:var(--pf-muted);font-size:12.5px;font-weight:600;text-align:center;}
+
+/* --- The form ---------------------------------------------------------------------- */
+body.customize-page .customize-controls{gap:20px;padding:24px !important;}
+body.customize-page .customize-controls-head h2{color:var(--pf-ink);font-size:18px;font-weight:800;letter-spacing:-.01em;}
+body.customize-page .customize-controls-head p{margin-top:6px;color:var(--pf-muted);font-size:13.5px;font-weight:600;line-height:1.55;}
+body.customize-page .customize-form{gap:20px;}
+body.customize-page .customize-field{gap:10px;}
+body.customize-page .customize-field label,
+body.customize-page .customize-field-label{color:var(--pf-ink);font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;}
+body.customize-page .customize-field input[type="text"]{min-height:44px;padding:0 14px;border:1px solid #d5dbea;border-radius:12px !important;background:#fff;color:var(--pf-ink);font-size:14.5px;font-weight:600;transition:border-color .15s ease,box-shadow .15s ease;}
+body.customize-page .customize-field input[type="text"]:focus{border-color:var(--pf-accent);box-shadow:0 0 0 4px rgba(79,99,214,.14);}
+
+/* Colour swatches: a little smaller and calmer, with a clear ring on the chosen one. */
+body.customize-page .color-swatches{gap:10px;padding:12px;border:1px solid var(--pf-line);border-radius:14px;background:var(--pf-soft);}
+body.customize-page .color-swatch{width:34px;height:34px;box-shadow:inset 0 0 0 1px rgba(27,36,64,.12);}
+body.customize-page .color-swatch.is-selected{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pf-accent);}
+body.customize-page .color-swatch:focus-visible,
+body.customize-page .color-swatch:focus-within{outline:3px solid rgba(79,99,214,.35);}
+
+/* Buttons: Save like the profile's Edit Profile; the rest outlined. */
+body.customize-page .customize-actions{display:flex;flex-wrap:wrap;gap:10px;padding-top:4px;border-top:1px solid var(--pf-line);padding-top:18px;}
+body.customize-page .customize-save-btn,
+body.customize-page .customize-reset-btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:12px;font-size:13.5px;font-weight:700;letter-spacing:0;text-transform:none;text-decoration:none;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
+body.customize-page .customize-save-btn{border:1px solid transparent;background:var(--pf-accent);color:#fff;box-shadow:0 6px 14px rgba(79,99,214,.28);}
+body.customize-page .customize-save-btn:hover{background:#4255c4;}
+body.customize-page .customize-reset-btn{border:1px solid var(--pf-line);background:#fff;color:var(--pf-ink);box-shadow:0 1px 2px rgba(27,36,64,.06);}
+body.customize-page .customize-reset-btn:hover{background:var(--pf-soft);border-color:#d5dbea;}
+body.customize-page .customize-save-btn:focus-visible,
+body.customize-page .customize-reset-btn:focus-visible,
+body.customize-page .customize-back-link:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+body.customize-page .customize-status{color:var(--pf-muted);font-size:13px;font-weight:600;}
+
+/* --- Smaller screens ------------------------------------------------------------------ */
+/* Phones and small tablets: Save stays within reach in a bar that sticks to
+   the bottom of the screen (mobile.css); here it matches this page's style:
+   Save across the top, the other buttons sharing the row below. */
+@media (max-width:768px){
+  body.customize-page .customize-actions{display:flex !important;flex-wrap:wrap;gap:8px !important;padding:10px !important;margin:0 -6px !important;border:1px solid var(--pf-line);border-radius:16px;background:rgba(255,255,255,.96);box-shadow:0 10px 26px rgba(27,36,64,.14);}
+  body.customize-page .customize-actions .customize-save-btn{flex:1 1 100%;min-height:46px;}
+  body.customize-page .customize-actions .customize-reset-btn{flex:1 1 auto;min-height:42px;padding:0 12px;white-space:nowrap;}
+}
+@media (max-width:900px){
+  body.customize-page .customize-grid{grid-template-columns:1fr;}
+  body.customize-page .customize-preview-card{max-width:420px;margin:0 auto;width:100%;}
+}
+@media (max-width:640px){
+  body.customize-page .customize-standalone{padding:max(14px,env(safe-area-inset-top)) 16px 28px !important;}
+  body.customize-page .customize-hero{flex-direction:column !important;align-items:stretch !important;gap:14px;padding:18px !important;}
+  body.customize-page .customize-back-link{align-self:flex-start;}
+  body.customize-page .customize-preview-panel,
+  body.customize-page .customize-controls{padding:16px !important;}
+  body.customize-page .customize-preview-cover{height:92px;}
+  body.customize-page .customize-preview-avatar{width:112px;height:112px !important;margin-top:-54px;border-radius:26px;}
+}
+@media (prefers-reduced-motion: reduce){
+  body.customize-page .customize-preview-cover,
+  body.customize-page .customize-save-btn,
+  body.customize-page .customize-reset-btn,
+  body.customize-page .customize-field input[type="text"]{transition:none;}
+}

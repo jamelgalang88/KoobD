@@ -1,0 +1,270 @@
+/* KoobD shared story system.
+   Everything every story shares, whatever its mode: the black title and
+   narration page and full-screen storyboard frames (the story card), the
+   fade-through-black between places, the place name shown on arrival, the
+   ending page ("The End", the lesson, Play Again / Choose Stage / Home), and
+   the leave-story window. A story's root element carries `koobd-story`.
+
+   Platform Mode (css/teacher-stories.css: the world, platforms, physics
+   sprites, HUD, touch controls, cutscene bars) and Story Mode
+   (css/book1.css: the reading layout) add only their own parts on top. */
+
+/* (Each story's root positions itself: the platformer stage is fixed to the
+   screen, the reading layout is a full-screen block.) */
+
+/* Scene-transition overlay. Pure black, matching the story card, so the page
+   turn reads as one continuous black page. Timing matches SCENE_FADE_MS. */
+.koobd-story::after{content:"";position:absolute;inset:0;pointer-events:none;transition:opacity .4s ease;z-index:12;background:#000;opacity:0;}
+.koobd-story.is-scene-transitioning::after{opacity:1;}
+
+/* Story card: a "title" turn and a narrator turn are introductions, not
+   dialogue - both are centred on an opaque black screen with the gameplay
+   hidden behind them. One card serves both, told apart only by a modifier
+   class for typography. It is appended to the stage, so these selectors are
+   intentionally not scoped to .platformer-story-dialogue.
+
+   The backdrop never animates: it switches on discretely via `visibility` so it
+   is instantly opaque and the gameplay is never seen through it. Only the text
+   fades, which is what an introduction should animate. */
+.vn-story-card{
+  position:absolute;
+  inset:0;
+  z-index:16;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:#000;
+  opacity:1;
+  visibility:hidden;
+  pointer-events:none;
+}
+/* The stage is covered before the very first paint, so gameplay is never
+   glimpsed before the opening text appears. Applied by `opensWithTitle` in the
+   player script and removed when the story card hides. */
+.koobd-story.is-title-intro{background:#000;}
+/* An opaque black page over the world, HUD and controls (below the story card
+   and dialogue), present from the very first paint of a story that opens on
+   its title, so no gameplay is ever seen before the title. */
+.koobd-story.is-title-intro::before{content:"";position:absolute;inset:0;z-index:14;background:#000;pointer-events:none;}
+/* Holds the title text at its "before" state for one frame, so it still fades
+   in when the card is up from the first paint. */
+.vn-story-card.visible.text-pending .vn-story-card-text{opacity:0;transform:translateY(6px);transition:none;}
+/* Leaving the card for gameplay: once the text has faded, the black page
+   itself fades away (in a page turn the scene overlay is still black beneath
+   it, so nothing shows through early). */
+.vn-story-card.visible.backdrop-out{opacity:0;transition:opacity .3s ease;}
+/* The line showing fades out before the next one fades in. */
+.vn-story-card.visible.is-swapping .vn-story-card-text{opacity:0;transition:opacity .25s ease;}
+.vn-story-card.visible{
+  visibility:visible;
+  /* Stay clickable while shown so the click-to-advance still works. */
+  pointer-events:auto;
+}
+/* Title text: the only part that animates. It fades and settles in on show, and
+   fades out on `hiding` - the backdrop is dropped by JS once this is done. */
+.vn-story-card-text{
+  margin:0;
+  max-width:min(90%,900px);
+  color:#f6f2e8;
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(30px,7.5vmin,68px);
+  font-weight:700;
+  font-style:italic;
+  line-height:1.25;
+  letter-spacing:.02em;
+  text-align:center;
+  text-wrap:balance;
+  /* The text lifts and settles as the title comes up. */
+  transform:translateY(6px);
+  opacity:0;
+  transition:opacity .45s ease,transform .5s ease;
+}
+.vn-story-card.visible .vn-story-card-text{
+  opacity:1;
+  transform:translateY(0);
+}
+/* Narration is a paragraph rather than a title, so it is set smaller, upright
+   and on a narrower measure: same card, but comfortable to read at length. */
+.vn-story-card.is-narration .vn-story-card-text{
+  max-width:min(88%,760px);
+  font-size:clamp(17px,2.6vmin,27px);
+  font-style:normal;
+  font-weight:600;
+  line-height:1.75;
+  letter-spacing:.012em;
+  text-wrap:pretty;
+}
+/* A storyboard frame above the narration: a framed still that fades and
+   settles in with its line, and out with it. */
+.vn-story-card{flex-direction:column;gap:clamp(14px,3.2vh,30px);}
+.vn-story-card-frame{display:none;margin:0;width:min(78vw,calc(56vh * 16 / 9),980px);aspect-ratio:16/9;border:3px solid rgba(246,242,232,.92);border-radius:4px;overflow:hidden;background:#111;box-shadow:0 18px 50px rgba(0,0,0,.6);opacity:0;transition:opacity .45s ease;}
+.vn-story-card.has-image .vn-story-card-frame{display:block;}
+.vn-story-card-frame img{display:block;width:100%;height:100%;object-fit:cover;}
+.vn-story-card.visible .vn-story-card-frame{opacity:1;}
+.vn-story-card.visible.text-pending .vn-story-card-frame{opacity:0;transition:none;}
+.vn-story-card.visible.is-swapping .vn-story-card-frame,
+.vn-story-card.hiding .vn-story-card-frame,
+.vn-story-card.hiding.visible .vn-story-card-frame{opacity:0;transition:opacity .3s ease;}
+/* A storyboard frame fills the whole screen. It only ever fades - the
+   camera keeps the game's scale, so nothing zooms. */
+.vn-story-card.is-frame{padding:0;transition:opacity .45s ease;}
+.vn-story-card.is-frame .vn-story-card-frame{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;background:#000;}
+/* From gameplay, a frame dissolves in over the scene, and back out into it. */
+.vn-story-card.visible.is-frame.text-pending{opacity:0;transition:none;}
+.vn-story-card.visible.is-frame.is-dissolving{opacity:0;}
+.vn-story-card.is-frame.is-dissolving .vn-story-card-frame{opacity:1;}
+/* Frame to frame: the next picture fades in over the last one... */
+.vn-story-card-under{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+.vn-story-card-frame img:not(.vn-story-card-under){position:relative;z-index:1;}
+.vn-story-card.is-crossfading .vn-story-card-frame img:not(.vn-story-card-under){animation:storyFrameMelt .5s ease both;}
+@keyframes storyFrameMelt{from{opacity:0;}to{opacity:1;}}
+/* ...or, for a blinding light, through white. */
+.vn-story-card.is-flashing .vn-story-card-frame::after{content:"";position:absolute;inset:0;z-index:2;background:#fffdf4;animation:storyFrameFlash .6s ease both;}
+@keyframes storyFrameFlash{0%{opacity:0;}35%{opacity:1;}100%{opacity:0;}}
+.vn-story-card.is-flashing .vn-story-card-frame img:not(.vn-story-card-under){animation:storyFrameMeltLate .6s steps(1,end) both;}
+@keyframes storyFrameMeltLate{0%{opacity:0;}40%{opacity:1;}100%{opacity:1;}}
+.vn-story-card.is-frame .vn-story-card-text{display:none;}
+.vn-story-card.has-image.is-narration .vn-story-card-text{font-size:clamp(15px,2.3vmin,24px);line-height:1.6;}
+/* Fade the text out first; the black backdrop is removed by JS afterwards. */
+.vn-story-card.hiding .vn-story-card-text,
+.vn-story-card.hiding.visible .vn-story-card-text{
+  opacity:0;
+  transition:opacity .45s ease;
+}
+
+/* Area names: where the player has just arrived, at the top centre. */
+.platformer-area-title{position:absolute;top:clamp(54px,10vh,92px);left:50%;z-index:8;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 56px 12px;color:#f6f2e8;text-align:center;white-space:nowrap;pointer-events:none;background:radial-gradient(ellipse at center,rgba(10,14,28,.6) 0%,rgba(10,14,28,.34) 45%,rgba(10,14,28,0) 72%);text-shadow:0 2px 6px rgba(0,0,0,.6),0 0 2px rgba(0,0,0,.75);opacity:0;transform:translate(-50%,0);transition:opacity .5s ease;}
+.platformer-area-title.is-visible{opacity:1;transform:translate(-50%,0);}
+.platformer-area-name{display:flex;align-items:center;gap:.65em;font-family:Georgia,'Times New Roman',serif;font-size:clamp(18px,4vmin,38px);font-weight:700;letter-spacing:.16em;text-transform:uppercase;}
+.platformer-area-name::before,.platformer-area-name::after{content:'';width:clamp(22px,6vmin,64px);height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(246,242,232,0),rgba(246,242,232,.95));box-shadow:0 1px 3px rgba(0,0,0,.45);}
+.platformer-area-name::after{background:linear-gradient(90deg,rgba(246,242,232,.95),rgba(246,242,232,0));}
+.platformer-area-time{font-family:Georgia,'Times New Roman',serif;font-size:clamp(12px,2.2vmin,18px);font-style:italic;letter-spacing:.1em;opacity:.92;}
+.platformer-area-title:not(.has-time) .platformer-area-time{display:none;}
+.koobd-story.is-dialogue-open .platformer-area-title{opacity:0;transition-duration:.3s;}
+
+/* The ending card covers the whole stage, above the HUD, controls and story
+   card, so nothing from the game sits on top of it. */
+.koobd-story .ending-screen{z-index:20;}
+/* The ending is a page of its own, like the title: the world has faded to
+   black behind it, and "The End", the lesson and the two choices rise out of
+   the dark in turn - no panel, no blurred game showing through. */
+.koobd-story.is-story-ended::after{opacity:1;}
+
+.koobd-story .ending-screen{position:absolute;background:#000;backdrop-filter:none;-webkit-backdrop-filter:none;animation:endingPageIn .6s ease both;}
+.koobd-story .ending-content{width:min(100%,760px);padding:0;border:0;border-radius:0;background:none;box-shadow:none;display:flex;flex-direction:column;align-items:center;}
+.koobd-story .ending-content h1{margin:0;color:#f6f2e8;font-family:Georgia,'Times New Roman',serif;font-size:clamp(40px,10vmin,88px);font-weight:700;font-style:italic;letter-spacing:.02em;line-height:1.1;animation:endingRise .9s ease .25s both;}
+/* Which ending the reader reached (stories with more than one). */
+.koobd-story .ending-kicker{margin:clamp(10px,2vh,18px) 0 0;color:#e8c77a;font:800 clamp(11px,1.8vmin,14px)/1.3 Montserrat,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;animation:endingRise .8s ease .6s both;}
+.koobd-story .ending-lesson{margin:clamp(14px,2.6vh,24px) auto 0;max-width:min(90%,620px);color:rgba(246,242,232,.78);font-family:Georgia,'Times New Roman',serif;font-size:clamp(15px,2.4vmin,21px);font-weight:400;line-height:1.6;text-wrap:balance;animation:endingRise .8s ease .9s both;}
+.koobd-story .ending-buttons{margin-top:clamp(30px,6vh,52px);gap:14px;width:min(100%,640px);animation:endingRise .7s ease 1.4s both;}
+/* Choose Stage: the ending gives way to a list of the story's stages, each
+   starting at the beginning of that part of the story. */
+.koobd-story .ending-stages{display:none;width:min(100%,680px);animation:endingRise .45s ease both;}
+.koobd-story .ending-content.is-choosing-stage > h1,
+.koobd-story .ending-content.is-choosing-stage > .ending-lesson,
+.koobd-story .ending-content.is-choosing-stage > .ending-buttons{display:none;}
+.koobd-story .ending-content.is-choosing-stage .ending-stages{display:block;}
+.koobd-story .ending-stages-title{margin:0;color:#f6f2e8;font-family:Georgia,'Times New Roman',serif;font-size:clamp(26px,5vmin,40px);font-style:italic;font-weight:700;}
+.koobd-story .ending-stage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:clamp(16px,3vh,26px) 0;max-height:min(58vh,520px);overflow:auto;padding:2px;}
+.koobd-story .ending-stage{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;border:1.5px solid rgba(246,242,232,.28);border-radius:14px;background:rgba(255,255,255,.04);color:#f6f2e8;text-align:left;text-decoration:none;transition:background-color .15s ease,border-color .15s ease,transform .15s ease;}
+.koobd-story .ending-stage:hover,.koobd-story .ending-stage:focus-visible{background:rgba(255,255,255,.1);border-color:rgba(246,242,232,.8);transform:translateY(-1px);outline:none;}
+.koobd-story .ending-stage-number{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#ffd36b;color:#3a2a14;font:900 12px/1 Montserrat,system-ui,sans-serif;}
+.koobd-story .ending-stage-name{font:800 13px/1.25 Montserrat,system-ui,sans-serif;letter-spacing:.01em;}
+.koobd-story .ending-stages-back{padding:10px 18px;border:0;border-radius:999px;background:transparent;color:rgba(246,242,232,.8);font:800 12px/1 Montserrat,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+.koobd-story .ending-stages-back:hover,.koobd-story .ending-stages-back:focus-visible{color:#f6f2e8;background:rgba(255,255,255,.08);outline:none;}
+/* The exit button steps aside on the ending page. */
+body:has(.koobd-story.is-story-ended) .story-exit-btn{opacity:0;pointer-events:none;transition:opacity .4s ease;}
+@keyframes endingPageIn{from{opacity:0;}to{opacity:1;}}
+@keyframes endingRise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@media (prefers-reduced-motion: reduce){.koobd-story .ending-screen,.koobd-story .ending-screen *{animation:none !important;}}
+
+/* --- The pause page (KoobdStory.createPauseScreen) ------------------------
+   Shared by every story: the story stays in view behind it, blurred and
+   dimmed, under "Paused" in the ending's serif, one quiet line, and
+   Continue / Restart / Home as the ending's pills. Self-contained, so it
+   looks the same on any story page. */
+.koobd-pause{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left));background:rgba(8,10,18,.68);-webkit-backdrop-filter:blur(12px) saturate(110%);backdrop-filter:blur(12px) saturate(110%);animation:endingPageIn .35s ease both;}
+.koobd-pause[hidden]{display:none;}
+.koobd-pause-content{display:flex;flex-direction:column;align-items:center;width:min(100%,760px);text-align:center;}
+.koobd-pause h1{margin:0;color:#f6f2e8;text-shadow:0 2px 18px rgba(0,0,0,.45);font-family:Georgia,'Times New Roman',serif;font-size:clamp(40px,10vmin,88px);font-weight:700;font-style:italic;letter-spacing:.02em;line-height:1.1;animation:endingRise .5s ease .05s both;}
+.koobd-pause-copy{margin:clamp(14px,2.6vh,24px) auto 0;max-width:min(90%,620px);color:rgba(246,242,232,.88);text-shadow:0 1px 10px rgba(0,0,0,.5);font-family:Georgia,'Times New Roman',serif;font-size:clamp(15px,2.4vmin,21px);line-height:1.6;text-wrap:balance;animation:endingRise .5s ease .15s both;}
+.koobd-pause-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;width:min(100%,880px);margin-top:clamp(30px,6vh,52px);animation:endingRise .5s ease .25s both;}
+.koobd-pause-btn{flex:1 1 0;min-width:150px;max-width:284px;min-height:clamp(52px,10.5vh,76px);display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border:1.5px solid rgba(246,242,232,.55);border-radius:999px;background:transparent;color:#f6f2e8;font:900 13px/1 Montserrat,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background-color .2s ease,border-color .2s ease,transform .15s ease,filter .2s ease;}
+.koobd-pause-btn:hover{background:rgba(246,242,232,.1);border-color:#f6f2e8;}
+.koobd-pause-btn.is-primary{border-color:transparent;background:linear-gradient(135deg,#6277c3,#74ddb1);color:#fff;}
+.koobd-pause-btn.is-primary:hover{background:linear-gradient(135deg,#6277c3,#74ddb1);filter:brightness(1.06);}
+.koobd-pause-btn:active{transform:scale(.97);}
+.koobd-pause-btn:focus-visible{outline:3px solid rgba(116,221,177,.75);outline-offset:3px;}
+body.is-koobd-paused .story-exit-btn{opacity:0;pointer-events:none;}
+@media (max-width:520px){.koobd-pause-buttons{flex-direction:column;align-items:center;}.koobd-pause-btn{width:min(100%,280px);max-width:none;flex:none;}}
+@media (prefers-reduced-motion:reduce){.koobd-pause,.koobd-pause h1,.koobd-pause-copy,.koobd-pause-buttons{animation:none;}}
+
+/* A stage name on a teacher-made story page (KoobD's story editor): pages can
+   be pale or plain white, so its dark halo is stronger to keep it readable. */
+.teacher-story-vn .platformer-area-title{padding:14px 64px 16px;background:radial-gradient(ellipse at center,rgba(10,14,28,.78) 0%,rgba(10,14,28,.55) 45%,rgba(10,14,28,0) 74%);}
+
+/* The story's top-right button pauses (KoobdStory.createPauseScreen), so it
+   shows a pause sign: two rounded bars. */
+.story-exit-btn .story-pause-icon{display:block;width:18px;height:20px;background:#eef2ff;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 20'><rect x='1' y='0' width='6' height='20' rx='2.6'/><rect x='11' y='0' width='6' height='20' rx='2.6'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 20'><rect x='1' y='0' width='6' height='20' rx='2.6'/><rect x='11' y='0' width='6' height='20' rx='2.6'/></svg>") center/contain no-repeat;}
+
+/* A storyboard beat that is a video (Platform Mode cutscenes): it fills the
+   frame, over the frame's still picture. */
+.vn-story-card-frame{position:relative;}
+.vn-story-card-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:2;}
+
+/* The story's own text style, chosen in the story editor: a font
+   (--story-font) and a size (data-text-size on the story's stage). */
+.koobd-story .dialogue-box,
+.koobd-story .vn-story-card-text,
+.koobd-story .name-box{font-family:var(--story-font, inherit);}
+.koobd-story[data-text-size="small"] .dialogue-box{font-size:clamp(14px,1.7vw,18px) !important;}
+.koobd-story[data-text-size="large"] .dialogue-box{font-size:clamp(19px,2.4vw,27px) !important;}
+.koobd-story[data-text-size="small"] .vn-story-card-text{font-size:clamp(16px,2.6vmin,24px) !important;}
+.koobd-story[data-text-size="large"] .vn-story-card-text{font-size:clamp(22px,4vmin,38px) !important;}
+
+/* A story made in the editor ends on its own page (js/teacher-story-player.js),
+   above whatever was playing. */
+.story-ending-root{position:fixed;inset:0;z-index:60;}
+.story-ending-root::after{position:absolute;}
+/* Story Mode choices: the answers sit under the question. */
+.teacher-story-choices{z-index:8;}
+
+/* Story pages: characters fade out while there is narration, a title card or a
+   question, and fade back in when someone speaks. (In the editor they only
+   dim, so they can still be picked and dragged.) */
+.vn-characters{transition:opacity .45s ease;}
+.vn-wrapper .vn-characters.is-narrating{opacity:0;}
+.story-builder-canvas .vn-characters.is-narrating{opacity:.4;}
+@media (prefers-reduced-motion: reduce){.vn-characters{transition:none;}}
+
+/* Reader labels (draft, pages, page/part/progress): readable on any picture. */
+.teacher-story-scene-meta .teacher-story-player-badge,
+.teacher-story-scene-meta .teacher-story-player-mode{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:999px;background:rgba(15,28,59,.62);color:#fff;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-shadow:none;box-shadow:0 6px 14px rgba(10,16,36,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+
+/* A title's own size, chosen in the editor (data-title-size). It replaces the
+   normal title size (and the story's text size) for that one title. */
+[data-title-size="small"]{--title-scale:.75;}
+[data-title-size="large"]{--title-scale:1.3;}
+[data-title-size="xlarge"]{--title-scale:1.6;}
+body .vn-story-card .vn-story-card-text[data-title-size]{font-size:calc(clamp(30px,7.5vmin,68px) * var(--title-scale,1)) !important;}
+body .teacher-story-scene-title-text[data-title-size]{font-size:calc(clamp(26px,4vw,48px) * var(--title-scale,1));}
+
+/* Formatted lines (js/rich-text.js): lists, alignment and highlights inside
+   the story's own boxes (the boxes themselves keep their look). */
+.rt-content ul,.rt-content ol{margin:.2em 0;padding-left:1.4em;text-align:left;}
+.rt-content li{margin:.08em 0;}
+.rt-content div:empty{min-height:1em;}
+.rt-content span[style*="background-color"]{padding:0 .12em;border-radius:.18em;-webkit-box-decoration-break:clone;box-decoration-break:clone;text-shadow:none;color:#1d2945;}
+/* (A colour picked for the same words still wins: it is on the span itself.) */
+.rt-content b{font-weight:900;}
+
+/* Story pages: the full-screen button (js/story-orientation.js), placed just
+   under the page's top-right button. */
+.story-fullscreen-btn{position:fixed;z-index:20;top:max(66px,calc(env(safe-area-inset-top) + 58px));right:max(14px,env(safe-area-inset-right));display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:999px;background:rgba(15,28,59,.62);color:#fff;box-shadow:0 6px 14px rgba(10,16,36,.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer;opacity:.85;transition:opacity .2s ease,background .2s ease;}
+.story-fullscreen-btn:hover,.story-fullscreen-btn:focus-visible{opacity:1;background:rgba(15,28,59,.8);}
+.story-fullscreen-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.story-fullscreen-btn .story-fullscreen-exit,.story-fullscreen-btn.is-on .story-fullscreen-enter{display:none;}
+.story-fullscreen-btn.is-on .story-fullscreen-exit{display:block;}
+/* Not over the "rotate your device" card. */
+body.story-compact-device.story-portrait-active .story-fullscreen-btn{display:none;}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel King</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;--bg:#2b2038;--panel:#3a2c4a;--ink:#f4e9d3;--dim:#b9a8c9}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:10px/1.8 'Press Start 2P',ui-monospace,monospace;padding:20px 16px 40px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:18px;margin:0 0 6px}
+p{color:var(--dim);margin:0 0 18px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.card{background:var(--panel);padding:12px;text-align:center;flex:1 1 150px}
+canvas{image-rendering:pixelated;display:block;margin:8px auto 0;max-width:100%}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pixel King</h1>
+<p>32x46 sprites, 16 frames. Facing right, flip for left. FlowerGirl's father, of the Flower Race, drawn after KING.png.</p>
+<div class="row">
+ <div class="card">Idle<canvas id="a0" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Run<canvas id="a1" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Jump<canvas id="a2" width="32" height="46" style="width:128px"></canvas></div>
+</div>
+<p>Sprite sheet (rows: idle, run, jump). Save the image to use it in your game.</p>
+<div class="wrap"><canvas id="sheet" width="192" height="138" style="width:576px;margin:0"></canvas></div>
+</main>
+<script>
+// <draw>
+// After the King's portrait (KING.png): a round white Flower-Race body, a wide
+// sunflower-yellow hat, a wavy yellow moustache, a green leaf cape over one
+// shoulder and a yellow staff topped with an orange bud.
+const C={o:'#3b3844',h:'#f4f4f4',hs:'#d9d8d6',e:'#111111',
+  y:'#e3d90c',ys:'#c9bf10',yi:'#c09f26',lf:'#3ddc10',ld:'#2fa812',bd:'#e8701c'};
+
+const CW=32,CH=46,BASE=14;
+const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+const blob=(g,x,y,w,h,c)=>{px(g,x+1,y,w-2,h,c);px(g,x,y+1,w,h-2,c)};
+const blobO=(g,x,y,w,h,c)=>{blob(g,x-1,y-1,w+2,h+2,C.o);blob(g,x,y,w,h,c)};
+function leg(g,x0,y0,x1,y1,c){
+  const n=Math.max(1,Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-2,y0+(y1-y0)*i/n-2,4,4,C.o);
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-1,y0+(y1-y0)*i/n-1,2,2,c);
+}
+
+const foot=(g,x,y)=>blobO(g,x-3,y-1,6,3,C.h);
+function king(g,X,Y,P){
+  const b=P.b,hx=P.hx,H=Y+b+P.hy-5;
+  leg(g,X+13,Y+23+b,X+P.lf[0],Y+P.lf[1],C.h);leg(g,X+19,Y+23+b,X+P.rf[0],Y+P.rf[1],C.h);
+  foot(g,X+P.lf[0],Y+P.lf[1]);foot(g,X+P.rf[0],Y+P.rf[1]);
+  const sx=X+P.fr[0]+5;                                              // staff, in the right hand
+  px(g,sx-1,Y+7+b,4,21,C.o);px(g,sx,Y+8+b,2,19,C.y);
+  px(g,sx-3,Y+4+b,8,4,C.o);px(g,sx-2,Y+6+b,6,1,C.y);                // trident head
+  px(g,sx-2,Y+4+b,1,2,C.y);px(g,sx+3,Y+4+b,1,2,C.y);
+  px(g,sx,Y+2+b,2,4,C.o);px(g,sx,Y+3+b,2,3,C.bd);                    // the orange bud
+  blobO(g,X+9-P.sw,Y+13+b,15,12,C.h);px(g,X+21-P.sw,Y+15+b,2,9,C.hs); // body
+  blobO(g,X+P.fr[0]+2,Y+P.fr[1]+b+3,5,5,C.h);                        // hand on the staff
+  blobO(g,X+8-P.sw,Y+14+b,9,7,C.lf);blobO(g,X+8-P.sw,Y+20+b,6,4,C.lf);// leaf cape
+  px(g,X+7-P.sw,Y+24+b,3,3,C.o);px(g,X+8-P.sw,Y+24+b,2,2,C.lf);       // its tip
+  px(g,X+10-P.sw,Y+16+b,1,8,C.ld);px(g,X+11-P.sw,Y+15+b,1,2,C.ld);   // vein
+  [[13,17],[13,20],[8,18]].forEach(([x,y])=>px(g,X+x-P.sw,Y+y+b,2,1,C.ld));
+  px(g,X+17-P.sw,Y+14+b,5,1,C.lf);px(g,X+21-P.sw,Y+13+b,1,1,C.lf);   // stem over the shoulder
+  blobO(g,X+P.fl[0]+2,Y+P.fl[1]+b+1,5,5,C.h);                        // other hand
+  blobO(g,X+8+hx,H+5,16,13,C.h);px(g,X+22+hx,H+9,1,7,C.hs);          // head
+  const ex=X+hx+P.look;
+  if(P.blink){px(g,ex+12,H+11,2,1,C.e);px(g,ex+19,H+10,2,1,C.e)}
+  else{px(g,ex+12,H+10,2,3,C.e);px(g,ex+19,H+9,2,3,C.e)}
+  px(g,ex+12,H+15,2,1,C.ys);px(g,ex+13,H+14,3,1,C.ys);px(g,ex+16,H+15,2,1,C.ys); // moustache
+  px(g,ex+18,H+14,3,1,C.ys);px(g,ex+21,H+15,1,1,C.ys);
+  blobO(g,X+2+hx,H+3,26,4,C.y);                                      // sunflower hat brim
+  blobO(g,X+24+hx,H+1,5,3,C.y);px(g,X+27+hx,H,2,2,C.y);
+  px(g,X+10+hx,H+3,12,2,C.yi);                                       // its crown
+  for(let i=0;i<6;i++)px(g,X+4+hx+i*4,H+6,2,1,C.ys);                 // petal edge
+}
+const DRAW=king;
+
+const pose=o=>Object.assign({dy:0,b:0,hx:0,hy:0,nz:0,blink:0,glow:0,sw:0,look:0,lf:[11,27],rf:[21,27],fl:[5,16],fr:[21,15]},o);
+
+const IDLE=[pose({}),pose({b:1,nz:1}),pose({b:1,blink:1,glow:1}),pose({glow:1})];
+const RUN=[0,1,2,3,4,5].map(i=>{
+  const ph=i/6*Math.PI*2,q=ph+Math.PI;
+  return pose({b:-Math.round(Math.abs(Math.sin(ph))*2),hx:1,sw:Math.round(Math.sin(ph)),
+    lf:[11+4*Math.cos(ph),27-Math.max(0,-Math.sin(ph))*4],rf:[21+4*Math.cos(q),27-Math.max(0,-Math.sin(q))*4],
+    fl:[6+Math.round(3*Math.cos(q)),16],fr:[20+Math.round(2*Math.cos(ph)),15]});
+});
+const JUMP=[
+  pose({b:3,lf:[9,27],rf:[23,27]}),
+  pose({dy:-3,b:-1,lf:[12,28],rf:[20,28],fl:[5,13],fr:[21,12]}),
+  pose({dy:-9,b:-1,lf:[12,25],rf:[20,25],fl:[4,11],fr:[22,10],sw:1}),
+  pose({dy:-12,lf:[11,25],rf:[21,26],fl:[4,12],fr:[22,11]}),
+  pose({dy:-6,lf:[11,28],rf:[21,28],fl:[5,14],fr:[21,13],sw:-1}),
+  pose({b:3,lf:[9,27],rf:[23,27]})
+];
+const ROWS=[IDLE,RUN,JUMP],FPS=[5,12,8],JD=JUMP.map(p=>p.dy);
+// </draw>
+const sheet=document.getElementById('sheet'),sg=sheet.getContext('2d');
+ROWS.forEach((fr,r)=>fr.forEach((p,c)=>DRAW(sg,c*CW,r*CH+BASE+p.dy,p)));
+ROWS.forEach((fr,r)=>{
+  const g=document.getElementById('a'+r).getContext('2d');let i=0;
+  const f=()=>{g.clearRect(0,0,CW,CH);g.drawImage(sheet,i*CW,r*CH,CW,CH,0,0,CW,CH);i=(i+1)%fr.length};
+  f();setInterval(f,1000/FPS[r]);
+});
+</script>
+</body>
+</html>

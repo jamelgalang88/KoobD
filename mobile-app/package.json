@@ -1,0 +1,28 @@
+{
+  "name": "koobd-mobile-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor mobile wrapper for the KoobD platform",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "cap:copy": "cap copy",
+    "android:add": "cap add android",
+    "ios:add": "cap add ios",
+    "android:open": "cap open android",
+    "ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/app": "^7.0.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/haptics": "^7.0.2",
+    "@capacitor/ios": "^7.4.2",
+    "@capacitor/keyboard": "^7.0.2",
+    "@capacitor/splash-screen": "^7.0.2",
+    "@capacitor/status-bar": "^7.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
+    "typescript": "^5.9.2"
+  }
+}

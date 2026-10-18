@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Flowerling</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#2b2038;--panel:#3a2c4a;--ink:#f4e9d3;--dim:#b9a8c9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:10px/1.8 'Press Start 2P',ui-monospace,monospace;padding:20px 16px 40px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:18px;margin:0 0 6px}
+p{color:var(--dim);margin:0 0 18px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.card{background:var(--panel);padding:12px;text-align:center;flex:1 1 150px}
+canvas{image-rendering:pixelated;display:block;margin:8px auto 0;max-width:100%}
+.sky{background:#7ec8ec}
+.scene{width:100%;height:auto;margin:0 0 10px}
+.ctl{display:flex;gap:8px;margin-bottom:22px}
+button{font:inherit;background:var(--ink);color:var(--bg);border:0;padding:12px 14px;flex:1;cursor:pointer;touch-action:none}
+button:active{background:#0abb0a}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pixel Flowerling</h1>
+<p>32x46 sprites, 16 frames. Facing right, flip for left.</p>
+
+<div class="row">
+ <div class="card">Idle<canvas id="a0" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Run<canvas id="a1" width="32" height="46" style="width:128px"></canvas></div>
+ <div class="card">Jump<canvas id="a2" width="32" height="46" style="width:128px"></canvas></div>
+</div>
+
+<p>Try it: arrows or A/D to run, Space to jump.</p>
+<canvas id="scene" class="scene sky" width="160" height="72"></canvas>
+<div class="ctl"><button id="bl">Left</button><button id="bj">Jump</button><button id="br">Right</button></div>
+
+<p>Sprite sheet (rows: idle, run, jump). Save the image to use it in your game.</p>
+<div class="wrap"><canvas id="sheet" width="192" height="138" style="width:576px;margin:0"></canvas></div>
+</main>
+<script>
+const C={o:'#3b3844',h:'#eeedeb',hs:'#cfcdc9',p:'#e0e0e0',br:'#6b3a00',gd:'#069a06',gb:'#0abb0a',gl:'#0bc50b',pk:'#b020ff',e:'#2a2a2a'};
+const CW=32,CH=46,BASE=14;
+const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h)};
+const blob=(g,x,y,w,h,c)=>{px(g,x+1,y,w-2,h,c);px(g,x,y+1,w,h-2,c)};
+const blobO=(g,x,y,w,h,c)=>{blob(g,x-1,y-1,w+2,h+2,C.o);blob(g,x,y,w,h,c)};
+function leg(g,x0,y0,x1,y1){
+  const n=Math.max(1,Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))));
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-2,y0+(y1-y0)*i/n-2,4,4,C.o);
+  for(let i=0;i<=n;i++)px(g,x0+(x1-x0)*i/n-1,y0+(y1-y0)*i/n-1,2,2,C.h);
+}
+const foot=(g,x,y)=>blobO(g,x-2,y-1,5,3,C.h);
+function fling(g,X,Y,P){
+  const b=P.b,hx=P.hx,hy=P.hy,H=Y+b+hy;
+  leg(g,X+12,Y+24+b,X+P.lf[0],Y+P.lf[1]);leg(g,X+19,Y+24+b,X+P.rf[0],Y+P.rf[1]);
+  foot(g,X+P.lf[0],Y+P.lf[1]);foot(g,X+P.rf[0],Y+P.rf[1]);
+  blobO(g,X+8,Y+18+b+P.la,8,9,C.gd);                       // left sleeve
+  blobO(g,X+14,Y+18+b+P.ra,8,9,C.gb);                      // right sleeve
+  px(g,X+10,Y+20+b+P.la,1,4,C.gl);px(g,X+19,Y+20+b+P.ra,1,5,C.gd);
+  blobO(g,X+8+hx,H+8,16,12,C.h);                           // head
+  px(g,X+22+hx,H+11,1,6,C.hs);
+  const ex=X+hx+P.look;
+  if(P.blink){px(g,ex+12,H+14,2,1,C.e);px(g,ex+19,H+14,2,1,C.e)}
+  else{px(g,ex+12,H+13,2,3,C.e);px(g,ex+19,H+13,2,3,C.e)}
+  px(g,ex+10,H+16,3,1,C.pk);px(g,ex+20,H+16,3,1,C.pk);    // blush
+  blobO(g,X+11+hx,H+1+P.pl,5,7,C.p);                       // top petals
+  blobO(g,X+17+hx,H+2+P.pr,5,7,C.p);
+  blobO(g,X+3+hx-P.fl,H+4+P.pl,11,6,C.p);                  // side petals
+  blobO(g,X+18+hx+P.fl,H+6+P.pr,11,6,C.p);
+  px(g,X+5+hx-P.fl,H+6+P.pl,3,1,C.hs);px(g,X+22+hx+P.fl,H+8+P.pr,3,1,C.hs);
+  blobO(g,X+11+hx,H+4,10,5,C.br);                          // flower centre
+}
+const pose=o=>Object.assign({dy:0,b:0,hx:0,hy:0,look:0,blink:0,pl:0,pr:0,fl:0,lf:[12,27],rf:[20,27],la:0,ra:0},o);
+const IDLE=[pose({}),pose({pl:-1,pr:1}),pose({b:1,pl:1,pr:0}),pose({b:1,blink:1,pl:0,pr:-1})];
+const RUN=[0,1,2,3,4,5].map(i=>{
+  const ph=i/6*Math.PI*2,q=ph+Math.PI;
+  return pose({b:-Math.round(Math.abs(Math.sin(ph))*2),hx:1,look:1,fl:1,
+    pl:-1+Math.round(Math.sin(ph)),pr:-1+Math.round(Math.sin(ph+1.5)),
+    lf:[12+4*Math.cos(ph),27-Math.max(0,-Math.sin(ph))*4],
+    rf:[20+4*Math.cos(q),27-Math.max(0,-Math.sin(q))*4],
+    la:Math.round(2*Math.sin(ph)),ra:Math.round(-2*Math.sin(ph))});
+});
+const JUMP=[
+  pose({b:3,pl:1,pr:1,lf:[11,27],rf:[21,27],la:1,ra:1}),
+  pose({dy:-3,b:-1,pl:1,pr:1,lf:[12,28],rf:[20,28],la:1,ra:1}),
+  pose({dy:-9,b:-1,pl:-2,pr:-2,fl:1,lf:[12,25],rf:[20,25],la:-2,ra:-2}),
+  pose({dy:-12,pl:-1,pr:-1,fl:1,lf:[12,24],rf:[20,24],la:-1,ra:-1}),
+  pose({dy:-6,pl:-3,pr:-3,lf:[11,28],rf:[21,28],la:-2,ra:-2}),
+  pose({b:3,pl:2,pr:2,lf:[10,27],rf:[22,27],la:1,ra:1})
+];
+const ROWS=[IDLE,RUN,JUMP],FPS=[5,12,8],JD=JUMP.map(p=>p.dy);
+
+const sheet=document.getElementById('sheet'),sg=sheet.getContext('2d');
+ROWS.forEach((fr,r)=>fr.forEach((p,c)=>fling(sg,c*CW,r*CH+BASE+p.dy,p)));
+
+ROWS.forEach((fr,r)=>{
+  const g=document.getElementById('a'+r).getContext('2d');let i=0;
+  const f=()=>{g.clearRect(0,0,CW,CH);g.drawImage(sheet,i*CW,r*CH,CW,CH,0,0,CW,CH);i=(i+1)%fr.length};
+  f();setInterval(f,1000/FPS[r]);
+});
+
+const sc=document.getElementById('scene'),g=sc.getContext('2d'),G=60;
+const k={l:0,r:0,j:0};let scroll=0,face=1,jy=0,vy=0,land=0,t=0;
+function tick(){
+  const dir=k.r-k.l;if(dir)face=dir;
+  if(k.j&&jy===0&&vy===0)vy=-4.2;
+  if(jy<0||vy<0){vy+=.4;jy+=vy;if(jy>=0){jy=0;vy=0;land=5}}
+  scroll+=dir*1.6;t++;
+  let row,col;
+  if(jy<0){row=2;col=vy<-2?2:vy<=2?3:4}
+  else if(land>0){land--;row=2;col=5}
+  else if(dir){row=1;col=Math.floor(t/2.5)%6}
+  else{row=0;col=Math.floor(t/6)%4}
+  g.clearRect(0,0,160,72);
+  g.fillStyle='#fff';
+  for(const [cx,cy] of [[20,12],[90,20],[140,8]]){const x=((cx-scroll*.3)%200+200)%200-20;g.fillRect(x,cy,16,4);g.fillRect(x+3,cy-3,10,3)}
+  g.fillStyle='#b5653a';g.fillRect(0,G,160,12);
+  g.fillStyle='#5fbf4a';g.fillRect(0,G,160,3);
+  g.fillStyle='#8a4a2a';
+  for(let x=-16;x<176;x+=16){const bx=x-((scroll%16)+16)%16;g.fillRect(bx,G+3,1,9);g.fillRect(bx,G+8,16,1)}
+  const dy=G-43+jy-(row===2?JD[col]:0);
+  g.save();g.translate(80,0);g.scale(face,1);
+  g.drawImage(sheet,col*CW,row*CH,CW,CH,-16,dy,CW,CH);
+  g.restore();
+}
+setInterval(tick,1000/30);
+const K={ArrowLeft:'l',a:'l',ArrowRight:'r',d:'r',ArrowUp:'j',w:'j',' ':'j'};
+addEventListener('keydown',e=>{const m=K[e.key];if(m){k[m]=1;e.preventDefault()}});
+addEventListener('keyup',e=>{const m=K[e.key];if(m)k[m]=0});
+[['bl','l'],['br','r'],['bj','j']].forEach(([id,m])=>{
+  const b=document.getElementById(id);
+  b.addEventListener('pointerdown',()=>k[m]=1);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>k[m]=0));
+});
+</script>
+</body>
+</html>
