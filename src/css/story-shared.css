@@ -158,6 +158,42 @@
 .koobd-story .ending-kicker{margin:clamp(10px,2vh,18px) 0 0;color:#e8c77a;font:800 clamp(11px,1.8vmin,14px)/1.3 Montserrat,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;animation:endingRise .8s ease .6s both;}
 .koobd-story .ending-lesson{margin:clamp(14px,2.6vh,24px) auto 0;max-width:min(90%,620px);color:rgba(246,242,232,.78);font-family:Georgia,'Times New Roman',serif;font-size:clamp(15px,2.4vmin,21px);font-weight:400;line-height:1.6;text-wrap:balance;animation:endingRise .8s ease .9s both;}
 .koobd-story .ending-buttons{margin-top:clamp(30px,6vh,52px);gap:14px;width:min(100%,640px);animation:endingRise .7s ease 1.4s both;}
+.koobd-story .ending-review-form{display:contents;margin:0;}
+.koobd-story .ending-buttons .review-approve{background:#16966e;}
+.koobd-story .ending-buttons .review-reject{background:#a9435a;}
+.koobd-story.is-approval-review .ending-screen.is-review-ending{overflow:auto;background:radial-gradient(ellipse at 50% 12%,rgba(72,91,157,.25),transparent 54%),linear-gradient(145deg,#111a31,#080c18 72%);}
+.koobd-story.is-approval-review .ending-content.is-review-content{width:min(100% - 32px,690px);padding:clamp(22px,5vh,44px);border:1px solid rgba(226,233,255,.13);border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:0 30px 90px rgba(0,0,0,.32);text-align:center;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);animation:endingRise .55s cubic-bezier(.2,.8,.2,1) .1s both;}
+.koobd-story.is-approval-review .ending-review-context{display:flex;align-items:center;gap:12px;margin:0 auto 18px;padding:10px 14px;border:1px solid rgba(255,255,255,.13);border-radius:14px;background:rgba(255,255,255,.055);text-align:left;}
+.koobd-story.is-approval-review .ending-review-mark{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:11px;background:rgba(115,221,179,.14);color:#89e1bf;font:900 16px/1 system-ui,sans-serif;}
+.koobd-story.is-approval-review .ending-review-labels{display:flex;flex-direction:column;gap:3px;}
+.koobd-story.is-approval-review .ending-review-labels>span{color:rgba(230,236,255,.55);font:800 9px/1.2 system-ui,sans-serif;letter-spacing:.16em;}
+.koobd-story.is-approval-review .ending-review-labels>strong{color:#e5eaff;font:750 12px/1.3 system-ui,sans-serif;}
+.koobd-story.is-approval-review .ending-review-story-title{max-width:100%;margin:0 0 7px;overflow-wrap:anywhere;color:#a8b7ee;font:800 11px/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;}
+.koobd-story.is-approval-review .ending-content.is-review-content h1{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:clamp(29px,6vmin,46px);font-style:normal;font-weight:850;letter-spacing:-.045em;line-height:1.08;animation:endingRise .5s ease .18s both;}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-kicker{max-width:500px;margin:11px auto 0;color:rgba(229,234,248,.7);font:500 clamp(13px,2.1vmin,15px)/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;text-transform:none;text-wrap:balance;animation:endingRise .5s ease .25s both;}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-lesson{max-width:500px;margin-top:12px;color:rgba(229,234,248,.58);font:400 12px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;animation:endingRise .5s ease .3s both;}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons{display:flex;flex-direction:column;gap:12px;width:min(100%,560px);margin:26px auto 0;animation:endingRise .5s ease .34s both;}
+.koobd-story.is-approval-review .ending-action-label{display:block;margin:0 0 -5px;color:rgba(210,220,246,.48);font:800 9px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-align:left;}
+.koobd-story.is-approval-review .ending-review-decisions,.koobd-story.is-approval-review .ending-review-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;}
+.koobd-story.is-approval-review .ending-review-form{display:block;min-width:0;margin:0;}
+.koobd-story.is-approval-review .ending-content.is-review-content .choice-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;min-width:0;min-height:54px;padding:12px 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.045);color:#dbe2f4;font:700 13px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;text-align:center;text-decoration:none;text-transform:none;white-space:normal;box-shadow:0 4px 12px rgba(0,0,0,.08);transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;}
+.koobd-story.is-approval-review .ending-content.is-review-content .choice-btn:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.27);background:rgba(255,255,255,.09);box-shadow:0 9px 22px rgba(0,0,0,.2);}
+.koobd-story.is-approval-review .ending-content.is-review-content .choice-btn:focus-visible{outline:3px solid rgba(130,157,255,.72);outline-offset:3px;}
+.koobd-story.is-approval-review .ending-decision-icon{display:grid;place-items:center;width:25px;height:25px;flex:0 0 auto;border-radius:8px;background:rgba(255,255,255,.15);font:800 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif;}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons .review-approve{border-color:rgba(104,224,184,.35);background:linear-gradient(135deg,#1d9874,#147858);color:#fff;box-shadow:0 8px 22px rgba(16,123,91,.22);}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons .review-approve:hover{background:linear-gradient(135deg,#25a981,#168363);box-shadow:0 11px 25px rgba(22,129,95,.3);}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons .review-reject{border-color:rgba(231,126,143,.3);background:linear-gradient(135deg,rgba(161,54,76,.88),rgba(126,42,61,.9));color:#fff;}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons .review-reject:hover{border-color:rgba(246,151,166,.55);background:linear-gradient(135deg,#a93e56,#873047);}
+.koobd-story.is-approval-review .ending-content.is-review-content .ending-review-tools .choice-btn{min-height:46px;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.035);color:rgba(230,235,248,.78);font-size:12px;}
+.koobd-story.is-approval-review .ending-review-form.is-submitting .choice-btn{opacity:.7;cursor:wait;}
+.koobd-story.is-approval-review .ending-review-form .choice-btn:disabled{transform:none;opacity:.7;cursor:wait;}
+@media(max-width:520px){
+  .koobd-story.is-approval-review .ending-content.is-review-content{width:calc(100% - 24px);padding:22px 17px;border-radius:21px;}
+  .koobd-story.is-approval-review .ending-content.is-review-content .ending-buttons{gap:10px;margin-top:19px;}
+  .koobd-story.is-approval-review .ending-review-decisions,.koobd-story.is-approval-review .ending-review-tools{gap:8px;}
+  .koobd-story.is-approval-review .ending-content.is-review-content .choice-btn{min-height:48px;padding:10px 9px;font-size:11px;}
+}
+@media(prefers-reduced-motion:reduce){.koobd-story.is-approval-review .ending-content.is-review-content,.koobd-story.is-approval-review .ending-content.is-review-content *{animation:none!important;transition:none!important;}}
 /* Choose Stage: the ending gives way to a list of the story's stages, each
    starting at the beginning of that part of the story. */
 .koobd-story .ending-stages{display:none;width:min(100%,680px);animation:endingRise .45s ease both;}
@@ -239,8 +275,37 @@ body.is-koobd-paused .story-exit-btn{opacity:0;pointer-events:none;}
 @media (prefers-reduced-motion: reduce){.vn-characters{transition:none;}}
 
 /* Reader labels (draft, pages, page/part/progress): readable on any picture. */
+.teacher-story-scene-meta{top:18px;left:18px;right:190px;align-items:flex-start;gap:12px;}
+.teacher-story-player-badges{gap:7px;max-width:min(62vw,560px);}
 .teacher-story-scene-meta .teacher-story-player-badge,
-.teacher-story-scene-meta .teacher-story-player-mode{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:999px;background:rgba(15,28,59,.62);color:#fff;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-shadow:none;box-shadow:0 6px 14px rgba(10,16,36,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.teacher-story-scene-meta .teacher-story-player-mode{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.2);border-radius:11px;background:rgba(15,28,59,.74);color:#f7f9ff;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;text-shadow:none;box-shadow:0 5px 16px rgba(10,16,36,.2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+.teacher-story-scene-meta .teacher-story-player-mode{margin-left:auto;max-width:min(42vw,340px);font-size:10px;letter-spacing:.055em;text-align:right;}
+.teacher-story-scene-meta .teacher-story-player-badge.is-updated-version{border-color:rgba(255,208,122,.35);background:rgba(94,62,18,.78);color:#ffe8b5;}
+.teacher-story-player-page .teacher-story-top-right-link{top:18px;right:18px;min-height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.24);border-radius:11px;background:rgba(15,28,59,.76);font-size:10px;font-weight:800;letter-spacing:.06em;box-shadow:0 5px 16px rgba(10,16,36,.2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+.teacher-story-player-page .teacher-story-top-right-link:hover{background:rgba(15,28,59,.92);transform:translateY(-1px);}
+.teacher-story-player-page .ks-reader-btn{top:50%;right:max(14px,env(safe-area-inset-right));width:48px;min-height:48px;padding:7px 0;border:1px solid rgba(255,255,255,.24);border-radius:14px;background:rgba(15,28,59,.76);box-shadow:0 5px 16px rgba(10,16,36,.2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transform:translateY(-50%);transition:background .18s ease,transform .18s ease,box-shadow .18s ease;}
+.teacher-story-player-page .ks-reader-btn:hover{background:rgba(15,28,59,.92);box-shadow:0 8px 20px rgba(10,16,36,.25);transform:translateY(-50%) translateX(-2px);}
+.teacher-story-player-page .ks-reader-btn:focus-visible{outline:3px solid rgba(255,233,168,.85);outline-offset:3px;}
+.teacher-story-player-page .platformer-story-hud{top:18px;left:18px;right:190px;padding:0;grid-template-columns:auto minmax(140px,420px) auto;align-items:center;justify-content:space-between;gap:14px;pointer-events:none;}
+.teacher-story-player-page .platformer-story-hud .teacher-story-player-badge,
+.teacher-story-player-page .platformer-story-hud .platformer-story-mode{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.2);border-radius:11px;background:rgba(15,28,59,.76);color:#f7f9ff;font-size:10px;font-weight:800;letter-spacing:.065em;text-transform:uppercase;text-shadow:none;box-shadow:0 5px 16px rgba(10,16,36,.2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+.teacher-story-player-page .platformer-story-hud .platformer-story-progress{grid-column:2;align-self:center;width:100%;height:7px;margin:0;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(15,28,59,.48);box-shadow:0 4px 12px rgba(10,16,36,.17);pointer-events:auto;}
+.teacher-story-player-page .platformer-story-hud .platformer-story-progress>span{border-radius:inherit;background:linear-gradient(90deg,#84a5ff,#7de0be);box-shadow:0 0 12px rgba(125,224,190,.35);}
+.teacher-story-player-page .platformer-story-hud .platformer-story-progress button{border:2px solid #fff;box-shadow:0 2px 8px rgba(10,16,36,.32);}
+.teacher-story-player-page .platformer-story-hud .platformer-story-mode{grid-column:3;min-width:0;justify-content:center;font-size:10px;letter-spacing:.045em;font-variant-numeric:tabular-nums;text-transform:none;}
+@media(max-width:640px){
+  .teacher-story-scene-meta{top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));gap:7px;}
+  .teacher-story-player-badges{max-width:calc(100vw - 130px);gap:5px;}
+  .teacher-story-scene-meta .teacher-story-player-badge,.teacher-story-scene-meta .teacher-story-player-mode{min-height:28px;padding:0 9px;border-radius:9px;font-size:9px;letter-spacing:.045em;}
+  .teacher-story-scene-meta .teacher-story-player-mode{max-width:46vw;font-size:9px;}
+  .teacher-story-player-page .teacher-story-top-right-link{top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));min-height:32px;padding:0 10px;border-radius:9px;font-size:9px;}
+  .teacher-story-player-page .ks-reader-btn{right:max(8px,env(safe-area-inset-right));width:42px;min-height:42px;border-radius:12px;font-size:9px;}
+  .teacher-story-player-page .ks-reader-btn svg{width:18px;height:18px;}
+  .teacher-story-player-page .platformer-story-hud{top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));grid-template-columns:auto minmax(38px,1fr) auto;gap:7px;}
+  .teacher-story-player-page .platformer-story-hud .teacher-story-player-badge,.teacher-story-player-page .platformer-story-hud .platformer-story-mode{min-height:28px;padding:0 8px;border-radius:9px;font-size:9px;letter-spacing:.035em;}
+  .teacher-story-player-page .platformer-story-hud .platformer-story-progress{height:6px;}
+  .teacher-story-player-page .platformer-story-hud .platformer-story-mode{font-size:9px;}
+}
 
 /* A title's own size, chosen in the editor (data-title-size). It replaces the
    normal title size (and the story's text size) for that one title. */

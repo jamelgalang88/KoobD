@@ -13,3 +13,9 @@ mobile-app/android/**/*.aab
 # Local signing material
 mobile-app/**/*.jks
 mobile-app/**/*.keystore
+
+# Local https certificate authority and keys (docker/apache/start.sh)
+docker/certs/
+
+# Local secrets (ANTHROPIC_API_KEY for Writing Practice): never commit.
+.env

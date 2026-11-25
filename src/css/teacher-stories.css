@@ -5,21 +5,15 @@
   min-height: 100vh;
 }
 
+/* The same page background as every other KoobD page (.app-bg). */
 .teacher-story-page,
-.teacher-story-library-page{
-  background:
-    radial-gradient(circle at 10% 14%, rgba(98, 119, 195, .22), transparent 24%),
-    radial-gradient(circle at 86% 16%, rgba(116, 221, 177, .2), transparent 22%),
-    radial-gradient(circle at 68% 76%, rgba(255, 194, 104, .18), transparent 18%),
-    linear-gradient(180deg, #e2f0ff 0%, #d7ecff 46%, #e6f6ff 100%);
-}
-
+.teacher-story-library-page,
 .story-builder-page{
-  background:
-    radial-gradient(circle at 12% 14%, rgba(116, 221, 177, .18), transparent 26%),
-    radial-gradient(circle at 84% 18%, rgba(98, 119, 195, .16), transparent 22%),
-    radial-gradient(circle at 76% 78%, rgba(255, 212, 102, .16), transparent 20%),
-    linear-gradient(180deg, #eef8ff 0%, #e5f5ff 52%, #edf8ff 100%);
+  background-color: #f4f7fc;
+  background-image:
+    radial-gradient(760px 380px at 0% 0%, rgba(98,119,195,.11), transparent 70%),
+    radial-gradient(860px 400px at 100% 0%, rgba(116,221,177,.15), transparent 70%);
+  background-repeat: no-repeat;
 }
 
 .teacher-story-shell,
@@ -127,6 +121,52 @@
   background: linear-gradient(135deg, #6277c3, #74ddb1);
   color: #fff;
   box-shadow: 0 14px 26px rgba(98, 119, 195, .2);
+}
+
+.teacher-story-primary-btn.is-locked{
+  background:#eef0f4;
+  color:#858d9d;
+  box-shadow:none;
+}
+
+.teacher-story-primary-btn.is-locked:hover,
+.teacher-story-primary-btn.is-locked:active{
+  transform:none;
+  filter:none;
+  box-shadow:none;
+}
+
+.teacher-story-primary-btn.is-locked svg{
+  width:16px;
+  height:16px;
+  flex:none;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.ts-btn.is-locked{
+  border-color:#e1e4eb;
+  background:#f0f2f6;
+  color:#858d9d;
+  box-shadow:none;
+}
+
+.ts-btn.is-locked:hover,
+.ts-btn.is-locked:active{
+  transform:none;
+  filter:none;
+  box-shadow:none;
+}
+
+.ts-icon-btn.is-locked{
+  border-color:#e1e4eb;
+  background:#f0f2f6;
+  color:#929bad;
+  cursor:not-allowed;
+  opacity:.75;
 }
 
 .teacher-story-danger-btn{
@@ -2266,7 +2306,10 @@
    needed behind it. Only the scene-transition overlay remains below. */
 .platformer-story-background{position:absolute;inset:0;background-position:center;background-size:cover;transition:filter .22s ease,transform .22s ease;}
 .platformer-story-background::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,23,49,.12),transparent 48%,rgba(11,27,30,.2));}
-.platformer-story-world{position:absolute;inset:0;transition:filter .22s ease;}
+.platformer-story-world{position:absolute;inset:0;transition:filter .22s ease;
+  /* The camera moves this layer every frame: keep it on its own GPU layer so
+     scrolling only shifts the drawn scene instead of repainting all of it. */
+  will-change:transform;}
 /* Dialogue focus: while a conversation is open, the scene behind it (the
    world and its characters, the background, the HUD and the controls) is
    blurred, so only the dialogue box and the two speaking figures - which sit
@@ -2296,6 +2339,9 @@
 /* --jump-shift lowers a character's frame window to cancel the lift drawn
    into the sprite sheets' jump poses (set per frame by the player script). */
 .platformer-story-player,.platformer-npc{position:absolute;z-index:3;transform:translateX(-50%) translateY(var(--jump-shift,0px));}
+/* Characters move every frame: each on its own small GPU layer, so moving one
+   does not repaint the scenery behind it. */
+.platformer-story-stage .platformer-story-player,.platformer-story-stage .platformer-npc{will-change:transform;}
 .platformer-story-player{width:clamp(94px,15vw,180px);height:clamp(130px,32vh,290px);object-fit:contain;object-position:center bottom;transform-origin:50% 100%;filter:drop-shadow(0 15px 9px rgba(5,26,26,.35));transform:translateX(-50%) translateY(var(--jump-shift,0px)) scale(var(--platformer-player-scale,0.7));transition:left .04s linear,bottom .04s linear;}
 /* Direction: the sprite sheet is authored facing right. Mirroring is done on
    the inner <img> by setSpriteFrameFacing in platformer-story-player.js, which
@@ -2401,13 +2447,18 @@
 @media (prefers-reduced-motion: reduce){.platformer-npc.is-talkable .platformer-npc-name::after{animation:none;}}
 /* Rain over a stretch of the world: two sheets of streaks falling at
    different speeds, so the storm has depth. */
-.platformer-rain{position:absolute;top:0;bottom:0;pointer-events:none;opacity:.8;transition:opacity .8s ease;
-  background-image:repeating-linear-gradient(103deg,transparent 0 22px,rgba(210,225,245,.7) 22px 24px,transparent 24px 47px),
-                   repeating-linear-gradient(100deg,transparent 0 37px,rgba(225,235,250,.35) 37px 38px,transparent 38px 71px);
-  background-size:180px 120px,260px 170px;animation:platformerRain .55s linear infinite;}
+.platformer-rain{position:absolute;top:0;bottom:0;overflow:hidden;pointer-events:none;opacity:.8;transition:opacity .8s ease;}
+/* Each sheet is a pseudo-element that slides by one tile (a transform the
+   graphics chip moves on its own), instead of animating background-position,
+   which repainted the whole storm every frame. Each sheet reaches one step
+   further up and right than the box, so the slide never shows an edge. */
+.platformer-rain::before,.platformer-rain::after{content:"";position:absolute;left:0;bottom:0;}
+.platformer-rain::before{top:-120px;right:-26px;background:repeating-linear-gradient(103deg,transparent 0 22px,rgba(210,225,245,.7) 22px 24px,transparent 24px 47px) 0 0/180px 120px;animation:platformerRainNear .55s linear infinite;}
+.platformer-rain::after{top:-170px;right:-30px;background:repeating-linear-gradient(100deg,transparent 0 37px,rgba(225,235,250,.35) 37px 38px,transparent 38px 71px) 0 0/260px 170px;animation:platformerRainFar .55s linear infinite;}
 .platformer-rain.is-gone{opacity:0;}
-@keyframes platformerRain{from{background-position:0 0,0 0;}to{background-position:-26px 120px,-30px 170px;}}
-@media (prefers-reduced-motion: reduce){.platformer-rain{animation:none;}}
+@keyframes platformerRainNear{from{transform:translate(0,0);}to{transform:translate(-26px,120px);}}
+@keyframes platformerRainFar{from{transform:translate(0,0);}to{transform:translate(-30px,170px);}}
+@media (prefers-reduced-motion: reduce){.platformer-rain::before,.platformer-rain::after{animation:none;}}
 .platformer-decor{position:absolute;transform:translateX(-50%);transform-origin:50% 100%;}
 .platformer-decor img{display:block;height:100%;width:auto;image-rendering:pixelated;}
 .platformer-decor.is-flipped img{transform:scaleX(-1);}
@@ -2981,3 +3032,418 @@ body.story-builder-page-platformer .story-builder-canvas.has-block-tool.is-panni
    as solid blocks and hazards. Uploaded pictures are scaled smoothly. */
 .platformer-story-platform.is-pixel-art img{image-rendering:pixelated;}
 .platformer-decor.is-smooth img{image-rendering:auto;}
+
+/* --- My Stories: story cards --------------------------------------------------
+   One layout for every story: a cover of the same shape (a story without one
+   gets one drawn in its mode's colour) with its status, then what kind of
+   story it is, its title and description, when it was last edited, and its
+   actions - Edit (the main one), Preview, and Duplicate and Delete as compact
+   icon buttons. Cards in a row share a height; actions sit at the bottom. */
+.teacher-story-library-grid{
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  align-items: stretch;
+}
+
+.ts-card{
+  --ts-ink: #1b2440;
+  --ts-muted: #7c86a8;
+  --ts-accent: #4f63d6;
+  --ts-mode: #4f63d6;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(107,120,168,.16);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 8px 22px rgba(27,36,64,.07);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.ts-card.is-platform{
+  --ts-mode: #16966e;
+}
+
+.ts-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 14px 30px rgba(27,36,64,.11);
+}
+
+.ts-card-cover{
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #eef1f8;
+}
+
+.ts-card-cover img{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ts-card-cover.no-cover{
+  display: grid;
+  place-items: center;
+  background: linear-gradient(155deg, #7d8be6 0%, #5767d4 55%, #4352b8 100%);
+}
+
+.ts-card.is-platform .ts-card-cover.no-cover{
+  background: linear-gradient(155deg, #45c79f 0%, #1e9d76 55%, #13805f 100%);
+}
+
+.ts-card-placeholder{
+  width: 30%;
+  max-width: 88px;
+  fill: none;
+  stroke: rgba(255,255,255,.32);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ts-card-status{
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.94);
+  color: var(--ts-ink);
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(15,22,42,.18);
+}
+
+.ts-card-status::before{
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f2a93b;
+}
+
+.ts-card-status.is-published::before{
+  background: #1fae78;
+}
+
+.ts-card-status.is-pending::before{background:#e2a53a;}
+.ts-card-updated-note{margin:-3px 0 11px;padding:8px 10px;border:1px solid #f0dfb8;border-radius:9px;background:#fff9ec;color:#856329;font-size:10px;font-weight:800;line-height:1.45;}
+.ts-card-status.is-revision::before{background:#d99132;}
+.ts-card-revision-note{margin:-3px 0 11px;padding:9px 10px;border:1px solid #f0dfb8;border-radius:9px;background:#fff9ec;color:#856329;font-size:10px;font-weight:750;line-height:1.5;}
+.ts-card-status.is-rejected::before{background:#db5972;}
+.ts-card-status.is-unpublished::before{background:#7885a8;}
+.ts-feedback-history{margin:2px 0 13px;padding:11px;border:1px solid #e6eaf4;border-radius:12px;background:linear-gradient(145deg,#fafbff,#f7fbfa);}
+.ts-feedback-history h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;color:#465575;font-size:11px;font-weight:900;}
+.ts-feedback-new{padding:3px 7px;border-radius:999px;background:#edf2ff;color:#5368c1;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;}
+.ts-feedback-history ol{display:grid;gap:9px;margin:0;padding:0;list-style:none;}
+.ts-feedback-history li{padding-top:9px;border-top:1px solid #e9edf5;}
+.ts-feedback-reviewer{display:flex;align-items:center;gap:8px;min-width:0;}
+.ts-feedback-avatar{display:grid;place-items:center;width:30px;height:30px;flex:0 0 auto;overflow:hidden;border:1px solid rgba(103,119,166,.2);border-radius:50%;background:linear-gradient(145deg,var(--feedback-top,#eef1ff),var(--feedback-bottom,#dce2f7));}
+.ts-feedback-avatar img{width:100%;height:100%;object-fit:contain;object-position:center bottom;}
+.ts-feedback-reviewer>span:nth-child(2){display:grid;min-width:0;gap:2px;}
+.ts-feedback-reviewer strong{overflow:hidden;color:#435171;font-size:10px;text-overflow:ellipsis;white-space:nowrap;}
+.ts-feedback-reviewer small{color:#8791a8;font-size:9px;line-height:1.35;}
+.ts-feedback-reviewer time{margin-left:auto;color:#929cb0;font-size:9px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.ts-feedback-history li>p{margin:8px 0 0 38px;color:#5d6985;font-size:10px;line-height:1.55;overflow-wrap:anywhere;}
+.ts-card-submission-code{display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin:2px 0 13px;padding:10px 12px;border:1px solid #e3e8f4;border-radius:11px;background:linear-gradient(135deg,#f7f8ff,#f3fbf7);color:#78839d;font-size:10px;font-weight:750;line-height:1.35;}
+.ts-card-submission-code strong{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border:1px solid #e0e5f1;border-radius:8px;background:#fff;color:#354b8c;font:900 14px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.12em;}
+.ts-card-code-row{display:flex;align-items:center;gap:7px;}
+.ts-card-code-copy{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid #e0e5f1;border-radius:8px;background:#fff;color:#667493;cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;}
+.ts-card-code-copy:hover{transform:translateY(-1px);border-color:#c8d1ec;background:#f8f9ff;color:#4f63d6;}
+.ts-card-code-copy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.ts-card-code-copy.is-copied{border-color:#bce8d3;background:#effaf5;color:#168467;}
+.ts-card-code-copy.is-copy-error{border-color:#f1d2d7;background:#fff5f6;color:#b34858;}
+.ts-card-code-copy:focus-visible{outline:3px solid rgba(79,99,214,.28);outline-offset:2px;}
+
+.ts-card-body{
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 16px 16px;
+}
+
+.ts-card-meta{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ts-mode);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.ts-card-meta span:last-child{
+  color: var(--ts-muted);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 800;
+}
+
+.ts-card-meta svg{
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ts-card-dot{
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #b4bbcd;
+}
+
+.ts-card-title{
+  margin: 8px 0 0;
+  overflow: hidden;
+  color: var(--ts-ink);
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ts-card-desc{
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #56607f;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ts-card-desc.is-empty{
+  color: #a3abc4;
+  font-style: italic;
+}
+
+.ts-card-edited{
+  margin: 8px 0 0;
+  color: var(--ts-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ts-card-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+.ts-btn{
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(107,120,168,.24);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 900;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.ts-btn:hover{
+  border-color: rgba(79,99,214,.35);
+  background: #f6f7fd;
+}
+
+.ts-btn svg,
+.ts-icon-btn svg{
+  width: 17px;
+  height: 17px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ts-btn-primary{
+  border-color: transparent;
+  background: var(--ts-accent);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(79,99,214,.25);
+}
+
+.ts-btn-primary:hover{
+  border-color: transparent;
+  background: #4355c4;
+}
+
+.ts-icon-btn{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(107,120,168,.24);
+  border-radius: 12px;
+  background: #fff;
+  color: #56607f;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.ts-icon-btn:hover{
+  border-color: rgba(79,99,214,.35);
+  background: #f6f7fd;
+  color: var(--ts-accent);
+}
+
+.ts-icon-btn.is-danger:hover{
+  border-color: rgba(214,72,72,.35);
+  background: #fdf1f1;
+  color: #c93c3c;
+}
+
+.ts-icon-btn:disabled{
+  opacity: .55;
+  cursor: progress;
+}
+
+.ts-btn:focus-visible,
+.ts-icon-btn:focus-visible{
+  outline: 3px solid rgba(79,99,214,.35);
+  outline-offset: 2px;
+}
+
+.teacher-story-duplicate-form{
+  display: contents;
+}
+
+/* Lite mode: no lift on hover. */
+html.koobd-lite .ts-card,
+html.koobd-lite .ts-card:hover{
+  transform: none;
+  transition: none;
+}
+
+/* A narrow card keeps its labels whole: the text buttons drop their icons. */
+.ts-card-body{
+  container-type: inline-size;
+}
+
+@container (max-width: 300px){
+  .ts-btn svg{
+    display: none;
+  }
+}
+
+@media (max-width: 420px){
+  .ts-card-body{
+    padding: 12px 14px 14px;
+  }
+
+  .ts-btn{
+    padding: 0 10px;
+  }
+}
+
+/* --- The progress bar and percentage (Platform Mode) --------------------------------------------
+   As in Geometry Dash: one bar with the percentage right beside it ("65%"),
+   no "World" label. With "Play together" (js/story-multiplayer.js) every
+   player is a coloured dot on that same bar; the player's own dot (the bar's
+   knob, in their colour) says "You". Names stay above the characters in the
+   world, never on the bar. */
+/* The title on the left; the bar with its percentage centred on the screen. */
+.platformer-story-hud{display:grid;grid-template-columns:minmax(64px,1fr) minmax(120px,420px) auto minmax(64px,1fr);align-items:center;justify-content:normal;gap:10px;padding-right:0;}
+.platformer-story-hud .teacher-story-player-badge{justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.platformer-story-hud .platformer-story-progress{grid-column:2;width:100%;max-width:none;margin:0;}
+.platformer-story-hud .platformer-story-mode{grid-column:3;}
+.platformer-story-mode{min-width:52px;justify-content:center;padding:0 10px;font-size:13px;letter-spacing:.02em;font-variant-numeric:tabular-nums;text-transform:none;}
+.platformer-story-progress.is-multiplayer{height:8px;}
+.platformer-story-progress.is-multiplayer #platformerStoryProgressThumb{width:16px;height:16px;background:var(--mp-you,#ff5a5f);border-width:3px;z-index:3;}
+.platformer-story-progress.is-multiplayer #platformerStoryProgressThumb::after{
+  content:"You";
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 5px);
+  transform:translateX(-50%);
+  padding:2px 7px;
+  border-radius:999px;
+  background:var(--mp-you,#ff5a5f);
+  color:#fff;
+  font:900 10px/1.3 inherit;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.teacher-story-player-badge.is-updated-version{background:rgba(255,248,229,.94);color:#805f21;letter-spacing:.025em;}
+.mp-dots{position:absolute;inset:0;pointer-events:none;}
+.mp-dot{position:absolute;z-index:2;top:50%;width:12px;height:12px;border:2px solid #fff;border-radius:50%;background:var(--mp-color,#2bb3ff);box-shadow:0 1px 4px rgba(25,39,79,.35);transform:translate(-50%,-50%);transition:left 1s linear;}
+
+/* Classmates in the world: a flat silhouette of their character with their
+   name above, in their colour. Picture and name only - no animation. */
+.mp-ghosts{position:absolute;inset:0;z-index:4;pointer-events:none;}
+/* A classmate (js/story-multiplayer.js): the box is placed in the world each
+   frame from their replayed movement; the body turns to face their way and
+   the figure shows the pose - sprite-sheet frames, or for a single picture a
+   bob while running and a stretch / squash in the air and on landing.
+   Transforms and opacity only. */
+.mp-ghost{position:absolute;display:block;transform:translateX(-50%) scale(var(--mp-scale,.7));transform-origin:50% 100%;pointer-events:none;transition:opacity .25s ease;}
+.mp-ghost.is-entering,.mp-ghost.is-leaving{opacity:0;}
+.mp-ghost-body{position:absolute;inset:0;display:block;}
+.mp-ghost.is-facing-left .mp-ghost-body{transform:scaleX(-1);}
+.mp-ghost-figure{display:block;width:100%;height:100%;background:var(--mp-color,#2bb3ff);opacity:.62;transform-origin:50% 100%;-webkit-mask:var(--mp-src) center bottom / contain no-repeat;mask:var(--mp-src) center bottom / contain no-repeat;transition:transform .09s ease-out;}
+.mp-ghost.is-sheet .mp-ghost-figure{-webkit-mask:var(--mp-src) var(--mp-fx,0%) var(--mp-fy,0%) / 600% 300% no-repeat;mask:var(--mp-src) var(--mp-fx,0%) var(--mp-fy,0%) / 600% 300% no-repeat;transform:translateY(var(--mp-lift,0px));transition:none;}
+.mp-ghost.is-running .mp-ghost-figure{animation:mpGhostRun .34s linear infinite;}
+.mp-ghost.is-rising .mp-ghost-figure{transform:scale(.93,1.08);}
+.mp-ghost.is-falling .mp-ghost-figure{transform:scale(.97,1.04);}
+.mp-ghost.is-landing .mp-ghost-figure{animation:mpGhostLand .16s ease-out;}
+@keyframes mpGhostRun{0%,50%,100%{transform:translateY(0) rotate(-2deg);}25%,75%{transform:translateY(-6%) rotate(2deg);}}
+@keyframes mpGhostLand{0%{transform:scale(1.12,.86);}100%{transform:none;}}
+.mp-ghost-name{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);max-width:220%;overflow:hidden;padding:3px 9px;border-radius:999px;background:var(--mp-color,#2bb3ff);color:#fff;font-size:12px;font-weight:1000;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.mp-ghost.is-answering .mp-ghost-name::after{content:"  B7 answering";font-weight:800;opacity:.9;}
+@media (prefers-reduced-motion:reduce){.mp-ghost,.mp-ghost-figure,.mp-dot{transition:none;}.mp-ghost.is-running .mp-ghost-figure,.mp-ghost.is-landing .mp-ghost-figure{animation:none;}}
+html.koobd-lite .mp-dot{transition:none;}
+/* A darker track so the bar (and its dots) reads against any sky. */
+.platformer-story-progress{background:rgba(15,28,59,.42);box-shadow:0 0 0 1px rgba(255,255,255,.55);}
+
+/* The arrow at the end of a Platform Mode stage (world.endArrow): a chunky
+   arrow in the controls' teal, nudging toward the next page. Transform-only
+   animation; it holds still for readers who prefer less motion. */
+.platformer-end-arrow{position:absolute;z-index:3;width:clamp(48px,6vw,84px);height:clamp(40px,5vw,70px);transform:translateX(-50%);pointer-events:none;}
+.platformer-end-arrow-shape{position:absolute;inset:0;background:#3fc7a8;clip-path:polygon(0 30%,55% 30%,55% 0,100% 50%,55% 100%,55% 70%,0 70%);filter:drop-shadow(0 3px 0 #1d6f5d);animation:platformerEndArrow 1.1s ease-in-out infinite;}
+@keyframes platformerEndArrow{0%,100%{transform:translateX(-14%);}50%{transform:translateX(14%);}}
+@media (prefers-reduced-motion:reduce){.platformer-end-arrow-shape{animation:none;}}
+html.koobd-lite .platformer-end-arrow-shape{filter:none;box-shadow:none;}
+
+/* A character's pose shape (js/character-animation.js, shared with Versus
+   Mode): squash and stretch, the bounce in a stride and a picture's sway,
+   anchored at the feet. Set by js/platformer-story-player.js as --squash-x,
+   --squash-y, --bob (a share of the height) and --tilt; looks only - the
+   physics and hitboxes never change. */
+.platformer-story-player{transform:translateX(-50%) translateY(var(--jump-shift,0px)) scale(var(--platformer-player-scale,0.7)) translateY(calc(var(--bob,0) * -100%)) rotate(var(--tilt,0rad)) scale(var(--squash-x,1),var(--squash-y,1));}
+.platformer-npc-sprite,.platformer-npc>img{transform-origin:50% 100%;transform:translateY(calc(var(--bob,0) * -100%)) rotate(var(--tilt,0rad)) scale(var(--squash-x,1),var(--squash-y,1));}

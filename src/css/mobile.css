@@ -70,20 +70,23 @@ a,button,input,select,textarea,label{-webkit-tap-highlight-color:transparent;tou
   /* Tab labels, taken from where each tab leads. */
   .sidebar .sidebar-link::after,
   .sidebar .sidebar-profile-link::after{
-    font:800 10.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
-    letter-spacing:.01em;
+    font:700 10px/1.15 system-ui,-apple-system,"Segoe UI",sans-serif;
+    letter-spacing:.015em;
     color:inherit;
     white-space:nowrap;
+    transition:color .16s ease;
   }
   .sidebar-link[href^="home"]::after{content:"Home";}
   .sidebar-link[href*="classroom"]::after{content:"Classroom";}
   .sidebar-link-stories::after{content:"My Stories";}
+  .sidebar-link-lastread::after{content:"Last Read";}
   .sidebar-link-add::after{content:"Create";}
   .sidebar .sidebar-profile-link::after{content:"Profile";}
   /* The same labels in Tagalog (js/i18n.js sets html[lang]). */
   html[lang="tl"] .sidebar-link[href*="classroom"]::after{content:"Klase";}
   html[lang="tl"] .sidebar-link-add::after{content:"Gumawa";}
   html[lang="tl"] .sidebar-link-stories::after{content:"Kuwento Ko";}
+  html[lang="tl"] .sidebar-link-lastread::after{content:"Huling Nabasa";}
   html[lang="tl"] .sidebar .sidebar-profile-link::after{content:"Profile";}
   .sidebar-icon-svg{width:22px !important;height:22px !important;opacity:.75;}
   .sidebar-link.active .sidebar-icon-svg{opacity:1;filter:none;}
@@ -222,30 +225,12 @@ a,button,input,select,textarea,label{-webkit-tap-highlight-color:transparent;tou
   /* The left padding keeps the text clear of the magnifier icon. */
   .dash-search{height:46px !important;border-radius:16px !important;padding:0 16px 0 42px !important;background-position:15px center !important;background-size:17px !important;}
 
-  .dash-category-label,.dash-shared-label,.dash-lastread-label{font-size:12px !important;letter-spacing:.1em;margin:0 0 10px !important;}
+  .dash-category-label,.dash-shared-label{font-size:12px !important;letter-spacing:.1em;margin:0 0 10px !important;}
 
-  /* Story rows scroll sideways, a card and a bit showing so it reads as a row. */
+  /* Story rows: the shelves in css/dashboard.css (js/story-shelf.js). */
   .dash-category-art{padding:0 !important;background:none !important;box-shadow:none !important;}
-  .dash-category-grid,
-  .dash-shared-grid{
-    display:flex !important;
-    gap:12px !important;
-    overflow-x:auto;
-    overscroll-behavior-x:contain;
-    scroll-snap-type:x mandatory;
-    scroll-padding:0 16px;
-    margin:0 -16px;
-    padding:2px 16px 10px;
-    scrollbar-width:none;
-  }
-  .dash-category-grid::-webkit-scrollbar,.dash-shared-grid::-webkit-scrollbar{display:none;}
   .dash-story-tile,
-  .dash-shared-card{
-    flex:0 0 clamp(150px,42vw,220px);
-    scroll-snap-align:start;
-    aspect-ratio:4 / 5 !important;
-    border-radius:18px !important;
-  }
+  .dash-shared-card{border-radius:18px !important;}
   .dash-story-tile:hover,.dash-shared-card:hover{transform:none !important;}
   .dash-story-title{font-size:13px !important;left:12px !important;right:12px !important;bottom:12px !important;line-height:1.25;}
   .dash-shared-card{display:flex !important;flex-direction:column;overflow:hidden;}
@@ -253,16 +238,11 @@ a,button,input,select,textarea,label{-webkit-tap-highlight-color:transparent;tou
   .dash-shared-body{padding:10px 12px !important;}
   .dash-shared-body h3{font-size:14px !important;margin:0 0 2px !important;}
 
-  .dash-progress-card{width:100%;border-radius:18px !important;padding:16px !important;}
   .dash-panel{border-radius:18px !important;}
-  .dash-lastread-actions{flex-direction:column;}
-  .dash-lastread-btn{width:100%;min-height:48px;}
 }
 
 /* Tablets with the side rail: a roomier grid. */
 @media (min-width:769px) and (max-width:1180px){
-  .dash-category-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr)) !important;gap:16px !important;}
-  .dash-shared-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important;gap:16px !important;}
   .dash-story-tile:hover{transform:translateY(-4px);}
 }
 
@@ -278,7 +258,7 @@ a,button,input,select,textarea,label{-webkit-tap-highlight-color:transparent;tou
     padding:max(18px,env(safe-area-inset-top)) 18px max(24px,env(safe-area-inset-bottom)) !important;
     gap:14px !important;
     justify-content:center !important;
-    background:linear-gradient(180deg,#f4f6ff 0%,#eefbf5 100%) !important;
+    background:transparent !important;
   }
   .reader-decor{display:none !important;}
   .reader-topbar{
@@ -633,18 +613,20 @@ body.story-compact-device.story-portrait-active > :not(.story-rotate-prompt):not
 /* ---------------------------------------------------------------------------
    The side menu on short screens (a phone held sideways, a small laptop
    window): tighter, so its items never overlap; it scrolls if still too tall.
+   The steady screen height (html.koobd-h540, js/performance-mode.js) decides,
+   so the menu does not change while a tablet's address bar slides in and out.
    --------------------------------------------------------------------------- */
-@media (min-width:769px) and (max-height:540px){
-  .sidebar{overflow-y:auto;scrollbar-width:none;}
-  .sidebar::-webkit-scrollbar{display:none;}
-  .sidebar-inner{height:auto;min-height:100%;gap:10px;padding:10px 8px;}
-  .sidebar-brand-mark{width:40px;height:40px;}
-  .sidebar-divider{margin-bottom:10px;}
-  .sidebar-nav{gap:14px;}
-  .sidebar-bottom{gap:8px;}
-  .sidebar-profile-card{margin-bottom:2px;padding:4px 4px 5px;gap:3px;border-radius:14px;}
-  .sidebar-profile-avatar{max-width:38px;border-radius:10px;}
-  .sidebar-user-text{display:none;}
+@media (min-width:769px){
+  .sidebar{height:100vh;height:100svh;}
+  html.koobd-h540 .sidebar{overflow:hidden;}
+  html.koobd-h540 .sidebar-inner{height:auto;min-height:100%;gap:10px;padding:10px 8px;}
+  html.koobd-h540 .sidebar-brand-mark{width:40px;height:40px;}
+  html.koobd-h540 .sidebar-divider{margin-bottom:10px;}
+  html.koobd-h540 .sidebar-nav{gap:14px;}
+  html.koobd-h540 .sidebar-bottom{gap:8px;}
+  html.koobd-h540 .sidebar-profile-card{margin-bottom:2px;padding:4px 4px 5px;gap:3px;border-radius:14px;}
+  html.koobd-h540 .sidebar-profile-avatar{max-width:38px;border-radius:10px;}
+  html.koobd-h540 .sidebar-user-text{display:none;}
 }
 
 /* ---------------------------------------------------------------------------
@@ -671,6 +653,14 @@ html.koobd-lite .platformer-npc img,
 html.koobd-lite .platformer-npc-sprite,
 html.koobd-lite .platformer-decor img,
 html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-controls{filter:none !important;}
+/* No full-screen blur behind a conversation (it is redrawn whenever anything
+   moves): the scene is only dimmed a little instead, which costs nothing. */
+html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-world,
+html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-background,
+html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-hud{filter:none !important;}
+html.koobd-lite .platformer-story-stage.is-dialogue-open .platformer-story-world{opacity:.82;}
+/* Rain still falls; only the fainter far sheet goes. */
+html.koobd-lite .platformer-rain::after{display:none;}
 /* The player moves every frame already; smoothing its position as well is extra work. */
 html.koobd-lite .platformer-story-player{transition:none !important;}
 /* Scenery holds still (torches, flowers, grass, banners, floating lights). */
@@ -678,3 +668,352 @@ html.koobd-lite .platformer-decor,
 html.koobd-lite .platformer-decor img,
 html.koobd-lite .platformer-flower-head{animation:none !important;}
 
+
+/* ---------------------------------------------------------------------------
+   Bottom tab bar, tidied (phones, and tablets held upright - a Galaxy Tab A7
+   Lite is about 600px wide in Chrome). Every tab has the same 32px icon slot
+   with its label under it, so all labels sit on one line: Create is a
+   circle of that size (not raised), the language pill and the profile avatar
+   fit the same slot. The bar is solid white with a thin top line - no blur,
+   so nothing shows through it, and slower tablets draw it easily.
+   --------------------------------------------------------------------------- */
+@media (max-width:768px){
+  .sidebar{
+    border-top:1px solid #dfe4ef !important;
+    border-radius:0 !important;
+    background:#fff !important;
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    box-shadow:0 -2px 12px rgba(20,30,60,.07) !important;
+  }
+  .sidebar-inner{
+    height:64px !important;
+    padding:6px 4px !important;
+    align-items:stretch !important;
+  }
+  .sidebar .sidebar-link,
+  .sidebar .sidebar-profile-link,
+  .sidebar .sidebar-language{
+    flex:1 1 0 !important;
+    justify-content:center !important;
+    gap:5px !important;
+  }
+  .sidebar .sidebar-link::after,
+  .sidebar .sidebar-profile-link::after,
+  .sidebar .sidebar-language::after{
+    font:800 11px/12px system-ui,-apple-system,"Segoe UI",sans-serif !important;
+    height:12px;
+  }
+
+  /* The same icon slot for every tab. */
+  .sidebar .sidebar-icon-box{
+    width:52px !important;
+    height:32px !important;
+  }
+  .sidebar .sidebar-icon-box img,
+  .sidebar .sidebar-icon-svg{width:24px !important;height:24px !important;}
+
+  /* Create: a circle that fits the slot, in line with the others. */
+  .sidebar .sidebar-link.sidebar-link-add .sidebar-icon-add{
+    width:32px !important;
+    height:32px !important;
+    font-size:22px !important;
+    background:#4f63d6 !important;
+    box-shadow:0 2px 6px rgba(79,99,214,.3) !important;
+    transform:none !important;
+  }
+  .sidebar .sidebar-link-add{gap:5px !important;}
+  .sidebar .sidebar-link.sidebar-link-add.active .sidebar-icon-add{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(79,99,214,.4) !important;}
+
+  /* Language: the EN | TL pill centred in the slot. */
+  .sidebar .sidebar-language{
+    display:grid !important;
+    grid-template-columns:repeat(2,24px) !important;
+    grid-template-rows:32px 12px;
+    align-items:center !important;
+    align-content:center !important;
+    row-gap:5px !important;
+  }
+  .sidebar .sidebar-lang-btn{height:26px !important;font-size:10px !important;}
+
+  /* Profile: the avatar fills the slot. */
+  .sidebar .sidebar-profile-card{
+    width:32px !important;
+    height:32px !important;
+    border-width:1.5px !important;
+    box-shadow:0 1px 3px rgba(20,30,60,.18) !important;
+  }
+
+  /* The active tab: its icon on a soft pill, its label in indigo. */
+  .sidebar .sidebar-link.active,
+  .sidebar .sidebar-link-add.active{color:#3f51c4 !important;}
+
+  .main{padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important;}
+}
+/* Narrow phones: labels fit side by side with a little room between. */
+@media (max-width:400px){
+  .sidebar .sidebar-link::after,
+  .sidebar .sidebar-profile-link::after,
+  .sidebar .sidebar-language::after{font-size:10px !important;letter-spacing:0 !important;}
+  .sidebar .sidebar-icon-box{width:44px !important;}
+  .sidebar-inner{padding:6px 2px !important;}
+}
+/* Create: raised above the bar again - a larger circle with a white ring that
+   rises over the bar's top edge - while still taking only the 32px icon slot,
+   so its label stays in line with the others. */
+@media (max-width:768px){
+  .sidebar,.sidebar-inner{overflow:visible !important;}
+  .sidebar .sidebar-link.sidebar-link-add .sidebar-icon-add{
+    width:46px !important;
+    height:46px !important;
+    margin-top:-14px !important;
+    border:3px solid #fff !important;
+    font-size:26px !important;
+    background:linear-gradient(135deg,#5b6fd9,#4f63d6) !important;
+    box-shadow:0 4px 10px rgba(79,99,214,.35) !important;
+  }
+  .sidebar .sidebar-link.sidebar-link-add.active .sidebar-icon-add{box-shadow:0 0 0 2px rgba(79,99,214,.45),0 4px 10px rgba(79,99,214,.35) !important;}
+}
+
+/* Versus Mode's label in the bottom bar. */
+@media (max-width:768px){
+  .sidebar-link-versus::after{content:"Versus";}
+  html[lang="tl"] .sidebar-link-versus::after{content:"Laban";}
+}
+@media (max-width:430px){
+  .sidebar .sidebar-link::after,
+  .sidebar .sidebar-profile-link::after,
+  .sidebar .sidebar-language::after{font-size:9.5px !important;letter-spacing:-.01em !important;}
+  .sidebar .sidebar-icon-box{width:40px !important;}
+  .sidebar .sidebar-language{grid-template-columns:repeat(2,20px) !important;}
+}
+
+/* Keep the profile name attached to its Profile tab without creating an
+   additional bottom-navigation item. */
+@media (max-width:768px){
+  .sidebar .sidebar-account.sidebar-profile-menu{
+    display:flex !important;
+    flex:1 1 0 !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:1px !important;
+    min-width:0 !important;
+    width:auto !important;
+    margin:0 !important;
+    padding:0 !important;
+    order:4;
+  }
+  .sidebar .sidebar-account.sidebar-profile-menu .sidebar-profile-link{
+    flex:none !important;
+    width:100% !important;
+    gap:4px !important;
+  }
+  .sidebar .sidebar-profile-visible-name{
+    display:block;
+    width:100%;
+    max-width:none;
+    overflow:visible;
+    color:#59647e;
+    font-size:9px;
+    font-weight:750;
+    line-height:11px;
+    text-align:center;
+    text-overflow:clip;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .sidebar .sidebar-profile-name{display:none !important;}
+}
+@media (max-width:768px){
+  .sidebar-inner{height:74px !important;}
+  .main{padding-bottom:calc(94px + env(safe-area-inset-bottom)) !important;}
+}
+@media (min-width:769px) and (max-width:1180px) and (pointer:coarse){
+  .sidebar .sidebar-account.sidebar-profile-menu{
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+  }
+  .sidebar .sidebar-profile-visible-name{
+    width:100%;
+    max-width:82px;
+    color:#58637e;
+    font-size:9px;
+    line-height:11px;
+    text-align:center;
+    overflow:visible;
+    text-overflow:clip;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+}
+
+/* Portrait navigation keeps all primary destinations available. */
+@media (max-width:768px){
+  .sidebar .sidebar-link-approve-stories[hidden]{display:none !important;}
+  .sidebar .sidebar-link-approve-stories:not([hidden]){display:flex !important;}
+  .sidebar .sidebar-link[href^="home"]{order:1;}
+  .sidebar .sidebar-link[href*="classroom"]{order:2;}
+  .sidebar .sidebar-link-stories{order:3;}
+  .sidebar .sidebar-link-add{order:4;}
+  .sidebar .sidebar-link-versus{order:5;}
+  .sidebar .sidebar-account.sidebar-profile-menu{order:6;}
+  .sidebar .sidebar-link-lastread{order:7;}
+  .sidebar .sidebar-language{order:8;}
+  .sidebar .sidebar-link-approve-stories:not([hidden]){order:8;}
+}
+
+@media (max-width:400px){
+  .sidebar .sidebar-link[href*="classroom"]::after{content:"Class";}
+  .sidebar .sidebar-link-stories::after{content:"Stories";}
+  .sidebar .sidebar-link-lastread::after{content:"Read";}
+  html[lang="tl"] .sidebar .sidebar-link[href*="classroom"]::after{content:"Klase";}
+  html[lang="tl"] .sidebar .sidebar-link-stories::after{content:"Kuwento";}
+  html[lang="tl"] .sidebar .sidebar-link-lastread::after{content:"Basa";}
+  .sidebar .sidebar-icon-box{width:34px !important;}
+  .sidebar .sidebar-link.sidebar-link-add .sidebar-icon-add{
+    width:36px !important;
+    height:36px !important;
+    margin-top:-8px !important;
+    font-size:22px !important;
+  }
+}
+
+/* Touch navigation activates Last Read with a tap; the hover card is desktop-only. */
+@media (max-width:1180px) and (pointer:coarse){
+  .sidebar-lastread-wrap{display:contents;}
+  .sidebar-lastread-preview{display:none !important;}
+}
+
+  /* Tablets used by touch, with the side rail (a Galaxy Tab A7 Lite held
+   sideways): every icon the same 24px drawing inside the same 44px tap
+   area - pictures and drawn icons alike - Create a 36px circle, and the
+   current page marked by a soft pill behind its icon instead of a glow. */
+@media (min-width:769px) and (max-width:1180px) and (pointer:coarse){
+  .sidebar-lastread-wrap{width:100%;}
+  .sidebar .sidebar-link{min-height:52px;}
+  .sidebar .sidebar-icon-box{width:44px !important;height:44px !important;border-radius:12px;}
+  .sidebar .sidebar-icon-box img,
+  .sidebar .sidebar-icon-svg{width:24px !important;height:24px !important;}
+  .sidebar .sidebar-icon-add{width:36px !important;height:36px !important;font-size:22px !important;box-shadow:0 2px 6px rgba(79,99,214,.25) !important;}
+  .sidebar .sidebar-link.active .sidebar-icon-box{background:rgba(52,103,232,.12) !important;}
+  .sidebar .sidebar-link.active .sidebar-icon-box img,
+  .sidebar .sidebar-link.active .sidebar-icon-svg{filter:none !important;}
+  .sidebar .sidebar-link.active .sidebar-icon-add{background:#4f63d6 !important;}
+}
+
+/* Create is always a circle (whatever size a layout gives it). */
+.sidebar .sidebar-icon-add,
+.sidebar .sidebar-link-add .sidebar-icon-add{
+  border-radius:50% !important;
+  aspect-ratio:1 / 1;
+  flex:none;
+}
+
+/* A portrait tablet uses the same compact bottom bar as a phone. */
+@media (min-width:769px) and (max-width:1180px) and (orientation:portrait) and (pointer:coarse){
+  .sidebar{
+    width:auto !important;
+    min-width:0 !important;
+    height:auto !important;
+    min-height:0;
+    top:auto !important;
+    right:0;
+    bottom:0;
+    left:0;
+    overflow:visible !important;
+    border-top:1px solid #dfe4ef;
+    border-right:0;
+    background:#fff;
+    box-shadow:0 -2px 12px rgba(20,30,60,.07);
+  }
+  .sidebar-inner{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:stretch !important;
+    justify-content:space-around !important;
+    gap:0 !important;
+    width:100%;
+    height:68px;
+    padding:6px 8px;
+  }
+  .sidebar-top,.sidebar-nav,.sidebar-bottom,.sidebar-account{display:contents !important;}
+  .sidebar-brand-mark,.sidebar-brand-text,.sidebar-divider,.sidebar-user-text{display:none !important;}
+  .sidebar .sidebar-link,
+  .sidebar .sidebar-profile-link,
+  .sidebar .sidebar-language{
+    flex:1 1 0 !important;
+    min-width:0 !important;
+    width:auto !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    opacity:1 !important;
+  }
+  .sidebar .sidebar-link-approve-stories[hidden]{display:none !important;}
+  .sidebar .sidebar-link-approve-stories:not([hidden]){display:flex !important;order:6;}
+  .sidebar .sidebar-icon-box{width:48px !important;height:32px !important;}
+  .sidebar .sidebar-icon-box img,
+  .sidebar .sidebar-icon-svg{width:24px !important;height:24px !important;}
+  .sidebar .sidebar-link::after,
+  .sidebar .sidebar-profile-link::after,
+  .sidebar .sidebar-language::after{
+    position:static;
+    min-height:0;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:none;
+    box-shadow:none;
+    opacity:1;
+    visibility:visible;
+    pointer-events:none;
+    transform:none;
+    transition:none;
+    font:700 10px/12px system-ui,-apple-system,"Segoe UI",sans-serif !important;
+    letter-spacing:.015em !important;
+    height:12px;
+    color:inherit;
+    white-space:nowrap;
+  }
+  .sidebar .sidebar-link::before,
+  .sidebar .sidebar-profile-link::before,
+  .sidebar .sidebar-language::before{display:none !important;}
+  .sidebar .sidebar-link.active::after,
+  .sidebar .sidebar-profile-link[aria-expanded="true"]::after{color:#4d5fb3;}
+  .sidebar .sidebar-language{
+    display:grid !important;
+    grid-template-columns:repeat(2,22px);
+    grid-template-rows:24px 12px;
+    align-content:center;
+    justify-content:center;
+    row-gap:5px;
+  }
+  .sidebar .sidebar-lang-btn{height:24px;font-size:10px;}
+  .sidebar .sidebar-profile-card{
+    width:32px !important;
+    height:32px !important;
+    min-height:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:1.5px solid #fff !important;
+    border-radius:50% !important;
+  }
+  .sidebar .sidebar-profile-name{display:none !important;}
+  .sidebar .sidebar-link[href^="home"]{order:1;}
+  .sidebar .sidebar-link[href*="classroom"]{order:2;}
+  .sidebar .sidebar-link-stories{order:3;}
+  .sidebar .sidebar-link-add{order:4;}
+  .sidebar .sidebar-link-versus{order:5;}
+  .sidebar .sidebar-account.sidebar-profile-menu{order:6;}
+  .sidebar .sidebar-link-lastread{order:7;}
+  .sidebar .sidebar-language{order:8;}
+  .sidebar .sidebar-link-approve-stories[hidden]{display:none !important;}
+  .sidebar .sidebar-link-approve-stories:not([hidden]){display:flex !important;order:8;}
+  .main{margin-left:0 !important;padding-bottom:calc(88px + env(safe-area-inset-bottom)) !important;}
+}

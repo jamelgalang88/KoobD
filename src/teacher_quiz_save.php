@@ -3,16 +3,24 @@
 // teacher who owns the classroom can create, change, publish or delete it.
 //
 //   POST JSON { action: 'save', classroomId, activityId?, publish: true|false|null,
-//               title, description, instructions, dueDate, showAnswers,
-//               questions: [{ id?, type: multiple_choice|true_false, prompt,
-//                             choices: [{ id?, label, correct }] }] }
+//               title, description, instructions, dueDate, showAnswers, shuffle,
+//               questions: [{ id?, type: multiple_choice|true_false|identification|essay,
+//                             prompt, points? (essay), choices: [{ id?, label, correct }] }] }
 //     -> { success, activityId, status, questions (with their ids), errors? }
 //   POST JSON { action: 'delete', activityId } -> { success, redirect }
 //
 // Questions and choices keep their ids when edited, so submitted answers stay
 // attached; every submission is then checked again against the new key.
+// A story activity's questions (storyMode: true) are saved the same way: each
+// also has where in the story it is asked (`point`, one the story offers),
+// whether it may be skipped (`optional`) and its points; the activity itself
+// (its story, title and dates) is left as it is. It may have no questions at
+// all, and every question saved must be complete.
+//
 // A draft may be unfinished; publishing needs a title and, for every question,
-// a prompt, at least two filled choices and exactly one correct answer.
+// a prompt and: for multiple choice and true/false, at least two filled
+// choices and exactly one correct answer; for identification, at least one
+// accepted answer (its choices, all correct). An essay needs only its prompt.
 require_once('teacher_auth.php');
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -57,9 +65,15 @@ if ($action !== 'save') {
 // --- The classroom and, when editing, the activity ---------------------------------------
 $activityId = (int)($input['activityId'] ?? 0);
 $activity = $activityId > 0 ? koobdTeacherActivity($activityId, $teacherId) : null;
-if ($activityId > 0 && (!$activity || ($activity['activity_type'] ?? '') !== 'quiz')) {
+$storyMode = !empty($input['storyMode']);
+if ($activityId > 0 && (!$activity || ($activity['activity_type'] ?? 'story') !== ($storyMode ? 'story' : 'quiz'))) {
     quizSaveFail(404, 'That activity could not be found.');
 }
+if ($storyMode && !$activity) {
+    quizSaveFail(404, 'That activity could not be found.');
+}
+// The points in the story a question can be placed at.
+$storyPoints = $storyMode ? array_column(koobdStoryQuestionPoints(koobdStoryMeta((string)$activity['story_id'])), 'key') : [];
 $classroomId = $activity ? (int)$activity['classroom_id'] : (int)($input['classroomId'] ?? 0);
 $owns = $conn->prepare("SELECT id FROM classrooms WHERE id = ? AND teacher_id = ? LIMIT 1");
 $owns->bind_param('ii', $classroomId, $teacherId);
@@ -77,6 +91,7 @@ $instructions = $cut(trim((string)($input['instructions'] ?? '')), 4000);
 $due = trim((string)($input['dueDate'] ?? ''));
 $dueDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $due) && strtotime($due) ? $due : null;
 $showAnswers = !empty($input['showAnswers']) ? 1 : 0;
+$shuffle = !empty($input['shuffle']) ? 1 : 0;
 $currentStatus = $activity ? (($activity['status'] ?? 'published') === 'draft' ? 'draft' : 'published') : 'draft';
 $publish = $input['publish'] ?? null;
 $status = $publish === true ? 'published' : ($publish === false ? 'draft' : $currentStatus);
@@ -87,10 +102,21 @@ foreach (array_slice(is_array($input['questions'] ?? null) ? $input['questions']
     if (!is_array($raw)) {
         continue;
     }
-    $type = ($raw['type'] ?? '') === 'true_false' ? 'true_false' : 'multiple_choice';
+    $type = koobdQuizType((string)($raw['type'] ?? ''));
     $choices = [];
     $rawChoices = is_array($raw['choices'] ?? null) ? $raw['choices'] : [];
-    if ($type === 'true_false') {
+    if ($type === 'essay') {
+        // Written answers have no choices; the teacher grades them.
+    } elseif ($type === 'identification' || $type === 'speak') {
+        // Every accepted answer (for "Say it": every phrase that counts, the
+        // first shown to students) is a choice marked correct; blanks are dropped.
+        foreach (array_slice($rawChoices, 0, 10) as $choice) {
+            $label = is_array($choice) ? $cut(trim((string)($choice['label'] ?? '')), 500) : '';
+            if ($label !== '') {
+                $choices[] = ['id' => (int)($choice['id'] ?? 0), 'label' => $label, 'correct' => true];
+            }
+        }
+    } elseif ($type === 'true_false') {
         // Always exactly True and False; the teacher picks which is right.
         $rightIsTrue = true;
         foreach ($rawChoices as $index => $choice) {
@@ -128,23 +154,52 @@ foreach (array_slice(is_array($input['questions'] ?? null) ? $input['questions']
         'id' => (int)($raw['id'] ?? 0),
         'type' => $type,
         'prompt' => $cut(trim((string)($raw['prompt'] ?? '')), 2000),
+        // An essay - or any question in a story - is worth what the teacher
+        // sets (1 to 100); every other quiz question 1.
+        'points' => ($type === 'essay' || $storyMode) ? max(1, min(100, (int)($raw['points'] ?? ($type === 'essay' ? 5 : 1)))) : 1,
+        'point' => $storyMode ? (string)($raw['point'] ?? '') : null,
+        'optional' => $storyMode && !empty($raw['optional']) ? 1 : 0,
+        'lang' => koobdSpeechLang(is_string($raw['lang'] ?? null) ? $raw['lang'] : 'auto'),
+        // The teacher's recording of a "Say it" phrase: only one of this
+        // teacher's own files in uploads/question-audio.
+        'audio' => $type === 'speak' && is_string($raw['audio'] ?? null)
+            && preg_match('#^uploads/question-audio/t' . $teacherId . '-[a-f0-9]{32}\.(webm|ogg|m4a|mp3|wav)$#', $raw['audio'])
+            && is_file(__DIR__ . '/' . $raw['audio']) ? $raw['audio'] : null,
         'choices' => $choices,
     ];
 }
 
 // --- Publishing needs a complete activity ----------------------------------------------
-if ($status === 'published') {
+if ($status === 'published' || $storyMode) {
     $errors = [];
-    if ($title === '') {
+    if ($title === '' && !$storyMode) {
         $errors[] = ['field' => 'title', 'message' => 'Give the activity a title.'];
     }
-    if (!$questions) {
+    if (!$questions && !$storyMode) {
         $errors[] = ['field' => 'questions', 'message' => 'Add at least one question.'];
     }
     foreach ($questions as $index => $question) {
         $number = $index + 1;
         if ($question['prompt'] === '') {
             $errors[] = ['question' => $index, 'message' => "Question {$number} needs a question."];
+        }
+        if ($storyMode && !in_array($question['point'], $storyPoints, true)) {
+            $errors[] = ['question' => $index, 'message' => "Choose where in the story question {$number} is asked."];
+        }
+        if ($question['type'] === 'essay') {
+            continue;
+        }
+        if ($question['type'] === 'identification') {
+            if (!$question['choices']) {
+                $errors[] = ['question' => $index, 'message' => "Type the correct answer for question {$number}."];
+            }
+            continue;
+        }
+        if ($question['type'] === 'speak') {
+            if (!$question['choices']) {
+                $errors[] = ['question' => $index, 'message' => "Type the word or phrase to say for question {$number}."];
+            }
+            continue;
         }
         $filled = array_filter($question['choices'], static fn($choice) => $choice['label'] !== '');
         if (count($filled) < 2) {
@@ -167,25 +222,28 @@ if ($status === 'published') {
 // --- Save --------------------------------------------------------------------------------
 $conn->begin_transaction();
 try {
-    if (!$activity) {
+    if ($storyMode) {
+        // A story activity keeps its details; only its questions change.
+        $status = 'published';
+    } elseif (!$activity) {
         $next = $conn->prepare("SELECT COALESCE(MAX(position), 0) + 1 AS next_position FROM classroom_activities WHERE classroom_id = ?");
         $next->bind_param('i', $classroomId);
         $next->execute();
         $position = (int)($next->get_result()->fetch_assoc()['next_position'] ?? 1);
         $next->close();
         $insert = $conn->prepare(
-            "INSERT INTO classroom_activities (classroom_id, activity_type, status, title, description, instructions, story_id, due_date, show_answers, position)
-             VALUES (?, 'quiz', ?, ?, ?, ?, '', ?, ?, ?)"
+            "INSERT INTO classroom_activities (classroom_id, activity_type, status, title, description, instructions, story_id, due_date, show_answers, shuffle_questions, position)
+             VALUES (?, 'quiz', ?, ?, ?, ?, '', ?, ?, ?, ?)"
         );
-        $insert->bind_param('isssssii', $classroomId, $status, $title, $description, $instructions, $dueDate, $showAnswers, $position);
+        $insert->bind_param('isssssiii', $classroomId, $status, $title, $description, $instructions, $dueDate, $showAnswers, $shuffle, $position);
         $insert->execute();
         $activityId = (int)$insert->insert_id;
         $insert->close();
     } else {
         $update = $conn->prepare(
-            "UPDATE classroom_activities SET status = ?, title = ?, description = ?, instructions = ?, due_date = ?, show_answers = ? WHERE id = ?"
+            "UPDATE classroom_activities SET status = ?, title = ?, description = ?, instructions = ?, due_date = ?, show_answers = ?, shuffle_questions = ? WHERE id = ?"
         );
-        $update->bind_param('sssssii', $status, $title, $description, $instructions, $dueDate, $showAnswers, $activityId);
+        $update->bind_param('sssssiii', $status, $title, $description, $instructions, $dueDate, $showAnswers, $shuffle, $activityId);
         $update->execute();
         $update->close();
     }
@@ -202,17 +260,17 @@ try {
     }
 
     $keptQuestions = [];
-    $insertQuestion = $conn->prepare("INSERT INTO activity_questions (activity_id, position, question_type, prompt) VALUES (?, ?, ?, ?)");
-    $updateQuestion = $conn->prepare("UPDATE activity_questions SET position = ?, question_type = ?, prompt = ? WHERE id = ? AND activity_id = ?");
+    $insertQuestion = $conn->prepare("INSERT INTO activity_questions (activity_id, position, question_type, prompt, points, story_point, optional, speech_lang, audio_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $updateQuestion = $conn->prepare("UPDATE activity_questions SET position = ?, question_type = ?, prompt = ?, points = ?, story_point = ?, optional = ?, speech_lang = ?, audio_path = ? WHERE id = ? AND activity_id = ?");
     $insertChoice = $conn->prepare("INSERT INTO activity_choices (question_id, position, label, is_correct) VALUES (?, ?, ?, ?)");
     $updateChoice = $conn->prepare("UPDATE activity_choices SET position = ?, label = ?, is_correct = ? WHERE id = ? AND question_id = ?");
     foreach ($questions as $qIndex => &$question) {
         $position = $qIndex + 1;
         if ($question['id'] > 0 && isset($knownQuestions[$question['id']]) && !isset($keptQuestions[$question['id']])) {
-            $updateQuestion->bind_param('issii', $position, $question['type'], $question['prompt'], $question['id'], $activityId);
+            $updateQuestion->bind_param('issisissii', $position, $question['type'], $question['prompt'], $question['points'], $question['point'], $question['optional'], $question['lang'], $question['audio'], $question['id'], $activityId);
             $updateQuestion->execute();
         } else {
-            $insertQuestion->bind_param('iiss', $activityId, $position, $question['type'], $question['prompt']);
+            $insertQuestion->bind_param('iissisiss', $activityId, $position, $question['type'], $question['prompt'], $question['points'], $question['point'], $question['optional'], $question['lang'], $question['audio']);
             $insertQuestion->execute();
             $question['id'] = (int)$insertQuestion->insert_id;
         }
@@ -251,6 +309,16 @@ try {
 
     koobdQuizRegrade($activityId);
     $conn->commit();
+    // Recordings no question uses any more (replaced or removed) are deleted.
+    foreach (array_diff(array_filter(array_column($known, 'audio')), array_filter(array_column($questions, 'audio'))) as $oldAudio) {
+        $stillUsed = $conn->prepare("SELECT 1 FROM activity_questions WHERE audio_path = ? LIMIT 1");
+        $stillUsed->bind_param('s', $oldAudio);
+        $stillUsed->execute();
+        if (!$stillUsed->get_result()->fetch_row() && strpos($oldAudio, 'uploads/question-audio/') === 0) {
+            @unlink(__DIR__ . '/' . $oldAudio);
+        }
+        $stillUsed->close();
+    }
 } catch (Throwable $error) {
     $conn->rollback();
     quizSaveFail(500, 'The activity could not be saved. Please try again.');

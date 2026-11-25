@@ -9,7 +9,6 @@ body.customize-page{
   --pf-line:#e6eaf3;
   --pf-soft:#f5f7fc;
   --pf-accent:#4f63d6;
-  background-attachment:fixed;
 }
 body.customize-page .customize-standalone{padding:24px 28px 48px;}
 body.customize-page .customize-shell{width:min(100%,1080px);gap:20px;}

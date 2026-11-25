@@ -1,0 +1,144 @@
+/* Questions inside a classroom story activity (js/story-questions.js): a card
+   over the paused story, in the quiz's look. A plain dark backdrop (no blur,
+   so it costs a slow tablet nothing), sized for phones and tablets in either
+   orientation; the card scrolls if a long question needs it. */
+.sq-layer{
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(10,16,30,.74);
+  font-family: inherit;
+}
+.sq-card{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px;
+  border-top: 8px solid #6277c3;
+  border-radius: 22px;
+  background: #fff;
+  color: #33415d;
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  animation: sqIn .22s ease;
+}
+@keyframes sqIn{ from{ opacity: 0; transform: translateY(10px) scale(.98); } to{ opacity: 1; transform: none; } }
+/* The card's header: an icon, "Story check / Question 1 of 2", and tags. */
+.sq-head{ display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid rgba(105,123,167,.16); }
+.sq-icon{ display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #6277c3, #5fc9a3); color: #fff; font-size: 20px; font-weight: 1000; }
+.sq-head-text{ display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.sq-eyebrow{ color: #6b7aaa; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.sq-count{ color: #1b2440; font-size: 15px; font-weight: 900; }
+.sq-tags{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.sq-tag{ display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; background: rgba(98,119,195,.12); color: #4f63ad; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.sq-tag.is-points{ background: rgba(116,221,177,.22); color: #24795a; }
+.sq-tag.is-optional{ background: #fff3dc; color: #8a5a0c; }
+.sq-prompt{ margin: 4px 0 0; color: #1b2440; font-size: 20px; font-weight: 900; line-height: 1.35; overflow-wrap: anywhere; }
+.sq-prompt:focus{ outline: none; }
+.sq-options{ display: flex; flex-direction: column; gap: 10px; }
+.sq-option{
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 2px solid rgba(105,123,167,.22);
+  border-radius: 14px;
+  background: #fff;
+  color: #33415d;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.sq-option input{ position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sq-option:hover{ border-color: rgba(98,119,195,.45); }
+.sq-option.is-selected{ border-color: #6277c3; background: rgba(98,119,195,.1); }
+.sq-option:has(input:focus-visible){ outline: 3px solid rgba(98,119,195,.4); outline-offset: 2px; }
+.sq-letter{ display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: #eef2fb; color: #4f63ad; font-weight: 1000; }
+.sq-option.is-selected .sq-letter{ background: #6277c3; color: #fff; }
+.sq-text{
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 16px;
+  border: 2px solid rgba(105,123,167,.22);
+  border-radius: 14px;
+  background: #fff;
+  color: #1b2440;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+.sq-text.is-essay{ min-height: 130px; font-size: 16px; font-weight: 600; line-height: 1.5; resize: vertical; }
+.sq-text:focus{ outline: none; border-color: #6277c3; }
+.sq-error{ margin: 0; color: #b4465f; font-size: 13px; font-weight: 900; }
+.sq-error[hidden]{ display: none; }
+.sq-actions{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.sq-actions.is-center{ justify-content: center; }
+.sq-btn{
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.sq-btn-primary{ background: linear-gradient(135deg, #6277c3, #5fc9a3); color: #fff; }
+.sq-btn-primary:disabled{ opacity: .5; cursor: default; }
+.sq-btn-ghost{ background: rgba(98,119,195,.12); color: #4f63ad; }
+.sq-btn:focus-visible{ outline: 3px solid rgba(98,119,195,.5); outline-offset: 2px; }
+.sq-result{ display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0 4px; text-align: center; }
+.sq-result h2{ margin: 0; color: #1b2440; font-size: 22px; font-weight: 1000; }
+.sq-result p{ margin: 0; color: rgba(51,65,93,.75); font-weight: 700; line-height: 1.5; }
+.sq-result-icon{ display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #74ddb1, #6277c3); color: #fff; font-size: 28px; font-weight: 1000; }
+.sq-result.is-right .sq-result-icon{ background: linear-gradient(135deg, #5fc9a3, #2f8a63); }
+.sq-result.is-wrong .sq-result-icon{ background: #e8a83a; }
+.sq-result.is-skipped .sq-result-icon{ background: #9aa6c8; }
+
+/* Phones held sideways: a lower card that scrolls. */
+@media (max-height: 520px){
+  .sq-card{ gap: 10px; padding: 14px 18px; border-top-width: 6px; }
+  .sq-prompt{ font-size: 17px; }
+  .sq-head{ padding-bottom: 10px; }
+  .sq-icon{ width: 34px; height: 34px; font-size: 17px; }
+  .sq-option{ min-height: 46px; padding: 6px 12px; }
+  .sq-layer{ padding-top: 10px; padding-bottom: 10px; }
+  .sq-card{ max-height: calc(100vh - 20px); max-height: calc(100svh - 20px); }
+  .sq-text.is-essay{ min-height: 90px; }
+  .sq-btn{ min-height: 44px; }
+}
+@media (max-width: 520px){
+  .sq-card{ padding: 18px 16px; border-radius: 18px; }
+  .sq-head{ flex-wrap: wrap; }
+  .sq-tags{ justify-content: flex-start; width: 100%; }
+  .sq-actions > .sq-btn{ flex: 1 1 0; }
+}
+@media (prefers-reduced-motion: reduce){ .sq-card{ animation: none; } }
+html.koobd-lite .sq-card{ animation: none; box-shadow: none; }
+
+/* Wide but short screens (a phone on its side): the answers side by side,
+   so the question and Submit fit without scrolling. */
+@media (max-height: 520px) and (min-width: 600px){
+  .sq-options{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+}
+
+/* Listening and speaking (js/koobd-speech.js): a choice's 🔊 at its right
+   end, and the "Say it" card in place of the answer field. */
+.sq-option-label{ flex: 1; min-width: 0; }
+.sq-option .ks-listen{ flex: none; }
+.sq-card .ks-prompt-row .ks-listen{ margin-top: 4px; }
+.sq-card .ks-say{ padding: 12px; }
+.sq-btn[hidden]{ display: none; }

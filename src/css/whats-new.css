@@ -1,0 +1,110 @@
+/* What's New: the latest updates on Home (.wn-mini) and the full changelog
+   page (whats_new.php). Each kind of update has its own colour: new stories
+   green, new features indigo, improvements blue, bug fixes coral - used for
+   the small tag, the icon tile and, for big updates, a thin edge. No
+   animations beyond hover colours; light enough for slower tablets. */
+:root{
+  --wn-ink:#1b2440;
+  --wn-muted:#7c86a8;
+  --wn-label:#6b78a8;
+  --wn-line:rgba(107,120,168,.16);
+  --wn-story:#16966e;
+  --wn-feature:#4f63d6;
+  --wn-improvement:#2f7fd0;
+  --wn-fix:#d0573f;
+}
+.is-story{--wn-color:var(--wn-story);--wn-soft:rgba(22,150,110,.1);}
+.is-feature{--wn-color:var(--wn-feature);--wn-soft:rgba(79,99,214,.1);}
+.is-improvement{--wn-color:var(--wn-improvement);--wn-soft:rgba(47,127,208,.1);}
+.is-fix{--wn-color:var(--wn-fix);--wn-soft:rgba(208,87,63,.1);}
+
+/* Shared pieces: the category tag, the "New" mark and the date. */
+.wn-tag{display:inline-flex;align-items:center;min-height:20px;padding:0 8px;border-radius:999px;background:var(--wn-soft);color:var(--wn-color);font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+.wn-fresh{display:inline-flex;align-items:center;gap:4px;color:#e0614a;font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;}
+.wn-fresh::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.wn-date{margin-left:auto;color:var(--wn-muted);font-size:11.5px;font-weight:800;white-space:nowrap;}
+
+/* --- Home: the latest few ------------------------------------------------- */
+.wn-mini{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;}
+.wn-mini-item{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px;margin:0 -8px;border-radius:12px;color:inherit;text-decoration:none;transition:background .15s ease;}
+.wn-mini-item:hover{background:rgba(107,120,168,.08);}
+.wn-mini-item:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:0;}
+.wn-mini-icon{display:grid;flex:none;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--wn-soft);color:var(--wn-color);overflow:hidden;}
+.wn-mini-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wn-mini-icon.is-cover{background:#eef1f8;box-shadow:inset 0 0 0 1px rgba(27,36,64,.06);}
+.wn-mini-icon img{width:100%;height:100%;object-fit:cover;}
+.wn-mini-body{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0;}
+.wn-mini-top{display:flex;align-items:center;gap:6px;min-width:0;}
+.wn-mini-title{overflow:hidden;color:var(--wn-ink);font-size:13.5px;font-weight:900;line-height:1.25;white-space:nowrap;text-overflow:ellipsis;}
+.wn-mini-empty{margin:0;color:var(--wn-muted);font-size:13px;font-weight:700;}
+
+/* --- The full page --------------------------------------------------------- */
+.whats-new-page .main-inner.wn-main{max-width:860px;margin:0 auto;padding:28px 28px 48px;}
+.wn-header{margin-bottom:18px;}
+.wn-back{display:inline-flex;align-items:center;gap:4px;min-height:36px;margin:0 0 6px -6px;padding:0 10px 0 4px;border-radius:10px;color:var(--wn-label);font-size:13px;font-weight:900;text-decoration:none;}
+.wn-back:hover{background:rgba(107,120,168,.1);}
+.wn-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.wn-title{margin:0;color:var(--wn-ink);font-size:clamp(24px,3vw,30px);font-weight:1000;letter-spacing:-.02em;line-height:1.15;}
+.wn-subtitle{margin:6px 0 0;color:var(--wn-muted);font-size:14.5px;font-weight:700;}
+
+/* Filters: a row of chips; on narrow screens the row scrolls sideways. */
+.wn-filters{display:flex;gap:8px;margin:0 0 22px;padding-bottom:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.wn-filters::-webkit-scrollbar{display:none;}
+.wn-filter{display:inline-flex;flex:none;align-items:center;gap:7px;min-height:40px;padding:0 14px;border:1px solid var(--wn-line);border-radius:999px;background:#fff;color:var(--wn-label);font:inherit;font-size:13px;font-weight:900;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+.wn-filter svg{width:16px;height:16px;fill:none;stroke:var(--wn-color,currentColor);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wn-filter:hover{border-color:rgba(79,99,214,.3);color:var(--wn-ink);}
+.wn-filter:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.wn-filter[aria-pressed="true"]{border-color:var(--wn-ink);background:var(--wn-ink);color:#fff;}
+.wn-filter[aria-pressed="true"] svg{stroke:currentColor;}
+.wn-filter-count{min-width:20px;padding:1px 6px;border-radius:999px;background:rgba(107,120,168,.14);font-size:11px;text-align:center;}
+.wn-filter[aria-pressed="true"] .wn-filter-count{background:rgba(255,255,255,.2);}
+
+/* Months, then the updates in each. */
+.wn-month{margin-bottom:26px;}
+.wn-month[hidden],.wn-item[hidden]{display:none;}
+.wn-month-title{margin:0 0 10px 2px;color:var(--wn-label);font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;}
+.wn-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;}
+
+/* An update: the icon (or the story's cover), then tag and date, the title,
+   a sentence or two, and for a story a button that opens it. */
+.wn-card{position:relative;display:flex;align-items:flex-start;gap:16px;padding:16px 18px;border:1px solid var(--wn-line);border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(27,36,64,.04),0 6px 18px rgba(27,36,64,.05);scroll-margin-top:20px;}
+/* Big updates and new stories: a thin coloured edge and a slightly larger title. */
+.wn-card.is-major::before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--wn-color);}
+.wn-card:target{border-color:var(--wn-color);box-shadow:0 0 0 3px var(--wn-soft);}
+.wn-card-icon{display:grid;flex:none;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--wn-soft);color:var(--wn-color);}
+.wn-card-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wn-card-cover{display:block;flex:none;width:88px;height:88px;border-radius:14px;overflow:hidden;background:#eef1f8;box-shadow:inset 0 0 0 1px rgba(27,36,64,.06);}
+.wn-card-cover img{display:block;width:100%;height:100%;object-fit:cover;}
+.wn-card-body{flex:1;min-width:0;}
+.wn-card-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-bottom:6px;}
+.wn-major{color:var(--wn-color);font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;}
+.wn-card-title{margin:0;color:var(--wn-ink);font-size:16px;font-weight:1000;line-height:1.3;letter-spacing:-.01em;}
+.wn-card.is-major .wn-card-title{font-size:17.5px;}
+.wn-card-summary{margin:4px 0 0;color:#56607f;font-size:14px;font-weight:600;line-height:1.5;}
+.wn-points{display:flex;flex-direction:column;gap:3px;margin:8px 0 0;padding:0;list-style:none;}
+.wn-points li{position:relative;padding-left:16px;color:#56607f;font-size:13.5px;font-weight:600;line-height:1.45;}
+.wn-points li::before{content:"";position:absolute;left:3px;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--wn-color);}
+.wn-card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;}
+.wn-btn{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 16px 0 13px;border-radius:11px;background:var(--wn-feature);color:#fff;font-size:13.5px;font-weight:900;text-decoration:none;box-shadow:0 4px 12px rgba(79,99,214,.25);transition:background .15s ease;}
+.wn-btn:hover{background:#4355c4;}
+.wn-btn:focus-visible{outline:3px solid rgba(79,99,214,.4);outline-offset:2px;}
+.wn-btn svg{width:14px;height:14px;fill:currentColor;}
+.wn-story-meta{color:var(--wn-muted);font-size:12px;font-weight:800;}
+.wn-empty{margin:24px 0;color:var(--wn-muted);font-size:14px;font-weight:700;text-align:center;}
+
+/* Tablets and phones. */
+@media (max-width:768px){
+  .whats-new-page .main-inner.wn-main{padding:16px 16px 96px;}
+  .wn-filters{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;}
+  .wn-filter{min-height:44px;}
+}
+@media (max-width:520px){
+  .wn-card{gap:12px;padding:14px;}
+  .wn-card-icon{width:38px;height:38px;border-radius:11px;}
+  .wn-card-icon svg{width:19px;height:19px;}
+  .wn-card-cover{width:64px;height:64px;border-radius:12px;}
+  .wn-card-title{font-size:15px;}
+  .wn-card.is-major .wn-card-title{font-size:16px;}
+  .wn-card-summary{font-size:13.5px;}
+  .wn-btn{min-height:44px;}
+}

@@ -25,6 +25,12 @@
     ]);
   }
   const row = (children) => el('div', { class: 'pe-row' }, children);
+  // Sound choices (js/koobd-audio.js): built-in music, effects and weather,
+  // with "Listen" to hear one before choosing it.
+  const SOUND = window.KoobdAudio || null;
+  const soundLabels = SOUND ? SOUND.labels : { effects: {}, weather: {}, surfaces: { auto: 'What they stand on' } };
+  const trackOptions = () => (SOUND ? SOUND.tracks : []).map((track) => [track.id, track.name]);
+  const WEATHER_FROM_LINE = [['', 'Keep as it is'], ['none', 'Stop'], ['rain', 'Rain'], ['rain,thunder', 'Storm (rain and thunder)'], ['wind', 'Wind'], ['birds', 'Birds'], ['crickets', 'Night crickets'], ['water', 'Flowing water'], ['fire', 'Crackling fire']];
   const actionButton = (label, onClick, kind = 'soft', iconName = '') => el('button', {
     type: 'button', class: `ed-btn ed-btn-${kind}`, on: { click: onClick }
   }, [iconName ? icon(iconName) : null, el('span', { text: label })]);
@@ -475,15 +481,46 @@
       beyond ? el('p', { class: 'pe-warning', text: `${beyond} piece${beyond > 1 ? 's are' : ' is'} past the end of the stage and cannot be reached.` }) : null
     ], 'Walking off the right-hand end finishes the page, once every required story event has played.'));
 
+    parts.push(section('End of the stage', [
+      UI.toggle('Show an arrow at the end', scene.endArrow !== false, (value) => { scene.endArrow = value; ed.commit(); },
+        'A moving arrow at the end of the stage shows players where to go for the next page')
+    ]));
+    const music = scene.music;
+    const musicMode = !music ? '' : typeof music.asset === 'string' ? 'file' : music.none ? 'none' : (music.track || '');
     parts.push(section('Music', [
-      UI.mediaField('Background music (MP3, loops)', scene.music ? scene.music.asset : '', {
+      field('Background music', UI.select([['', 'Platform Mode music (Off We Go)'], ...trackOptions(), ['file', 'My own music file…'], ['none', 'No music']], musicMode, (value) => {
+        scene.music = value === '' ? null
+          : value === 'none' ? { none: true }
+          : value === 'file' ? { asset: (music && music.asset) || '', volume: (music && music.volume) || 0.6 }
+          : { track: value };
+        ed.commit();
+      })),
+      SOUND && musicMode !== 'file' && musicMode !== 'none' ? actionButton('Listen', () => SOUND.previewMusic(musicMode || 'adventure'), 'ghost', 'music') : null,
+      musicMode === 'file' ? UI.mediaField('Music file (MP3, loops)', music.asset, {
         kinds: ['audio'], storyboards: false, title: 'Choose music',
-        onChange(value) { scene.music = value ? { asset: value, volume: scene.music ? scene.music.volume : 0.6 } : null; ed.commit(); }
-      }),
-      scene.music ? field(`Volume: ${Math.round(scene.music.volume * 100)}%`, UI.range(scene.music.volume, (value, done) => {
+        onChange(value) { scene.music = { asset: value || '', volume: music.volume || 0.6 }; ed.commit(); }
+      }) : null,
+      musicMode === 'file' && music.asset ? field(`Volume: ${Math.round(music.volume * 100)}%`, UI.range(music.volume, (value, done) => {
         scene.music.volume = r2(value);
         if (done) ed.commit(); else ed.touch();
       }, { min: 0, max: 1, step: 0.05 })) : null
+    ], 'Plays while the stage is played. A line in a story event can change it from that moment on.'));
+
+    const layers = scene.ambience ? scene.ambience.layers : [];
+    const setLayers = (next) => { scene.ambience = next.length ? { layers: next, volume: scene.ambience ? scene.ambience.volume : 0.7 } : null; ed.commit(); };
+    parts.push(section('Surroundings', [
+      el('div', { class: 'pe-sound-grid' }, Object.entries(soundLabels.weather).map(([id, label]) => UI.toggle(label, layers.includes(id), (on) => setLayers(on ? [...layers, id] : layers.filter((layer) => layer !== id))))),
+      layers.length ? field(`Volume: ${Math.round(scene.ambience.volume * 100)}%`, UI.range(scene.ambience.volume, (value, done) => {
+        scene.ambience.volume = r2(value);
+        if (done) ed.commit(); else ed.touch();
+      }, { min: 0.1, max: 1, step: 0.05 })) : null,
+      layers.length && SOUND ? actionButton('Listen', () => SOUND.previewWeather(Object.fromEntries(layers.map((layer) => [layer, scene.ambience.volume]))), 'ghost', 'music') : null
+    ], 'Weather and nature sounds while the stage plays. Rain placed in the stage is also heard where it falls.'));
+
+    parts.push(section('Character sounds', [
+      UI.toggle('Footsteps, jumps and landings', scene.sounds.character !== false, (value) => { scene.sounds.character = value; ed.commit(); },
+        'Sounds that follow what the player does'),
+      scene.sounds.character !== false ? field('Footsteps sound like', UI.select(Object.entries(soundLabels.surfaces), scene.sounds.surface || 'auto', (value) => { scene.sounds.surface = value; ed.commit(); })) : null
     ]));
 
     parts.push(section('Checkpoints', [
@@ -762,13 +799,33 @@
       if (beat.choices.length < 4) fields.push(actionButton('Add an answer', () => { beat.choices.push({ text: '', goto: { type: 'continue' } }); ed.commit(); }, 'ghost', 'plus'));
       fields.push(el('p', { class: 'pe-hint', text: 'Readers have a few seconds to choose; if they wait, answer A is picked. “Jump to a page” starts a branch: build it with the page bar and see it in the Story Map.' }));
     }
-    const soundButton = beat.type === 'title' ? null : UI.iconButton('mic', beat.audio ? 'Sound or voice: on' : 'Add a sound or voice', () => popup(ed, 'Sound or voice', () => el('div', { class: 'pe-popup' }, [
-      UI.mediaField('Sound or voice (optional)', beat.audio || '', {
+    // This part's sounds: an uploaded sound or voice, a built-in effect (once
+    // or a few times), and the music or weather from this moment on.
+    const hasSound = Boolean(beat.audio || beat.sfx || beat.music || beat.weather);
+    const soundButton = beat.type === 'title' ? null : UI.iconButton('mic', hasSound ? 'Sound: on' : 'Add a sound', () => popup(ed, 'Sound', () => el('div', { class: 'pe-popup' }, [
+      UI.mediaField('Sound or voice file (optional)', beat.audio || '', {
         kinds: ['audio'], storyboards: false, title: 'Choose a sound',
         onChange(value) { if (value) beat.audio = value; else delete beat.audio; ed.commit(); }
       }),
-      el('p', { class: 'pe-hint', text: 'Plays when this part of the event appears, e.g. a voice reading the line.' })
-    ])), { class: beat.audio ? 'is-active' : '' });
+      el('p', { class: 'pe-hint', text: 'Plays when this part of the event appears, e.g. a voice reading the line.' }),
+      field('Sound effect', UI.select([['', 'None'], ...Object.entries(soundLabels.effects)], beat.sfx || '', (value) => {
+        if (value) beat.sfx = value; else { delete beat.sfx; delete beat.sfxRepeat; }
+        ed.commit();
+      })),
+      beat.sfx ? field('Plays', UI.select([['1', 'Once'], ['2', 'Twice'], ['3', '3 times'], ['5', '5 times']], String(beat.sfxRepeat || 1), (value) => {
+        if (value === '1') delete beat.sfxRepeat; else beat.sfxRepeat = Number(value);
+        ed.commit();
+      })) : null,
+      beat.sfx && SOUND ? actionButton('Listen', () => SOUND.sfx(beat.sfx), 'ghost', 'music') : null,
+      field('Music from this moment', UI.select([['', 'Keep playing'], ...trackOptions(), ['none', 'Stop the music']], beat.music || '', (value) => {
+        if (value) beat.music = value; else delete beat.music;
+        ed.commit();
+      })),
+      field('Weather from this moment', UI.select(WEATHER_FROM_LINE, Array.isArray(beat.weather) ? beat.weather.join(',') : (beat.weather || ''), (value) => {
+        if (!value) delete beat.weather; else beat.weather = value === 'none' ? 'none' : value.split(',');
+        ed.commit();
+      }))
+    ])), { class: hasSound ? 'is-active' : '' });
     const showOnStage = ['narration', 'dialogue', 'title', 'choices'].includes(beat.type) ? () => ed.showLine(beat.id) : null;
     return el('li', { class: `pe-beat is-${beat.type}${ed.ui.activeBeatId === beat.id ? ' is-on-stage' : ''}`, dataset: { beat: beat.id }, on: showOnStage ? { focusin: showOnStage, pointerdown: showOnStage } : {} }, [
       el('div', { class: 'pe-beat-head' }, [

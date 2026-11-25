@@ -30,7 +30,10 @@
   var memory = Number(navigator.deviceMemory) || 0;
   var connection = navigator.connection || {};
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var lowEndDevice = (memory > 0 && memory <= 2) || connection.saveData === true || reducedMotion;
+  // Tablets known to struggle, recognised by model: the Galaxy Tab A7 Lite
+  // (SM-T220/T225/T227) reports 3-4 GB of memory, so the memory test misses it.
+  var slowModel = /SM-T22[0-7]/i.test(navigator.userAgent || '');
+  var lowEndDevice = slowModel || (memory > 0 && memory <= 2) || connection.saveData === true || reducedMotion;
 
   function apply(lite) {
     root.classList.toggle('koobd-lite', Boolean(lite));
@@ -56,10 +59,15 @@
       if (median > 25) {
         write('sessionStorage', MEASURED, 'lite');
         apply(true);
+      } else if (++checks < 4) {
+        // A page can open on something cheap to draw (a story's black title
+        // card) and get heavy later, so look again a little later.
+        window.setTimeout(measure, 8000);
       }
     }
     window.requestAnimationFrame(frame);
   }
+  var checks = 0;
   if (document.readyState === 'complete') window.setTimeout(measure, 1500);
   else window.addEventListener('load', function () { window.setTimeout(measure, 1500); }, { once: true });
 
@@ -73,4 +81,49 @@
       apply(choice === 'lite' || (choice !== 'full' && lowEndDevice));
     }
   };
+})();
+
+// A steady screen height for phones and tablets. A phone's address bar slides
+// away while the page scrolls and comes back when it scrolls up, changing the
+// window's height each time; layouts that follow that height stretch and jump.
+// On touch screens the height is kept at its smallest (the address bar shown)
+// and only measured again when the width changes (turning the device), so
+// html.koobd-h540 / -h620 / -h700 / -h760 ("the screen is at most this tall")
+// and --koobd-steady-h hold still while reading. The on-screen keyboard is
+// ignored. Mouse screens simply follow the window.
+(function () {
+  var root = document.documentElement;
+  var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  var LIMITS = [540, 620, 700, 760];
+  var width = 0;
+  var height = 0;
+
+  function typing() {
+    var el = document.activeElement;
+    return Boolean(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)));
+  }
+
+  function measure() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    if (!touch || w !== width || !height) {
+      width = w;
+      height = h;
+    } else if (h < height && height - h <= 140 && !typing()) {
+      height = h; // the address bar came back: the smaller height is the steady one
+    } else {
+      return;
+    }
+    root.style.setProperty('--koobd-steady-h', height + 'px');
+    LIMITS.forEach(function (limit) {
+      root.classList.toggle('koobd-h' + limit, height <= limit);
+    });
+  }
+
+  measure();
+  window.addEventListener('resize', measure);
+  window.addEventListener('orientationchange', function () {
+    width = 0;
+    window.setTimeout(measure, 250);
+  });
 })();

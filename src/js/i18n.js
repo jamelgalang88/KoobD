@@ -28,8 +28,12 @@
   }
 
   const lang = readLang();
-  const dict = (window.KOOBD_I18N_TL && window.KOOBD_I18N_TL.strings) || {};
-  const patterns = ((window.KOOBD_I18N_TL && window.KOOBD_I18N_TL.patterns) || [])
+  // The dictionary is only indexed for Tagalog readers: in English nothing is
+  // looked up, and indexing a few thousand phrases on every page load costs a
+  // slow device time before the page can draw.
+  const source = (lang === 'tl' && window.KOOBD_I18N_TL) || {};
+  const dict = source.strings || {};
+  const patterns = (source.patterns || [])
     .map(([source, replacement]) => [new RegExp(source), replacement]);
   // Case-insensitive lookup, for text the page writes in capitals.
   const lowerDict = {};
@@ -37,7 +41,7 @@
   // The classic stories' own text that appears outside them (their lessons
   // on the home page and in classrooms): translated wherever it shows, even
   // among protected story content. User stories are never in it.
-  const classic = (window.KOOBD_I18N_TL && window.KOOBD_I18N_TL.classic) || {};
+  const classic = source.classic || {};
   const missing = new Set();
   // Text that is already Tagalog (translated a moment ago) is left alone.
   const tagalog = new Set(Object.values(dict).map((value) => value.toLowerCase()));

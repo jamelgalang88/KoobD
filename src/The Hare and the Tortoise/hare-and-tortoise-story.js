@@ -105,6 +105,34 @@ const characters = {
 [...Object.values(places).map((place) => place.src), ...Object.values(frames), ...Object.values(characters)]
   .forEach((src) => { const image = new Image(); image.src = src; });
 
+// --- Sound (js/koobd-audio.js) ------------------------------------------------------
+// Each place's music and surroundings, and the moments that make a sound: the
+// fox's "GO!", the Hare dashing off, the Eagle's cry, the Hare's nap and the
+// crowd at the finish.
+const storySound = window.KoobdAudio || null;
+const placeSounds = {
+  meadow: { music: "meadow", ambience: { birds: 1, wind: 0.2 } },
+  startLine: { music: "meadow", ambience: { birds: 0.7, wind: 0.3 } },
+  racePath: { music: "joyful", ambience: { birds: 0.5, wind: 0.5 } },
+  deepWoods: { music: "mystery", ambience: { birds: 0.4, wind: 0.4 } },
+  restingTree: { music: "calm", ambience: { birds: 0.6, wind: 0.3 } },
+  finishLine: { music: "joyful", ambience: { birds: 0.6 } }
+};
+const beatSounds = { 35: "go", 45: "footsteps", 55: "eagle", 70: "pop", 86: "snore" };
+function placeSound(key) {
+  const sound = placeSounds[key];
+  if (!storySound || !sound) return;
+  storySound.music(sound.music);
+  storySound.ambience(sound.ambience);
+}
+function beatSound(beat) {
+  if (!storySound || typeof beat.progress !== "number") return;
+  const effect = beat.progress === 92 && endingKey() === "tortoiseWon" ? "cheer" : beatSounds[beat.progress];
+  if (effect) window.setTimeout(() => storySound.sfx(effect, { surface: "dirt" }), 250);
+}
+document.addEventListener("koobd:pause", () => storySound?.pause());
+document.addEventListener("koobd:resume", () => storySound?.resume());
+
 // --- The shared story system ----------------------------------------------------
 const storyCard = KoobdStory.createStoryCard(storyRoot, () => advance());
 let currentPlace = "";
@@ -116,6 +144,7 @@ async function moveTo(key) {
   if (!place || key === currentPlace) {
     return;
   }
+  placeSound(key);
   const first = !currentPlace;
   currentPlace = key;
   if (first || storyCard.isShowing()) {
@@ -286,6 +315,7 @@ function setDialogue(line) {
 let beatToken = 0;
 async function present(beat) {
   busy = true;
+  beatSound(beat);
   const token = ++beatToken;
   if (typeof beat.progress === "number") {
     saveReadingProgress(beat.progress);
@@ -424,6 +454,18 @@ function advance() {
     return;
   }
   const beat = storyQueue[currentStep];
+  // Arriving somewhere new: a classroom activity's question placed before
+  // that place is asked first (js/story-questions.js); then the same beat.
+  const questions = window.KoobdStoryQuestions;
+  const arriving = beat.place && beat.place !== currentPlace ? `place:${beat.place}` : "";
+  if (arriving && questions && questions.has(arriving)) {
+    storyLocked = true;
+    questions.at(arriving).then(() => {
+      storyLocked = false;
+      advance();
+    });
+    return;
+  }
   currentStep += 1;
   if (beat.type === "end") {
     finishStory();
@@ -438,6 +480,10 @@ async function finishStory() {
   finished = true;
   busy = true;
   stopChoiceTimer();
+  // A classroom activity's question placed at the end comes before the ending.
+  if (window.KoobdStoryQuestions && window.KoobdStoryQuestions.has("end")) {
+    await window.KoobdStoryQuestions.at("end");
+  }
   saveReadingProgress(100);
   const ending = ENDINGS[endingKey()];
   storyCard.hide();

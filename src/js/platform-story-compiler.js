@@ -9,6 +9,7 @@
 //   background {id | asset, color, tint}
 //   ground {material, color, asset, gaps: [{from, to, fill: water | chasm}]}
 //   music {asset, volume}
+//   endArrow         false hides the moving arrow at the end of the stage
 //   objects [...]    block   {material, x, y, cols, rows}         (tiles, solid)
 //                    image   {asset | prop | hazard, x, y, w, h, rotation, flip,
 //                             solid, hazard, layer, anim, light, box}  (a picture;
@@ -228,6 +229,8 @@
   function compileBeat(beat, ctx) {
     const audio = beat.audio ? url(beat.audio) : '';
     const base = audio ? { audio } : {};
+    // A built-in effect, and the music or weather from this line on.
+    ['sfx', 'sfxRepeat', 'music', 'weather'].forEach((key) => { if (beat[key] !== undefined && beat[key] !== '') base[key] = beat[key]; });
     const choicesOf = (list) => (Array.isArray(list) ? list : [])
       .filter((choice) => String(choice.text || '').trim())
       .map((choice) => ({ text: String(choice.text).trim(), goto: ctx.goto(choice.goto) }));
@@ -368,7 +371,16 @@
       checkpoints: (Array.isArray(scene.checkpoints) ? scene.checkpoints : []).map((checkpoint, index) => ({ id: `checkpoint-${checkpoint.id || index + 1}`, x: num(checkpoint.x) })),
       scenes: [{ id: 'stage', startX: 0, endX: width, tint: bgDef ? bgDef.filter : '' }],
     };
+    // Sound (js/platformer-story-player.js): the music - a file, a built-in
+    // track or none (unset: Platform Mode's own) - the surroundings, and the
+    // characters' footsteps and jumps.
     if (scene.music && scene.music.asset) world.music = { src: url(scene.music.asset), volume: clamp(num(scene.music.volume, 0.6), 0, 1) };
+    else if (scene.music && scene.music.track) world.music = { track: String(scene.music.track) };
+    else if (scene.music && scene.music.none) world.music = { none: true };
+    if (scene.ambience && Array.isArray(scene.ambience.layers) && scene.ambience.layers.length) world.ambience = { layers: scene.ambience.layers.slice(), volume: clamp(num(scene.ambience.volume, 0.7), 0, 1) };
+    if (scene.sounds) world.sounds = { character: scene.sounds.character !== false, surface: scene.sounds.surface || 'auto' };
+    // The arrow at the end of the stage, pointing on to the next page.
+    world.endArrow = !scene || scene.endArrow !== false;
     if (page && String(page.stageName || '').trim()) {
       world.areas = [{ id: 'stage-name', x: 0, name: String(page.stageName).trim(), time: String(page.stageSubtitle || '').trim() }];
     }

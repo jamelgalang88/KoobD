@@ -7,11 +7,41 @@ services:
     platform: linux/amd64
     ports:
       - "8080:80"
+      - "8443:443"
+    environment:
+      # Addresses the https certificate is made for: add this computer's
+      # Wi-Fi address (ipconfig) so tablets can open https://<it>:8443.
+      KOOBD_HOSTS: "localhost,127.0.0.1,192.168.1.14"
+      # Optional: Writing Practice's deeper AI review (Claude). Set it in a .env
+      # file next to this one or in the shell; left empty, only the built-in
+      # checker runs. Never commit the key.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
     volumes:
       - ./src:/var/www/html
+      # The local certificate authority and https certificate (kept here so
+      # tablets that trust it keep trusting it after a rebuild). Private keys:
+      # never commit or share this folder.
+      - ./docker/certs:/etc/koobd-certs
     depends_on:
       db:
         condition: service_healthy
+
+  # Versus Mode's live relay (relay/versus-relay.js): passes each player's
+  # movement straight to the other player. ws on 8090, wss on 8091 (for pages
+  # opened over https). It makes docker/certs/relay-secret on its first start;
+  # the web container reads it to sign each player's pass.
+  relay:
+    container_name: koobd-relay
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: ["node", "versus-relay.js"]
+    volumes:
+      - ./relay:/app:ro
+      - ./docker/certs:/certs
+    ports:
+      - "8090:8090"
+      - "8091:8091"
 
   db:
     container_name: koobd-db

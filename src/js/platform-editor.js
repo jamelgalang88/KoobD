@@ -47,6 +47,8 @@
       background: { id: 'meadow', asset: '', color: '#8fd0ee', tint: 'day' },
       ground: { material: 'earth', color: '#557d2e', asset: '', gaps: [] },
       music: null,
+      // A moving arrow at the end of the stage, pointing on to the next page.
+      endArrow: true,
       objects: [],
       characters: [],
       checkpoints: [],
@@ -83,7 +85,17 @@
       }))
     };
     if (scene.ground.material === 'custom' && !scene.ground.asset) scene.ground.material = 'earth';
-    scene.music = scene.music && scene.music.asset ? { asset: String(scene.music.asset), volume: clamp(num(scene.music.volume, 0.6), 0, 1) } : null;
+    // Music: a file (asset; '' while one is being chosen), a built-in track,
+    // none, or null for Platform Mode's own. Surroundings and character sounds.
+    const music = scene.music || null;
+    scene.music = music && typeof music.asset === 'string' ? { asset: String(music.asset), volume: clamp(num(music.volume, 0.6), 0, 1) }
+      : music && music.track ? { track: String(music.track) }
+      : music && music.none ? { none: true } : null;
+    scene.ambience = scene.ambience && Array.isArray(scene.ambience.layers) && scene.ambience.layers.length
+      ? { layers: scene.ambience.layers.map(String), volume: clamp(num(scene.ambience.volume, 0.7), 0, 1) } : null;
+    scene.sounds = { character: !scene.sounds || scene.sounds.character !== false, surface: (scene.sounds && scene.sounds.surface) || 'auto' };
+    // Shown unless the teacher turned it off (pages from before it existed show it).
+    scene.endArrow = scene.endArrow !== false;
     scene.objects = (Array.isArray(scene.objects) ? scene.objects : []).filter((object) => object && ['block', 'image', 'legacy'].includes(object.kind));
     scene.objects.forEach((object) => { object.id = String(object.id || makeId('obj')); });
     scene.characters = (Array.isArray(scene.characters) ? scene.characters : []).filter(Boolean).map((character) => ({
@@ -1416,7 +1428,9 @@
         if (gesture.kind === 'pan' || gesture.kind === 'place') {
           const dx = event.clientX - gesture.startX;
           const dy = event.clientY - gesture.startY;
-          if (Math.abs(dx) + Math.abs(dy) > 4) gesture.moved = true;
+          // A finger wobbles a little even in a tap: it only counts as a drag
+          // (moving around instead of letting go of the selection) past 10px.
+          if (Math.abs(dx) + Math.abs(dy) > (event.pointerType === 'touch' ? 10 : 4)) gesture.moved = true;
           if (gesture.kind === 'pan' || gesture.moved) {
             const { ux, uy } = px();
             ed.ui.camX = gesture.camX - dx / ux;

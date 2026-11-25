@@ -20,6 +20,10 @@ if (!$activityRow || ($activityRow['activity_type'] ?? '') !== 'quiz') {
     header('Location: classroom.php');
     exit();
 }
+// Past its due date a quiz can no longer be taken; a submitted one still shows its result.
+if (!$isPreview && koobdActivityClosed($activityRow) && !koobdQuizReview((int)$activityRow['id'], (int)$user['id'], true, [])) {
+    koobdLeaveClosedActivity($activityRow);
+}
 $activity = koobdActivityFromRow($activityRow);
 $classroomId = (int)$activity['classroom_id'];
 $backHref = $isPreview ? 'teacher_quiz_editor.php?activity=' . $activityId : 'classroom_room.php?id=' . $classroomId;
@@ -34,9 +38,18 @@ if ($classroomTitle === '') {
 }
 
 // A student's browser gets the questions without the answer key; the teacher's
-// preview has it, so Submit can show what a student would see.
+// preview has it, so Submit can show what a student would see. When the quiz
+// shuffles, each student gets their own order, saved so it stays the same
+// when they reload or come back (the preview shuffles anew each time).
 $questions = koobdQuizQuestions($activityId, $isPreview);
-$review = $isPreview ? null : koobdQuizReview($activityId, (int)$user['id'], $activity['show_answers']);
+if ($isPreview) {
+    if ($activity['shuffle']) {
+        shuffle($questions);
+    }
+} else {
+    $questions = koobdQuizOrderFor($activityId, (int)$user['id'], $questions, $activity['shuffle']);
+}
+$review = $isPreview ? null : koobdQuizReview($activityId, (int)$user['id'], $activity['show_answers'], $questions);
 $pageData = [
     'activityId' => $activityId,
     'preview' => $isPreview,
@@ -67,6 +80,7 @@ $dueLabel = $activity['due_date'] !== '' ? date('M j, Y', strtotime($activity['d
   <meta name="apple-mobile-web-app-title" content="KoobD">
   <link rel="apple-touch-icon" href="assets/images/icons/app/apple-touch-icon.png">
   <link rel="stylesheet" href="<?= koobdAsset('css/quiz.css') ?>">
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
   <link rel="stylesheet" href="<?= koobdAsset('css/mobile.css') ?>">
 </head>
 <body class="quiz-page quiz-take-page">
@@ -109,6 +123,7 @@ $dueLabel = $activity['due_date'] !== '' ? date('M j, Y', strtotime($activity['d
     window.KOOBD_QUIZ = <?= json_encode($pageData, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
     window.KOOBD_SESSION = { role: <?= json_encode($isPreview ? 'teacher' : 'student') ?> };
   </script>
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
   <script src="<?= koobdAsset('js/quiz-take.js') ?>"></script>
 </body>
 </html>

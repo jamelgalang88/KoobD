@@ -182,35 +182,6 @@
   font-size: 11px;
 }
 
-.dash-avatar-row{
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding-left: 8px;
-  padding-top: 4px;
-  min-height: 48px;
-}
-
-.dash-avatar{
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: none;
-  background: rgba(255,255,255,.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dash-avatar img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .dash-category-wrap{
   min-width: 0;
 }
@@ -321,14 +292,32 @@
   background: linear-gradient(180deg, rgba(0,0,0,0) 44%, rgba(0,0,0,.78) 100%);
 }
 
+/* A story without a cover gets one drawn for it: a soft gradient in its
+   mode's colour (Story indigo, Platform green) with the mode's icon, faint and
+   large. Its badge, title and maker sit where every other card has them. */
 .dash-shared-card.no-cover{
-  background:
-    linear-gradient(180deg, rgba(100,116,179,.18), rgba(116,221,177,.22)),
-    rgba(255,255,255,.94);
+  background: linear-gradient(155deg, #7d8be6 0%, #5767d4 55%, #4352b8 100%);
 }
 
-.dash-shared-body.no-cover{
-  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.88) 46%, rgba(255,255,255,.96) 100%);
+.dash-shared-card.no-cover:has(.story-mode-badge.is-platform){
+  background: linear-gradient(155deg, #45c79f 0%, #1e9d76 55%, #13805f 100%);
+}
+
+.dash-shared-card.no-cover::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 46%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5.5A2.5 2.5 0 016.5 3H12v16H6.5A2.5 2.5 0 004 21.5zM20 5.5A2.5 2.5 0 0017.5 3H12v16h5.5a2.5 2.5 0 012.5 2.5z'/></svg>") center / contain no-repeat;
+  opacity: .22;
+  pointer-events: none;
+}
+
+.dash-shared-card.no-cover:has(.story-mode-badge.is-platform)::before{
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9h12a4 4 0 014 4v1a3 3 0 01-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 012 14v-1a4 4 0 014-4zM8 11v3M6.5 12.5h3M16 12h.01M18 13.5h.01'/></svg>");
 }
 
 .dash-shared-meta{
@@ -343,10 +332,6 @@
   text-transform: uppercase;
 }
 
-.dash-shared-body.no-cover .dash-shared-meta{
-  color: #6b78a8;
-}
-
 .dash-shared-body h3{
   margin: 0;
   font-size: 15px;
@@ -354,11 +339,6 @@
   color: #fff;
   font-weight: 1000;
   text-shadow: 0 3px 12px rgba(0,0,0,.5);
-}
-
-.dash-shared-body.no-cover h3{
-  color: #1b2548;
-  text-shadow: none;
 }
 
 .dash-shared-author{
@@ -375,10 +355,6 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.dash-shared-body.no-cover p{
-  color: #5f6788;
 }
 
 .dash-shared-empty{
@@ -504,83 +480,6 @@
   object-fit: cover;
 }
 
-.dash-lastread-label{
-  font-weight: 1000;
-  letter-spacing: .35px;
-  font-size: 12px;
-  color: #6b78a8;
-  margin-bottom: 10px;
-}
-
-.dash-progress-card{
-  width: 100%;
-  max-width: 360px;
-  padding: 14px 16px 16px;
-  background: rgba(255,255,255,.92);
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.12);
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-
-.dash-progress-card:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(0,0,0,.15);
-}
-
-.dash-progress-story{
-  margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 1000;
-  line-height: 1.25;
-  color: #111;
-}
-
-.dash-progress-title{
-  font-weight: 1000;
-  color: #6b78a8;
-  margin-bottom: 10px;
-  text-align: center;
-  font-size: 12px;
-}
-
-.dash-progress-bar{
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(109,123,172,.28);
-  overflow: hidden;
-}
-
-.dash-progress-fill{
-  height: 100%;
-  width: 45%;
-  border-radius: 999px;
-  background: #6474b3;
-}
-
-.dash-progress-meta{
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.dash-progress-percent{
-  font-size: 13px;
-  font-weight: 1000;
-  color: #6474b3;
-}
-
-.dash-progress-hint{
-  font-size: 11px;
-  font-weight: 900;
-  color: #7c86a8;
-  text-align: right;
-}
-
 @media (max-width: 980px){
   .dashboard-grid{
     grid-template-columns: 1fr;
@@ -591,9 +490,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dash-progress-card{
-    max-width: 100%;
-  }
 
   .dash-category-grid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -682,21 +578,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dash-progress-meta{
-    flex-direction: column;
-    align-items: flex-start;
-  }
 
-  .dash-progress-hint{
-    text-align: left;
-  }
-
-  .dash-avatar-row{
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding-left: 0;
-    gap: 10px;
-  }
 
   .dash-events-body{
     min-height: 0;
@@ -716,9 +598,6 @@
     padding: 12px 14px;
   }
 
-  .dash-progress-card{
-    padding: 14px;
-  }
 
   .dash-story-title{
     left: 8px;
@@ -727,9 +606,6 @@
     font-size: 10px;
   }
 
-  .dash-lastread-btn{
-    width: 100%;
-  }
 }
 
 @media (max-width: 420px){
@@ -842,4 +718,657 @@ mark.search-hit{
 .dash-story-tile,.dash-shared-card{position:relative;isolation:isolate;} /* its badge stays under the navigation bar */
 .dash-story-tile .story-mode-badge,.dash-shared-card .story-mode-badge{position:absolute;top:10px;left:10px;z-index:2;}
 /* A card without a cover: the badge sits in the flow, above the title. */
-.dash-shared-card.no-cover .story-mode-badge{position:static;align-self:flex-start;margin:12px 0 0 12px;box-shadow:none;}
+
+/* --- Last Read --------------------------------------------------------------
+   The story opened most recently, first in the list: one slim card - the
+   cover, a quiet line with the story's mode and maker, its title, how far the
+   reader got, and Continue. It opens the same pop-up as the story's card. */
+.dash-lastread{
+  min-width: 0;
+}
+
+.dash-lastread-card{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 92px;
+  padding: 12px 16px 12px 12px;
+  border: 1px solid rgba(107,120,168,.16);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 8px 22px rgba(27,36,64,.07);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.dash-lastread-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(79,99,214,.28);
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 12px 28px rgba(27,36,64,.11);
+}
+
+.dash-lastread-card:active{
+  transform: translateY(0);
+}
+
+.dash-lastread-card:focus-visible{
+  outline: 3px solid rgba(79,99,214,.4);
+  outline-offset: 3px;
+}
+
+.dash-lastread-cover{
+  flex: none;
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(140deg, #dfe6fb, #eef2fb);
+  box-shadow: inset 0 0 0 1px rgba(27,36,64,.06);
+}
+
+.dash-lastread-cover img{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dash-lastread-body{
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dash-lastread-meta{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #5862d6;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dash-lastread-meta.is-platform{
+  color: #16966e;
+}
+
+.dash-lastread-meta svg{
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dash-lastread-dot{
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #b4bbcd;
+}
+
+.dash-lastread-creator{
+  overflow: hidden;
+  color: #7c86a8;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  text-overflow: ellipsis;
+}
+
+.dash-lastread-title{
+  overflow: hidden;
+  color: #1b2440;
+  font-size: 16px;
+  font-weight: 1000;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dash-lastread-progress{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.dash-lastread-bar{
+  flex: 1;
+  max-width: 320px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e8ebf5;
+  overflow: hidden;
+}
+
+.dash-lastread-bar span{
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6f7fe0, #4f63d6);
+}
+
+.dash-lastread-percent{
+  flex: none;
+  color: #7c86a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-lastread-percent strong{
+  color: #1b2440;
+  font-weight: 900;
+}
+
+/* Continue: the card's one clear action (the whole card opens the pop-up). */
+.dash-lastread-cta{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 18px 0 15px;
+  border-radius: 12px;
+  background: #4f63d6;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(79,99,214,.28);
+  transition: background .18s ease, box-shadow .18s ease;
+}
+
+.dash-lastread-card:hover .dash-lastread-cta{
+  background: #4355c4;
+  box-shadow: 0 8px 18px rgba(79,99,214,.34);
+}
+
+.dash-lastread-cta svg{
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+/* Read Again's arrow is a line icon. */
+.dash-lastread-cta svg path[d^="M4 12"]{
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* While searching, the list shows only the matching stories. */
+.dash-main-col.is-searching .dash-lastread{
+  display: none;
+}
+
+/* Lite mode: no lift or shadow changes on hover. */
+html.koobd-lite .dash-lastread-card,
+html.koobd-lite .dash-lastread-card:hover{
+  transform: none;
+  transition: none;
+}
+
+/* Phones: a smaller cover, and Continue becomes a round play button. */
+@media (max-width: 520px){
+  .dash-lastread-card{
+    gap: 12px;
+    min-height: 80px;
+    padding: 10px 12px 10px 10px;
+  }
+
+  .dash-lastread-cover{
+    width: 58px;
+    height: 58px;
+    border-radius: 12px;
+  }
+
+  .dash-lastread-title{
+    font-size: 15px;
+  }
+
+  .dash-lastread-creator,
+  .dash-lastread-dot{
+    display: none;
+  }
+
+  .dash-lastread-cta{
+    width: 44px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .dash-lastread-cta span{
+    display: none;
+  }
+
+  .dash-lastread-cta svg{
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* --- Wide screens: the side column stays put --------------------------------
+   With the stories and the side panels side by side, only the stories (the
+   banner, Last Read, the story rows) scroll; What's New and Events stay in
+   view. The column is at most a screen tall: when the panels need more room,
+   the Events pictures share what is left (down to a slim strip), and on short
+   screens the last ones are left out rather than cut in half. Sticky
+   positioning costs nothing per frame, so it is fine on slower tablets. */
+@media (min-width: 981px){
+  /* The main content is its own scroll container; the dashboard side panels
+     can stick within it while the navigation rail remains fixed. */
+  .dashboard-home .main{
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dash-side-col{
+    position: sticky;
+    top: 8px;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100svh - 16px);
+    min-height: 0;
+  }
+
+  .dash-side-col > .dash-panel{
+    flex: none;
+  }
+
+  .dash-side-col > .dash-events-panel{
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dash-events-panel .dash-events-body{
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .dash-events-panel .dash-event-item{
+    flex: 0 1 86px;
+    height: auto;
+    min-height: 52px;
+  }
+}
+
+/* Fewer events on short screens. The steady screen height
+   (js/performance-mode.js) decides, so the list does not change while a
+   tablet's address bar slides in and out. */
+@media (min-width: 981px){
+  html.koobd-h760 .dash-events-panel .dash-event-item:nth-child(n+4){
+    display: none;
+  }
+
+  html.koobd-h620 .dash-events-panel .dash-event-item:nth-child(n+3){
+    display: none;
+  }
+}
+
+/* --- Story shelves (Classic Stories, Stories Made by Others) -----------------
+   js/story-shelf.js. One row of cards that scrolls sideways (swipe, or the
+   round arrows on its edges), or with Show all a grid of every story in the
+   section. The number of cards in view follows the row's own width: four on
+   wide screens, three on tablets, two and a bit on phones (the next card
+   peeks in, so the row reads as one to swipe). */
+.story-shelf-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.story-shelf-head .dash-category-label,
+.story-shelf-head .dash-shared-label{
+  margin: 0 !important;
+}
+
+.story-shelf-toggle{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(107,120,168,.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  color: #4f5fa3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.story-shelf-toggle[hidden]{
+  display: none;
+}
+
+.story-shelf-toggle:hover{
+  border-color: rgba(79,99,214,.35);
+  background: #fff;
+}
+
+.story-shelf-toggle:focus-visible,
+.story-shelf-nav:focus-visible{
+  outline: 3px solid rgba(79,99,214,.38);
+  outline-offset: 2px;
+}
+
+.story-shelf-toggle svg{
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.story-shelf-toggle .is-less,
+.story-shelf.is-expanded .story-shelf-toggle .is-more{
+  display: none;
+}
+
+.story-shelf.is-expanded .story-shelf-toggle .is-less{
+  display: block;
+}
+
+.story-shelf-viewport{
+  position: relative;
+  container-type: inline-size;
+}
+
+/* The header's controls: the row's arrows, then Show all. */
+.story-shelf-controls{
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* While a press slides the row, it does not snap mid-way. */
+.story-shelf-track.is-sliding{
+  scroll-snap-type: none;
+}
+
+/* The row. */
+.story-shelf-track{
+  --shelf-gap: 16px;
+  --shelf-card: calc((100% - 3 * var(--shelf-gap)) / 4);
+  display: flex !important;
+  gap: var(--shelf-gap) !important;
+  margin: -10px -2px -16px;
+  padding: 10px 2px 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  scrollbar-width: none;
+}
+
+.story-shelf-track::-webkit-scrollbar{
+  display: none;
+}
+
+.story-shelf-track > *{
+  flex: 0 0 var(--shelf-card);
+  min-width: 0;
+  max-width: none;
+  scroll-snap-align: start;
+}
+
+.story-shelf-track > [hidden]{
+  display: none !important;
+}
+
+/* A gentler lift inside the row, so a card never pokes out of it. */
+.story-shelf-track > .dash-story-tile:hover,
+.story-shelf-track > .dash-shared-card:hover{
+  transform: translateY(-4px);
+}
+
+@container (max-width: 640px){
+  .story-shelf-track{
+    --shelf-card: calc((100% - 2 * var(--shelf-gap)) / 3);
+  }
+}
+
+@container (max-width: 460px){
+  .story-shelf-track{
+    --shelf-gap: 12px;
+    --shelf-card: calc((100% - var(--shelf-gap)) / 2.25);
+  }
+}
+
+/* The arrows: beside the row (never over a card), white with an indigo
+   chevron; hovering tints them, and a press fills them with KoobD's
+   indigo-to-mint gradient for a moment. */
+.story-shelf-nav{
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(107,120,168,.22);
+  border-radius: 50%;
+  background: #fff;
+  color: #4f63d6;
+  box-shadow: 0 2px 8px rgba(27,36,64,.1);
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease, transform .12s ease;
+}
+
+.story-shelf-nav[hidden]{
+  display: none;
+}
+
+.story-shelf-nav svg{
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.story-shelf-nav:hover:not(:disabled){
+  border-color: rgba(79,99,214,.35);
+  background: #eef1fd;
+  box-shadow: 0 4px 12px rgba(79,99,214,.18);
+}
+
+.story-shelf-nav:active:not(:disabled),
+.story-shelf-nav.is-pressed:not(:disabled){
+  border-color: transparent;
+  background: linear-gradient(135deg, #5f74d8, #6fe0b6);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(79,99,214,.32);
+}
+
+.story-shelf-nav:active:not(:disabled){
+  transform: scale(.94);
+}
+
+/* At the row's end: still there, but faded and not clickable. */
+.story-shelf-nav:disabled{
+  opacity: .35;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Show all, and search results: every story at once, in a grid. */
+.story-shelf.is-expanded .story-shelf-track,
+.dash-main-col.is-searching .story-shelf-track{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+.story-shelf.is-expanded .story-shelf-track{
+  animation: storyShelfIn .2s ease;
+}
+
+@keyframes storyShelfIn{
+  from{opacity: .4;}
+  to{opacity: 1;}
+}
+
+.dash-main-col.is-searching .story-shelf-nav,
+.dash-main-col.is-searching .story-shelf-toggle{
+  display: none !important;
+}
+
+@container (max-width: 460px){
+  .story-shelf.is-expanded .story-shelf-track,
+  .dash-main-col.is-searching .story-shelf-track{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phones and small tablets: taller cards, as before. */
+@media (max-width: 768px){
+  .story-shelf .dash-story-tile,
+  .story-shelf .dash-shared-card{
+    aspect-ratio: 4 / 5;
+  }
+
+  .story-shelf-nav{
+    width: 40px;
+    height: 40px;
+  }
+
+  .story-shelf-toggle{
+    min-height: 40px;
+  }
+}
+
+/* Lite mode and reduced motion: no fade, no lift. */
+html.koobd-lite .story-shelf.is-expanded .story-shelf-track{
+  animation: none;
+}
+
+html.koobd-lite .story-shelf-track > .dash-story-tile:hover,
+html.koobd-lite .story-shelf-track > .dash-shared-card:hover{
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .story-shelf.is-expanded .story-shelf-track{
+    animation: none;
+  }
+}
+
+/* Phones: every story card is the same comfortable width in both rows,
+   whether or not the row has arrows beside it (the next card peeks in). */
+@media (max-width: 600px){
+  .story-shelf-track{
+    --shelf-card: clamp(140px, 42vw, 220px);
+  }
+}
+
+/* Phones: Show all is an icon-only button, so the section title keeps
+   its room beside the arrows. */
+@media (max-width: 480px){
+  .story-shelf-toggle{
+    justify-content: center;
+    width: 40px;
+    padding: 0;
+  }
+
+  .story-shelf-toggle-label{
+    display: none;
+  }
+
+  .story-shelf-toggle svg{
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* --- The search bar stays at the top while the page scrolls -----------------
+   It sticks just below the top edge, over the stories as they scroll past,
+   so readers can search from anywhere on Home. Once the page has moved
+   (js/home-search.js adds .is-stuck) it keeps its size and look and only
+   zooms out a little, with a slightly deeper shadow, so it reads as still
+   there to use. A transform, so it costs nothing to draw. */
+.dashboard-home .main{
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.dash-search-wrap{
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+}
+
+.dash-search{
+  transform-origin: left center;
+  transition: width .3s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.dash-search-wrap.is-stuck .dash-search{
+  transform: scale(1.04);
+  box-shadow: 0 8px 22px rgba(27,36,64,.18);
+}
+
+/* The match count stays readable over the stories while stuck. */
+.dash-search-wrap.is-stuck .dash-search-summary:not(:empty){
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(27,36,64,.12);
+}
+
+@media (max-width: 768px){
+  .dash-search-wrap{
+    top: max(8px, env(safe-area-inset-top));
+  }
+
+  /* Full width on phones: it zooms from its middle, staying on screen. */
+  .dash-search{
+    transform-origin: center;
+  }
+
+  .dash-search-wrap.is-stuck .dash-search{
+    transform: scale(1.02);
+  }
+}
+
+html.koobd-lite .dash-search{
+  transition: none;
+}
+
+/* Stuck over the stories, the field is solid white so nothing shows through it. */
+.dash-search-wrap.is-stuck .dash-search{
+  background-color: #fff !important;
+}

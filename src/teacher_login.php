@@ -1,7 +1,5 @@
 <?php
 require_once('teacher_auth.php');
-$leftMascot = 'assets/images/characters/CUBEBOT.png';
-$rightMascot = 'assets/images/characters/WATER MAIN.png';
 
 $existingTeacher = koobdTeacherCurrentUser();
 if ($existingTeacher) {
@@ -47,53 +45,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="assets/images/icons/app/apple-touch-icon.png">
   <link rel="stylesheet" href="<?= koobdAsset('css/mobile.css') ?>">
+  <link rel="stylesheet" href="<?= koobdAsset('css/auth.css') ?>">
 </head>
-<body class="auth-bg auth-login-page">
+<body class="auth-bg auth-split auth-login-page">
   <main class="auth-scene" aria-label="Teacher login">
     <section class="auth-stage">
-      <div class="auth-pattern auth-pattern-diamond"></div>
-      <div class="auth-pattern auth-pattern-star auth-pattern-star-left"></div>
-      <div class="auth-pattern auth-pattern-circle auth-pattern-circle-right"></div>
-      <div class="auth-pattern auth-pattern-circle auth-pattern-circle-bottom"></div>
+      <?php require_once __DIR__ . '/auth_layout.php'; koobdAuthCarousel(); ?>
 
-      <img class="auth-mascot auth-mascot-left" src="<?= htmlspecialchars($leftMascot) ?>" alt="" aria-hidden="true">
-      <img class="auth-mascot auth-mascot-right" src="<?= htmlspecialchars($rightMascot) ?>" alt="" aria-hidden="true">
 
       <div class="auth-shell">
-        <div class="auth-card">
-          <div class="auth-role-switch" aria-label="Choose account type">
-            <a class="auth-role-pill" href="log.php">Student</a>
-            <a class="auth-role-pill is-active" href="teacher_login.php">Teacher</a>
-          </div>
-
-          <div class="auth-title">
-            <div class="auth-brandmark">
-              <div class="auth-infinity">
-                <img src="assets/images/icons/LOGO 1.png" alt="KoobD logo">
-              </div>
-            </div>
-            <div class="auth-h1">TEACHER LOGIN</div>
-            <div class="auth-subtitle">Manage classroom cards and view student reading progress from the teacher side.</div>
-          </div>
-
-          <form action="" method="post" class="auth-form" aria-label="Teacher login form">
-            <input class="auth-input" type="email" name="email" placeholder="Teacher email" autocomplete="email" required>
-            <input class="auth-input" type="password" name="password" placeholder="Password" autocomplete="current-password" required>
-
-            <?php if (!empty($error)) : ?>
-              <div class="auth-error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-
-            <div class="auth-actions-row">
-              <button type="submit" class="auth-btn primary">LOGIN</button>
-              <a class="auth-btn" href="teacher_register.php">REGISTER</a>
-            </div>
-          </form>
-
-          <div class="auth-switch">
-            Need a teacher account? <a href="teacher_register.php">Register here</a>
-          </div>
-        </div>
+        <?php koobdAuthCard('login', 'teacher', $error ?? ''); ?>
       </div>
     </section>
   </main>

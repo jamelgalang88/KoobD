@@ -1,0 +1,172 @@
+/* Section colours for Home (home.php), Classrooms (classroom.php) and My
+   Stories (teacher_stories.php), the same treatment as a classroom's page
+   (css/classroom.css): each section is a softly tinted panel with a border in
+   its colour, so sections are easy to tell apart, and the cards inside stay
+   white so their text keeps full contrast. Spacing between sections is a
+   little tighter than before.
+
+   The colours: indigo for stories and the main panels, violet for stories by
+   others, mint for reading progress and classes, amber for events. Flat
+   colours only, nothing that costs a slow tablet anything to draw. Loaded
+   after css/mobile.css, which is why a few phone rules need !important. */
+:root{
+  --ks-indigo: #4f63d6;
+  --ks-indigo-ink: #3d4fb8;
+  --ks-indigo-bg: #f2f4ff;
+  --ks-indigo-line: rgba(79,99,214,.2);
+  --ks-violet: #6f4fc9;
+  --ks-violet-bg: #f6f2ff;
+  --ks-violet-line: rgba(123,91,214,.22);
+  --ks-mint: #1d8063;
+  --ks-mint-bg: #eefaf4;
+  --ks-mint-line: rgba(29,143,106,.22);
+  --ks-amber: #95570b;
+  --ks-amber-bg: #fff7ec;
+  --ks-amber-line: rgba(214,140,40,.26);
+  --ks-shadow: 0 1px 2px rgba(27,36,64,.04), 0 8px 20px rgba(27,36,64,.06);
+}
+
+/* --- Home ------------------------------------------------------------------ */
+.dashboard-grid,
+.dash-main-col{
+  gap: 14px;
+}
+
+/* The story sections (Last Read, Classic Stories, Stories Made by Others)
+   sit straight on the page, without a box: only their names are coloured. */
+.dash-shared-wrap{
+  gap: 10px;
+  margin-top: 0;
+}
+
+.dash-shared-grid{
+  margin-bottom: 0;
+}
+
+/* Section names in their colour. */
+.dash-category-label,
+.dash-shared-label{
+  color: var(--ks-indigo-ink);
+}
+
+.dash-lastread .dash-category-label{
+  margin-bottom: 8px;
+  color: var(--ks-mint);
+}
+
+.dash-shared-wrap .dash-shared-label{
+  color: var(--ks-violet);
+}
+
+.dash-category-wrap .story-shelf-head,
+.dash-shared-wrap .story-shelf-head{
+  margin-bottom: 10px;
+}
+
+.dash-shared-wrap .story-shelf-head{
+  margin-bottom: 0;
+}
+
+/* The side panels: What's New in indigo, Events in amber. */
+.dash-side-col > .dash-panel{
+  border: 1px solid var(--ks-indigo-line);
+  background: var(--ks-indigo-bg);
+  box-shadow: var(--ks-shadow);
+}
+
+.dash-side-col > .dash-events-panel{
+  border-color: var(--ks-amber-line);
+  background: var(--ks-amber-bg);
+}
+
+.dash-panel-title{
+  color: var(--ks-indigo-ink);
+}
+
+.dash-events-panel .events-title{
+  color: var(--ks-amber);
+}
+
+.dash-panel-head{
+  margin-bottom: 10px;
+}
+
+/* "See all": readable, in the panel's colour. */
+.dash-see-all{
+  color: var(--ks-indigo-ink);
+}
+
+.dash-events-panel .dash-see-all{
+  color: var(--ks-amber);
+}
+
+@media (max-width: 768px){
+  .dashboard-grid{
+    gap: 12px !important;
+  }
+
+  .dash-category-label,
+  .dash-shared-label{
+    margin: 0 0 8px !important;
+  }
+}
+
+/* --- Classrooms -------------------------------------------------------------- */
+.classroom-join-panel,
+.classroom-teacher-hero.panel{
+  border: 1px solid var(--ks-indigo-line);
+  background: var(--ks-indigo-bg);
+  box-shadow: var(--ks-shadow);
+}
+
+.classroom-join-panel{
+  margin-bottom: 12px;
+}
+
+.classroom-teacher-panel.panel{
+  border: 1px solid var(--ks-mint-line);
+  background: var(--ks-mint-bg);
+  box-shadow: var(--ks-shadow);
+}
+
+/* A student's classes: one mint panel holding the cards. */
+.classroom-shell > .cr-grid{
+  padding: 14px;
+  border: 1px solid var(--ks-mint-line);
+  border-radius: 20px;
+  background: var(--ks-mint-bg);
+}
+
+@media (max-width: 600px){
+  .classroom-shell > .cr-grid{
+    padding: 10px;
+    border-radius: 16px;
+  }
+}
+
+/* --- My Stories ------------------------------------------------------------------ */
+.teacher-story-library-shell .teacher-story-library-head{
+  padding: 20px 22px;
+  border-radius: 22px;
+  border-color: var(--ks-indigo-line);
+  background: var(--ks-indigo-bg);
+  box-shadow: var(--ks-shadow);
+}
+
+.teacher-story-library-shell .teacher-story-library-grid{
+  padding: 14px;
+  border: 1px solid var(--ks-violet-line);
+  border-radius: 22px;
+  background: var(--ks-violet-bg);
+}
+
+.teacher-story-library-grid .ts-card{
+  border-color: var(--ks-indigo-line);
+}
+
+@media (max-width: 600px){
+  .teacher-story-library-shell .teacher-story-library-grid{
+    padding: 10px;
+    border-radius: 16px;
+  }
+}

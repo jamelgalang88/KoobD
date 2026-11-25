@@ -121,7 +121,7 @@
     const data = node.dataset;
     return {
       title: data.storyTitle, href: data.storyHref || node.getAttribute('href') || '', cover: data.storyCover,
-      mode: data.storyMode, creator: data.storyCreator, description: data.storyDescription, lesson: data.storyLesson,
+      mode: data.storyMode, creator: data.storyCreator, approver: data.storyApprover, description: data.storyDescription, lesson: data.storyLesson,
       progress: data.storyProgress, play: data.storyPlay, altHref: data.storyAltHref, altLabel: data.storyAltLabel,
       key: data.storyKey
     };
@@ -150,8 +150,8 @@
     dom.fav.hidden = !story.key;
     dom.fav.dataset.key = story.key || '';
     if (story.key) loadFavorite(story.key);
-    dom.creator.textContent = story.creator || '';
-    dom.creator.hidden = !story.creator;
+    dom.creator.textContent = [story.creator, story.approver ? `Approved by ${story.approver}` : ''].filter(Boolean).join(' · ');
+    dom.creator.hidden = !story.creator && !story.approver;
     dom.progress.hidden = progress === null;
     if (progress !== null) {
       dom.progressFill.style.width = `${progress}%`;

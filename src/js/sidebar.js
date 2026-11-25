@@ -157,24 +157,188 @@
   // Set active state based on current URL.
   const currentFile = window.location.pathname.split('/').pop();
   const teacherStoryFiles = ['create_story.php', 'teacher_create_story.php', 'teacher_story_editor.php', 'teacher_story_preview.php', 'shared_story_reader.php', 'story.php'];
-  navItems.forEach((item) => {
-    const href = item.getAttribute('href') || '';
-    if (!href || href === '#') return;
-    const hrefFile = href.split('/').pop();
-    const shouldActivate = hrefFile === currentFile || (item.classList.contains('sidebar-link-add') && teacherStoryFiles.includes(currentFile));
-    if (shouldActivate) item.classList.add('active');
-    else item.classList.remove('active');
-  });
+  function updateSidebarActiveState() {
+    const lastReadLink = document.querySelector('.sidebar-link-lastread[data-last-read-href]');
+    const isLastReadPage = lastReadLink
+      ? new URL(lastReadLink.href, window.location.href).pathname === window.location.pathname
+      : false;
+    navItems.forEach((item) => {
+      const href = item.getAttribute('href') || '';
+      if (!href || href === '#') return;
+      const hrefFile = href.split(/[?#]/)[0].split('/').pop();
+      const shouldActivate = item.classList.contains('sidebar-link-lastread')
+        ? isLastReadPage
+        : (hrefFile === currentFile && !isLastReadPage) || (item.classList.contains('sidebar-link-add') && !isLastReadPage && teacherStoryFiles.includes(currentFile));
+      if (shouldActivate) item.classList.add('active');
+      else item.classList.remove('active');
+    });
+  }
+  updateSidebarActiveState();
 
   fitSidebarProfileNames();
   window.addEventListener('resize', fitSidebarProfileNames);
 
-  // The profile button (bottom of the sidebar, or the last tab of the phone
-  // bar) opens its menu: My Profile and Log out.
+  const missionStatusUrl = new URL('../missions_status.php', document.currentScript.src);
+  const missionStatusRequest = fetch(missionStatusUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Mission status request failed (${response.status}).`);
+      return response.json();
+    })
+    .then((status) => {
+      if (!status || typeof status.unlocks !== 'object') {
+        throw new Error('Mission status response is invalid.');
+      }
+      return status;
+    });
+
+  // The profile menu's Dictionary (dictionary.php), Writing Practice
+  // (writing.php) and Minigames (minigames.php), right under My Profile.
+  document.querySelectorAll('.sidebar-profile-popover').forEach((menu) => {
+    if (menu.querySelector('[data-dictionary]')) return;
+    const profileItem = menu.querySelector('a.sidebar-profile-menu-item');
+    let place = profileItem ? profileItem.nextSibling : menu.firstChild;
+    [
+      ['dictionary.php', 'dictionary', 'Dictionary', '<path d="M4 5.5A2.5 2.5 0 016.5 3H12v16H6.5A2.5 2.5 0 004 21.5zM20 5.5A2.5 2.5 0 0017.5 3H12v16h5.5a2.5 2.5 0 012.5 2.5z"/>'],
+      ['writing.php', 'writing', 'Writing Practice', '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'],
+      ['minigames.php', 'minigames', 'Minigames', '<path d="M10 4a2 2 0 014 0v2h4a1 1 0 011 1v4h-2a2 2 0 000 4h2v4a1 1 0 01-1 1h-4v-2a2 2 0 00-4 0v2H6a1 1 0 01-1-1v-4H3a2 2 0 010-4h2V7a1 1 0 011-1h4z"/>']
+    ].forEach(([href, key, label, path]) => {
+      const item = document.createElement('a');
+      item.dataset.destination = href;
+      item.dataset.iconPath = path;
+      item.className = 'sidebar-profile-menu-item';
+      item.dataset[key] = '';
+      item.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg><span>${label}</span>`;
+      item.classList.add('is-locked');
+      item.setAttribute('aria-disabled', 'true');
+      item.setAttribute('tabindex', '-1');
+      item.title = 'Checking mission requirements...';
+      item.querySelector('svg').innerHTML = '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>';
+      menu.insertBefore(item, place);
+      place = item.nextSibling;
+    });
+    missionStatusRequest
+      .then((status) => {
+        menu.querySelectorAll('[data-dictionary], [data-writing], [data-minigames]').forEach((item) => {
+          const feature = item.hasAttribute('data-minigames') ? 'minigames' : 'learning_tools';
+          const icon = item.querySelector('svg');
+          if (status.unlocks[feature] === true) {
+            item.classList.remove('is-locked');
+            item.href = item.dataset.destination;
+            item.removeAttribute('aria-disabled');
+            item.removeAttribute('tabindex');
+            item.removeAttribute('title');
+            if (icon) icon.innerHTML = item.dataset.iconPath;
+            return;
+          }
+          item.removeAttribute('href');
+          item.title = 'Complete the required missions to unlock this feature.';
+        });
+      })
+      .catch((error) => console.error('Unable to load mission unlock status:', error));
+  });
+
+  document.querySelectorAll('.sidebar-profile-popover').forEach((menu) => {
+    if (menu.querySelector('[data-achievements-menu]')) return;
+    const item = document.createElement('a');
+    item.href = 'profile.php#achievements';
+    item.className = 'sidebar-profile-menu-item';
+    item.dataset.achievementsMenu = '';
+    item.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/><path d="m9 12 2 2 4-4"/></svg><span>Achievements &amp; Medals</span>';
+    const logout = menu.querySelector('.sidebar-menu-logout-form');
+    menu.insertBefore(item, logout || null);
+  });
+
+  missionStatusRequest
+    .then((status) => {
+      document.querySelectorAll('.sidebar-link-versus').forEach((item) => {
+        const icon = item.querySelector('.sidebar-icon-svg');
+        if (item.dataset.destination === undefined) item.dataset.destination = item.getAttribute('href') || '';
+        if (icon && item.dataset.iconMarkup === undefined) item.dataset.iconMarkup = icon.innerHTML;
+        if (status.unlocks.versus === true) {
+          item.classList.remove('is-locked');
+          item.href = item.dataset.destination;
+          item.setAttribute('aria-label', 'Versus Mode');
+          item.removeAttribute('aria-disabled');
+          item.removeAttribute('title');
+          if (icon) icon.innerHTML = item.dataset.iconMarkup;
+          return;
+        }
+        item.classList.add('is-locked');
+        item.removeAttribute('href');
+        item.setAttribute('aria-label', 'Versus Mode is locked');
+        item.setAttribute('aria-disabled', 'true');
+        item.title = 'Complete Creativity and Expression to unlock Versus Mode.';
+        if (icon) {
+          icon.innerHTML = '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>';
+        }
+      });
+
+      document.querySelectorAll('.sidebar-link-add').forEach((item) => {
+        const icon = item.querySelector('.sidebar-icon-add');
+        if (item.dataset.destination === undefined) item.dataset.destination = item.getAttribute('href') || '';
+        if (status.unlocks.story_creation === true) {
+          item.classList.remove('is-locked');
+          item.href = item.dataset.destination;
+          item.setAttribute('aria-label', 'Create story');
+          item.removeAttribute('aria-disabled');
+          item.removeAttribute('title');
+          if (icon && icon.querySelector('svg')) icon.innerHTML = '+';
+          return;
+        }
+        item.classList.add('is-locked');
+        item.removeAttribute('href');
+        item.setAttribute('aria-label', 'Create story is locked');
+        item.setAttribute('aria-disabled', 'true');
+        item.title = 'Complete Developing Language Skills to unlock story creation.';
+        if (icon) {
+          icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+        }
+      });
+    })
+    .catch((error) => console.error('Unable to load story-creation unlock status:', error));
+
+  // The profile button (bottom of the sidebar, or the portrait bar) opens its
+  // menu: My Profile, role-specific tools and Log out.
   const profileMenus = Array.from(document.querySelectorAll('.sidebar-profile-menu')).map((wrap) => ({
     button: wrap.querySelector('.sidebar-profile-link'),
     popover: wrap.querySelector('.sidebar-profile-popover')
   })).filter((menu) => menu.button && menu.popover);
+  const approveStoriesLink = document.querySelector('.sidebar-link-approve-stories');
+  const approvalPortraitQuery = window.matchMedia(
+    '(max-width: 768px) and (orientation: portrait), (orientation: portrait) and (pointer: coarse)'
+  );
+  const approvalMenuItems = [];
+  if (approveStoriesLink) {
+    profileMenus.forEach(({ popover }) => {
+      let item = popover.querySelector('[data-approve-stories-menu]');
+      if (!item) {
+        item = document.createElement('a');
+        item.href = approveStoriesLink.href;
+        item.className = 'sidebar-profile-menu-item';
+        item.dataset.approveStoriesMenu = '';
+        item.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v14l-3.5-2-3.5 2-3.5-2L6.5 20 3.5 18V6A1.5 1.5 0 0 1 5 4.5z"/><path d="m8 11 2.5 2.5L16 8"/></svg><span>Approve Stories</span>';
+        const logout = popover.querySelector('.sidebar-menu-logout-form');
+        popover.insertBefore(item, logout || null);
+      }
+      approvalMenuItems.push(item);
+    });
+  }
+
+  function updateApprovalStoriesPlacement() {
+    if (!approveStoriesLink) return;
+    const showInProfileMenu = approvalPortraitQuery.matches;
+    approveStoriesLink.hidden = showInProfileMenu;
+    approvalMenuItems.forEach((item) => {
+      item.hidden = !showInProfileMenu;
+    });
+  }
+
+  updateApprovalStoriesPlacement();
+  if (typeof approvalPortraitQuery.addEventListener === 'function') {
+    approvalPortraitQuery.addEventListener('change', updateApprovalStoriesPlacement);
+  } else {
+    approvalPortraitQuery.addListener(updateApprovalStoriesPlacement);
+  }
   // The sidebar's backdrop blur would make it the menu's frame (a fixed
   // element inside it is placed, and clipped, relative to the sidebar), so
   // the menu lives at the end of the page instead.
@@ -184,8 +348,8 @@
     const rect = menu.button.getBoundingClientRect();
     const { popover } = menu;
     popover.style.left = popover.style.right = popover.style.top = popover.style.bottom = '';
-    if (window.matchMedia('(max-width: 768px)').matches) {
-      // Phone bar: above the tab, kept inside the screen.
+    if (approvalPortraitQuery.matches) {
+      // Portrait bar: above the tab, kept inside the screen.
       popover.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
       popover.style.bottom = `${window.innerHeight - rect.top + 8}px`;
     } else {
@@ -232,7 +396,14 @@
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeProfileMenus(true);
     });
-    window.addEventListener('resize', () => closeProfileMenus());
+    // Turning the device closes the menu; the address bar sliding in and out
+    // (a height-only change) does not.
+    let menuWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+      if (window.innerWidth === menuWidth) return;
+      menuWidth = window.innerWidth;
+      closeProfileMenus();
+    });
   }
 
   // Banner carousel (only if elements exist).
@@ -412,16 +583,21 @@
     });
   });
 
-  // The interface language (English / Tagalog), at the top of the sidebar's
-  // bottom section, above the profile. The choice is global (js/i18n.js keeps
-  // it for every page); switching reloads the page in the new language.
-  document.querySelectorAll('.sidebar-bottom').forEach((bottom) => {
-    if (bottom.querySelector('.sidebar-language') || !window.KoobdI18n) return;
+  // The interface language (English / Tagalog) lives in the Profile menu so it
+  // does not take a place in the portrait navigation bar.
+  profileMenus.forEach(({ popover }, index) => {
+    if (popover.querySelector('.sidebar-profile-language') || !window.KoobdI18n) return;
     const current = window.KoobdI18n.lang;
+    const languageMenu = document.createElement('div');
+    languageMenu.className = 'sidebar-profile-language';
+    const label = document.createElement('span');
+    label.className = 'sidebar-profile-language-label';
+    label.id = `sidebarLanguageLabel${index + 1}`;
+    label.textContent = 'Change Language';
     const group = document.createElement('div');
     group.className = 'sidebar-language';
     group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Language');
+    group.setAttribute('aria-labelledby', label.id);
     [['en', 'EN', 'English'], ['tl', 'TL', 'Tagalog']].forEach(([code, short, name]) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -435,6 +611,7 @@
       button.addEventListener('click', () => window.KoobdI18n.setLang(code));
       group.appendChild(button);
     });
-    bottom.insertBefore(group, bottom.firstChild);
+    languageMenu.append(label, group);
+    popover.insertBefore(languageMenu, popover.firstChild);
   });
 })();

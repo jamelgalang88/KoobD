@@ -1,0 +1,84 @@
+/* The first-time tutorial (js/koobd-tutorial.js): a gray overlay with a
+   spotlight cut out around the feature being explained, and Flowergirl's
+   dialogue box with her standing at its right. The box is placed by the
+   script; sizes come from --kt-card-w (the card's width) and --kt-s (her
+   pixel scale). No blur or glow; low-end devices and reduced motion get no
+   transitions. */
+.kt{position:fixed;inset:0;z-index:1000;color:#1f2756;font-family:inherit;opacity:0;transition:opacity .18s ease;}
+.kt[hidden]{display:none;}
+.kt.is-shown{opacity:1;}
+
+/* Everything behind the tutorial waits for it. */
+.kt-block{position:fixed;inset:0;}
+
+/* The spotlight: a clear hole, everything around it darkened. */
+.kt-spot{position:fixed;left:0;top:0;width:0;height:0;border-radius:14px;pointer-events:none;
+  box-shadow:0 0 0 3px #fff,0 0 0 9999px rgba(20,24,44,.66);
+  transition:left .24s ease,top .24s ease,width .24s ease,height .24s ease;}
+.kt-spot.is-empty{box-shadow:0 0 0 9999px rgba(20,24,44,.66);}
+/* Journey tours let a learner activate only the highlighted target. */
+.kt.is-mission .kt-spot{pointer-events:auto;cursor:pointer;}
+
+/* Flowergirl and her dialogue box, side by side and bottom-aligned. */
+.kt-bubble{position:fixed;left:0;top:0;display:flex;align-items:flex-end;gap:6px;max-width:calc(100vw - 24px);}
+.kt-card{position:relative;box-sizing:border-box;width:var(--kt-card-w,380px);display:flex;flex-direction:column;gap:6px;padding:14px 16px 16px;border:1px solid #e1e6f6;border-radius:18px;background:#fff;box-shadow:0 14px 34px rgba(10,14,36,.28);}
+/* Her speech tail, pointing at her face from the box's right edge. */
+.kt-card::after{content:"";position:absolute;right:-8px;bottom:calc(32px * var(--kt-s,3) - 7px);width:14px;height:14px;background:#fff;border-top:1px solid #e1e6f6;border-right:1px solid #e1e6f6;transform:rotate(45deg);}
+
+.kt-head{display:flex;align-items:center;gap:8px;min-height:44px;margin:-6px -6px 0 0;}
+.kt-name{flex:none;padding:4px 10px;border-radius:999px;background:#eef1ff;color:#4f63d6;font-size:12.5px;font-weight:900;letter-spacing:.02em;}
+.kt-count{flex:1;min-width:0;color:#6b7aaa;font-size:12.5px;font-weight:800;white-space:nowrap;}
+.kt-skip{flex:none;min-height:44px;min-width:44px;padding:0 10px;border:0;border-radius:12px;background:transparent;color:#56608c;font:inherit;font-size:13.5px;font-weight:800;cursor:pointer;}
+.kt-skip:hover{background:#f2f4fb;color:#1f2756;}
+.kt-skip[hidden]{display:none;}
+.kt-skip-short{display:none;}
+.kt-bubble.is-narrow .kt-skip-long{display:none;}
+.kt-bubble.is-narrow .kt-skip-short{display:inline;}
+
+.kt-title{margin:0;color:#1f2756;font-size:19px;font-weight:1000;line-height:1.25;}
+.kt-text{margin:0 0 6px;color:#3d4672;font-size:15.5px;font-weight:600;line-height:1.5;}
+
+.kt-foot{display:flex;justify-content:flex-end;gap:10px;}
+.kt-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 16px;border-radius:12px;font:inherit;font-size:15px;font-weight:900;cursor:pointer;}
+.kt-btn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.kt-prev{border:1px solid #d5dbf3;background:#fff;color:#1f2756;}
+.kt-prev:hover{background:#f5f7fe;}
+.kt-prev:disabled{opacity:.45;cursor:default;background:#fff;}
+.kt-next{border:1px solid #4f63d6;background:#4f63d6;color:#fff;}
+.kt-next:hover{background:#4356c4;border-color:#4356c4;}
+.kt-finish-label{display:none;}
+.kt-next.is-finish .kt-next-label{display:none;}
+.kt-next.is-finish .kt-finish-label{display:inline;}
+.kt-next.is-finish svg{display:none;}
+.kt-skip:focus-visible,.kt-btn:focus-visible{outline:3px solid #1f2756;outline-offset:2px;}
+
+/* Flowergirl: her pixel sheet, never smoothed, feet on the box's baseline. */
+.kt-guide{flex:none;display:flex;align-items:flex-end;}
+.kt-sprite{width:96px;height:138px;background-repeat:no-repeat;background-position:0 0;image-rendering:pixelated;image-rendering:crisp-edges;transform-origin:50% 100%;}
+
+/* Short screens (phones turned sideways). */
+.kt-bubble.is-short .kt-card{gap:4px;padding:10px 14px 12px;}
+.kt-bubble.is-short .kt-head{margin-top:-4px;}
+.kt-bubble.is-short .kt-title{font-size:16.5px;}
+.kt-bubble.is-short .kt-text{font-size:14.5px;line-height:1.4;margin-bottom:4px;}
+
+/* Phones. */
+@media (max-width:599px){
+  .kt-card{padding:12px 14px 14px;}
+  .kt-title{font-size:17px;}
+  .kt-text{font-size:15px;line-height:1.45;}
+  .kt-foot{gap:8px;}
+  .kt-btn{flex:1;padding:0 12px;}
+}
+
+/* The narrowest phones: she stands on the box's top corner instead. */
+.kt-bubble.is-compact{flex-direction:column;align-items:flex-end;gap:0;}
+.kt-bubble.is-compact .kt-guide{order:-1;margin:0 18px -6px 0;position:relative;z-index:1;}
+.kt-bubble.is-compact .kt-card::after{right:calc(18px + 16px * var(--kt-s,2) - 7px);top:-8px;bottom:auto;border-top:1px solid #e1e6f6;border-right:0;border-left:1px solid #e1e6f6;}
+
+/* Low-end devices and reduced motion: no fades or sliding, a lighter shadow. */
+html.koobd-lite .kt,html.koobd-lite .kt-spot{transition:none;}
+html.koobd-lite .kt-card{box-shadow:0 4px 12px rgba(10,14,36,.25);}
+@media (prefers-reduced-motion:reduce){
+  .kt,.kt-spot{transition:none;}
+}

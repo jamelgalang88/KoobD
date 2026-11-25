@@ -6,6 +6,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: create_story.php");
     exit();
 }
+if (!koobdIsTeacher($user)) {
+    http_response_code(403);
+    exit('Student stories must be submitted for teacher approval from the story editor.');
+}
 
 $title = trim((string)($_POST['title'] ?? ''));
 $subtitle = trim((string)($_POST['subtitle'] ?? ''));

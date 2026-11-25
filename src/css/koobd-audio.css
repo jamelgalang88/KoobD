@@ -1,0 +1,94 @@
+/* Sound settings (js/koobd-audio.js): the profile menu's "Sound settings" and
+   its panel - the master volume with the on/off switch on top, then the mix
+   (music, effects, clicks). A sheet from the bottom on phones, a dialog
+   elsewhere; sliders with large thumbs for touch; no blur or glow. */
+.koobd-sound-menu-item svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+.koobd-sound{--ks-ink:#1b2440;--ks-soft:#5f6a8a;--ks-faint:#8a94b3;--ks-line:#e6e9f2;--ks-accent:#4f63d6;--ks-accent-dark:#3f51c4;--ks-tint:#eef1ff;
+  width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 24px);margin:auto;padding:0;border:0;border-radius:20px;background:transparent;color:var(--ks-ink);overflow:auto;font-family:inherit;}
+.koobd-sound::backdrop{background:rgba(15,20,45,.5);}
+.koobd-sound-card{display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:20px;background:#fff;box-shadow:0 24px 60px rgba(15,20,45,.28);}
+.koobd-sound svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Title. */
+.koobd-sound-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.koobd-sound-head h2{margin:0;font-size:20px;font-weight:1000;letter-spacing:-.01em;}
+.koobd-sound-head p{margin:3px 0 0;color:var(--ks-soft);font-size:13px;font-weight:700;}
+.koobd-sound-x{display:grid;flex:none;place-items:center;width:40px;height:40px;margin:-6px -6px 0 0;padding:0;border:0;border-radius:12px;background:transparent;color:var(--ks-soft);cursor:pointer;}
+.koobd-sound-x:hover{background:#f2f4fb;color:var(--ks-ink);}
+.koobd-sound-x svg{width:20px;height:20px;stroke-width:2.4;}
+
+/* Master: the main volume, and sound on / off. */
+.koobd-sound-master{display:grid;gap:10px;padding:14px 16px 12px;border:1px solid #dfe4fb;border-radius:16px;background:linear-gradient(180deg,#f6f7ff,#fff);}
+.koobd-sound-master-top{display:flex;align-items:center;gap:12px;}
+.koobd-sound-master-icon{display:grid;flex:none;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--ks-accent);color:#fff;}
+.koobd-sound-master-icon svg{width:22px;height:22px;}
+.koobd-sound-master-text{display:flex;flex:1;flex-direction:column;min-width:0;}
+.koobd-sound-master-text label{font-size:15px;font-weight:1000;}
+.koobd-sound-master-text span{color:var(--ks-soft);font-size:12.5px;font-weight:700;}
+.koobd-sound-switch{position:relative;display:inline-flex;flex:none;align-items:center;min-width:44px;min-height:44px;justify-content:flex-end;cursor:pointer;}
+.koobd-sound-switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
+.koobd-sound-track{position:relative;width:46px;height:26px;border-radius:999px;background:#c5cbe0;transition:background-color .15s ease;pointer-events:none;}
+.koobd-sound-track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(15,20,45,.25);transition:transform .15s ease;}
+.koobd-sound-switch input:checked + .koobd-sound-track{background:var(--ks-accent);}
+.koobd-sound-switch input:checked + .koobd-sound-track::after{transform:translateX(20px);}
+.koobd-sound-switch input:focus-visible + .koobd-sound-track{outline:3px solid rgba(79,99,214,.35);outline-offset:3px;}
+
+/* The mix. */
+.koobd-sound-group{margin:2px 0 -6px;color:var(--ks-faint);font-size:11.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+.koobd-sound-rows{display:flex;flex-direction:column;margin:0;padding:0;list-style:none;border:1px solid var(--ks-line);border-radius:16px;}
+.koobd-sound-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;}
+.koobd-sound-row + .koobd-sound-row{border-top:1px solid var(--ks-line);}
+.koobd-sound-kind{display:grid;flex:none;place-items:center;width:34px;height:34px;margin-top:2px;border-radius:10px;background:var(--ks-tint);color:var(--ks-accent);}
+.koobd-sound-kind svg{width:18px;height:18px;}
+.koobd-sound-main{display:flex;flex:1;flex-direction:column;min-width:0;}
+.koobd-sound-label{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.koobd-sound-label label{font-size:14.5px;font-weight:900;}
+.koobd-sound-hint{color:var(--ks-faint);font-size:12.5px;font-weight:700;}
+.koobd-sound output{flex:none;min-width:40px;color:var(--ks-ink);font-size:13px;font-weight:900;text-align:right;font-variant-numeric:tabular-nums;}
+.koobd-sound-control{display:flex;align-items:center;gap:8px;margin-top:2px;}
+.koobd-sound-control.is-master output{min-width:46px;font-size:14px;}
+
+/* Sliders: a thin track filled to the level, a round thumb that is easy to grab. */
+.koobd-sound input[type="range"]{flex:1;min-width:0;height:36px;margin:0;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none;}
+.koobd-sound input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:linear-gradient(90deg,var(--ks-accent) var(--fill,50%),#e3e7f2 var(--fill,50%));}
+.koobd-sound input[type="range"]::-moz-range-track{height:6px;border-radius:999px;background:#e3e7f2;}
+.koobd-sound input[type="range"]::-moz-range-progress{height:6px;border-radius:999px;background:var(--ks-accent);}
+.koobd-sound input[type="range"]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8px;border:2px solid var(--ks-accent);border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,20,45,.2);-webkit-appearance:none;appearance:none;}
+.koobd-sound input[type="range"]::-moz-range-thumb{width:18px;height:18px;border:2px solid var(--ks-accent);border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,20,45,.2);}
+.koobd-sound input[type="range"]:focus-visible{outline:3px solid rgba(79,99,214,.3);outline-offset:2px;border-radius:8px;}
+.koobd-sound input[type="range"]:disabled{cursor:default;}
+
+/* Test buttons. */
+.koobd-sound-test{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:4px;min-width:44px;height:36px;padding:0 10px 0 8px;border:1px solid var(--ks-line);border-radius:10px;background:#fff;color:var(--ks-accent);font:inherit;font-size:12.5px;font-weight:900;cursor:pointer;}
+.koobd-sound-test.is-icon{padding:0;width:36px;min-width:36px;}
+.koobd-sound-test svg{width:14px;height:14px;fill:currentColor;stroke:none;}
+.koobd-sound-test:hover{border-color:#cfd6f2;background:var(--ks-tint);}
+.koobd-sound-test:focus-visible,.koobd-sound-reset:focus-visible,.koobd-sound-done:focus-visible,.koobd-sound-x:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+
+/* Sound off: the volumes rest, unchanged, until it is back on. */
+.koobd-sound.is-muted .koobd-sound-control,.koobd-sound.is-muted .koobd-sound-rows{opacity:.45;}
+.koobd-sound.is-muted .koobd-sound-test{cursor:default;}
+
+/* Footer. */
+.koobd-sound-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.koobd-sound-reset{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px 0 8px;border:0;border-radius:12px;background:transparent;color:var(--ks-soft);font:inherit;font-size:13.5px;font-weight:900;cursor:pointer;}
+.koobd-sound-reset svg{width:17px;height:17px;}
+.koobd-sound-reset:hover{background:#f2f4fb;color:var(--ks-ink);}
+.koobd-sound-done{min-width:120px;min-height:44px;padding:0 22px;border:0;border-radius:12px;background:var(--ks-accent);color:#fff;font:inherit;font-size:14px;font-weight:900;cursor:pointer;}
+.koobd-sound-done:hover{background:var(--ks-accent-dark);}
+
+@media (max-width:560px){
+  .koobd-sound{width:100vw;max-width:100vw;max-height:92dvh;margin:auto 0 0;border-radius:20px 20px 0 0;}
+  .koobd-sound-card{gap:14px;padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;}
+  .koobd-sound-row{padding:12px;gap:10px;}
+  .koobd-sound-test span{display:none;}
+  .koobd-sound-test{width:40px;min-width:40px;height:40px;padding:0;}
+  .koobd-sound-done{min-width:0;flex:1;}
+}
+@media (max-width:340px){
+  .koobd-sound-kind{display:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  .koobd-sound-track,.koobd-sound-track::after{transition:none;}
+}

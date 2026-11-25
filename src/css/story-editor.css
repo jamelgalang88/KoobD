@@ -1079,3 +1079,7 @@ html.editor-is-fullscreen .pe-toolbar .pe-fullscreen-btn{width:var(--pe-fs-btn, 
   html.editor-is-fullscreen .story-builder-sidebar{max-height:55dvh;}
   html.editor-is-fullscreen .story-builder-sidebar > .story-builder-panel{max-height:55dvh;overflow-y:auto;}
 }
+
+/* Sound: the weather and surroundings to choose from (js/platform-editor-panels.js,
+   js/teacher-story-editor.js), two to a row where there is room. */
+.pe-sound-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px 14px;}

@@ -35,6 +35,21 @@ if ($storyId === '' || $storyTitle === '') {
     exit();
 }
 
+// A classroom activity past its due date is closed: its progress no longer changes.
+if (preg_match('/^activity:(\d+)$/', $progressContext, $match)) {
+    $dueStmt = $conn->prepare("SELECT due_date FROM classroom_activities WHERE id = ? LIMIT 1");
+    $dueId = (int)$match[1];
+    $dueStmt->bind_param('i', $dueId);
+    $dueStmt->execute();
+    $dueRow = $dueStmt->get_result()->fetch_assoc();
+    $dueStmt->close();
+    if ($dueRow && koobdActivityClosed($dueRow)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'This activity is closed: its due date has passed.']);
+        exit();
+    }
+}
+
 $stmt = $conn->prepare(
     "INSERT INTO story_progress (user_id, story_id, progress_context, story_title, progress, progress_state)
      VALUES (?, ?, ?, ?, ?, ?)

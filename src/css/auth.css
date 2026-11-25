@@ -1,0 +1,545 @@
+/* The sign-in pages (log.php, sign.php, teacher_login.php, teacher_register.php):
+   KoobD's main characters in a carousel on the left (auth_layout.php) and
+   the login card, as it has always looked, on the right. On phones the
+   carousel is on top and the card below. Everything is centred in the screen;
+   when a screen is too short for it all (a tablet on its side, a small phone)
+   the page scrolls, and nothing is cut off or shrunk. Heights use the small
+   screen height (svh: the address bar shown), so the page holds still while a
+   phone's address bar slides in and out. The carousel moves with
+   transforms only, which is cheap to draw on slower tablets, and holds still
+   for readers who prefer less motion. */
+body.auth-split{
+  height: auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.auth-split .auth-scene{
+  height: auto;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+body.auth-split .auth-stage{
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  align-items: center;
+  justify-items: center;
+  height: auto;
+  min-height: 100vh !important;
+  min-height: 100svh !important;
+  padding: 24px 32px !important;
+  overflow: visible;
+}
+
+/* --- The carousel (the same look as choosing a character) -------------------------- */
+.auth-carousel{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  width: 100%;
+  min-width: 0;
+}
+
+.auth-car-stage{
+  position: relative;
+  width: min(100%, 640px);
+  height: 300px;
+}
+
+.auth-car-card{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.62);
+  transition: transform .55s cubic-bezier(.22, .8, .2, 1), opacity .45s ease;
+  will-change: transform, opacity;
+  z-index: 1;
+}
+
+.auth-car-avatar{
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 196px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--car-top, #d9d2ff) 0%, var(--car-bottom, #bff7d6) 100%);
+  box-shadow: 0 14px 30px rgba(0,0,0,.14);
+}
+
+.auth-car-avatar::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 50%);
+}
+
+.auth-car-avatar img{
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.auth-car-card.is-prev2{
+  opacity: .32;
+  transform: translate(calc(-50% - 250px), -50%) scale(.72);
+  z-index: 1;
+}
+
+.auth-car-card.is-prev{
+  opacity: .56;
+  transform: translate(calc(-50% - 158px), -50%) scale(.9);
+  z-index: 2;
+}
+
+.auth-car-card.is-active{
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.28);
+  z-index: 3;
+}
+
+.auth-car-card.is-active .auth-car-avatar{
+  box-shadow: 0 18px 34px rgba(0,0,0,.18);
+}
+
+.auth-car-card.is-next{
+  opacity: .56;
+  transform: translate(calc(-50% + 158px), -50%) scale(.9);
+  z-index: 2;
+}
+
+.auth-car-card.is-next2{
+  opacity: .32;
+  transform: translate(calc(-50% + 250px), -50%) scale(.72);
+  z-index: 1;
+}
+
+.auth-car-dots{
+  display: flex;
+  gap: 8px;
+}
+
+.auth-car-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(107,120,168,.3);
+  transition: width .3s ease, background-color .3s ease;
+}
+
+.auth-car-dot.is-active{
+  width: 22px;
+  background: #6277c3;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .auth-car-card,
+  .auth-car-dot{
+    transition: none;
+  }
+}
+
+/* --- Phones and narrow tablets: the carousel on top, the card below -------------- */
+@media (max-width: 860px){
+  body.auth-split .auth-stage{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
+    padding: max(10px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  body.auth-split .auth-shell{
+    align-self: start;
+  }
+
+  .auth-carousel{
+    gap: 10px;
+    padding-top: 6px;
+  }
+
+  /* The same carousel, smaller. */
+  .auth-car-stage{
+    width: 100%;
+    height: 176px;
+  }
+
+  .auth-car-card.is-prev2{
+    transform: translate(calc(-50% - 150px), -50%) scale(.42);
+  }
+
+  .auth-car-card.is-prev{
+    transform: translate(calc(-50% - 94px), -50%) scale(.52);
+  }
+
+  .auth-car-card.is-active{
+    transform: translate(-50%, -50%) scale(.74);
+  }
+
+  .auth-car-card.is-next{
+    transform: translate(calc(-50% + 94px), -50%) scale(.52);
+  }
+
+  .auth-car-card.is-next2{
+    transform: translate(calc(-50% + 150px), -50%) scale(.42);
+  }
+}
+
+/* --- The login card, refined (the same design: the mint card, the Student /
+   Teacher switch, the logo, the two buttons and the social links) ------------ */
+body.auth-split .auth-card{
+  padding: 24px 26px 22px !important;
+  border: 1px solid rgba(255,255,255,.75);
+  border-radius: 28px !important;
+  box-shadow: 0 1px 2px rgba(31,60,48,.06), 0 24px 56px rgba(52,96,78,.16);
+}
+
+body.auth-split .auth-role-switch{
+  margin-bottom: 0;
+  padding: 4px;
+  gap: 4px;
+  background: rgba(255,255,255,.5);
+  box-shadow: inset 0 0 0 1px rgba(82,128,108,.14);
+}
+
+body.auth-split .auth-role-pill{
+  min-height: 40px !important;
+  border: 0;
+  background: transparent;
+  color: #4f6584;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  cursor: pointer;
+}
+
+body.auth-split .auth-role-pill:hover{
+  color: #263459;
+}
+
+body.auth-split .auth-role-pill.is-active{
+  background: #fff;
+  color: #263459;
+  box-shadow: 0 2px 8px rgba(52,96,78,.14);
+}
+
+body.auth-split .auth-role-pill:focus-visible{
+  outline: 3px solid rgba(79,99,214,.38);
+  outline-offset: 2px;
+}
+
+body.auth-split .auth-logo{
+  display: block;
+  width: 112px;
+  height: auto;
+  margin: 18px auto 4px;
+}
+
+/* Switching between Student and Teacher: the new form fades in. */
+.auth-pane.is-entering{
+  animation: authPaneIn .22s ease;
+}
+
+@keyframes authPaneIn{
+  from{ opacity: 0; transform: translateY(4px); }
+  to{ opacity: 1; transform: none; }
+}
+
+body.auth-split .auth-h1{
+  margin: 6px 0 0;
+  color: #263459;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: none;
+}
+
+body.auth-split .auth-subtitle{
+  margin: 6px auto 0;
+  max-width: 320px;
+  color: #4b5d7d;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+body.auth-split .auth-form{
+  gap: 12px !important;
+  margin-top: 18px;
+}
+
+body.auth-split .two-cols{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+body.auth-split .auth-input{
+  width: 100%;
+  min-height: 48px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(82,128,108,.2);
+  border-radius: 12px !important;
+  background: #fff;
+  color: #263459;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+body.auth-split .auth-input::placeholder{
+  color: #8592ad;
+}
+
+body.auth-split .auth-input:focus{
+  border-color: #6277c3;
+  box-shadow: 0 0 0 3px rgba(98,119,195,.2);
+  outline: none;
+}
+
+body.auth-split .forgot-row{
+  margin: -2px 2px 0 0;
+  text-align: right;
+}
+
+body.auth-split .forgot-row span{
+  color: #4a6488;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+body.auth-split .auth-error{
+  padding: 10px 12px;
+  border: 1px solid rgba(180,35,24,.18);
+  border-radius: 10px;
+  background: #fff4f3;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+body.auth-split .auth-actions-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+body.auth-split .auth-btn{
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px !important;
+  padding: 0 14px;
+  border: 1px solid rgba(82,128,108,.22);
+  border-radius: 12px !important;
+  background: #fff;
+  color: #3a4d78;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  text-decoration: none;
+  text-transform: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, filter .15s ease;
+}
+
+body.auth-split .auth-btn:hover{
+  border-color: rgba(98,119,195,.4);
+  background: #f7f9ff;
+}
+
+body.auth-split .auth-btn.primary{
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #6277c3, #5fc9a3) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(98,119,195,.26) !important;
+}
+
+body.auth-split .auth-btn.primary:hover{
+  filter: brightness(1.05);
+}
+
+body.auth-split .auth-btn:focus-visible{
+  outline: 3px solid rgba(79,99,214,.38);
+  outline-offset: 2px;
+}
+
+body.auth-split .auth-switch{
+  margin-top: 14px;
+  color: #4b5d7d;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+body.auth-split .auth-switch a{
+  color: #3f55b5;
+  font-weight: 900;
+}
+
+body.auth-split .auth-socials{
+  gap: 10px;
+  margin-top: 14px;
+}
+
+body.auth-split .social-circle{
+  width: 36px !important;
+  height: 36px !important;
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow: 0 2px 6px rgba(52,96,78,.12);
+}
+
+@media (max-width: 860px){
+  body.auth-split .auth-card{
+    padding: 20px 18px 18px !important;
+    border-radius: 24px !important;
+  }
+
+  body.auth-split .auth-logo{
+    width: 96px;
+    margin-top: 14px;
+  }
+
+  body.auth-split .auth-h1{
+    font-size: 21px;
+  }
+
+  body.auth-split .social-circle{
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .auth-pane.is-entering{
+    animation: none;
+  }
+}
+
+/* --- The page's colour, as before (just the colour: a mint and blue wash) -- */
+body.auth-split{
+  background:
+    radial-gradient(circle at 8% 6%, rgba(116,221,177,.42), transparent 42%),
+    radial-gradient(circle at 96% 14%, rgba(124,160,236,.30), transparent 40%),
+    radial-gradient(circle at 18% 96%, rgba(124,160,236,.22), transparent 40%),
+    radial-gradient(circle at 92% 92%, rgba(116,221,177,.34), transparent 42%),
+    linear-gradient(180deg, #eefcf5 0%, #eaf3ff 100%) !important;
+}
+
+body.auth-split .auth-stage{
+  background: transparent !important;
+}
+
+/* --- Phones and portrait tablets: the carousel and the card together, centred
+   in the screen (no empty space left below them) ------------------------------ */
+@media (max-width: 860px){
+  body.auth-split .auth-stage{
+    grid-template-rows: auto auto;
+    align-content: center;
+    row-gap: 14px;
+  }
+
+  body.auth-split .auth-shell{
+    align-self: center;
+  }
+}
+
+/* Portrait tablets (such as the Galaxy Tab A7 Lite): a bigger carousel and a
+   wider card. */
+@media (min-width: 560px) and (max-width: 860px){
+  .auth-car-stage{
+    width: min(100%, 620px);
+    height: 250px;
+  }
+
+  .auth-car-card.is-prev2{
+    transform: translate(calc(-50% - 230px), -50%) scale(.6);
+  }
+
+  .auth-car-card.is-prev{
+    transform: translate(calc(-50% - 140px), -50%) scale(.76);
+  }
+
+  .auth-car-card.is-active{
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+
+  .auth-car-card.is-next{
+    transform: translate(calc(-50% + 140px), -50%) scale(.76);
+  }
+
+  .auth-car-card.is-next2{
+    transform: translate(calc(-50% + 230px), -50%) scale(.6);
+  }
+
+  body.auth-split .auth-shell{
+    width: min(460px, 100%);
+    max-width: 460px;
+  }
+
+  body.auth-split .auth-card{
+    padding: 26px 28px 24px !important;
+  }
+}
+
+/* Wide but short screens (a tablet on its side): a smaller carousel, so more
+   of the card shows before any scrolling. html.koobd-h700 comes from the
+   steady screen height (js/performance-mode.js), so the carousel keeps its
+   size while the address bar slides in and out. */
+@media (min-width: 861px){
+  html.koobd-h700 .auth-car-stage{
+    height: 230px;
+  }
+
+  html.koobd-h700 .auth-carousel{
+    gap: 14px;
+  }
+
+  html.koobd-h700 .auth-car-card.is-prev2{
+    transform: translate(calc(-50% - 205px), -50%) scale(.6);
+  }
+
+  html.koobd-h700 .auth-car-card.is-prev{
+    transform: translate(calc(-50% - 128px), -50%) scale(.74);
+  }
+
+  html.koobd-h700 .auth-car-card.is-active{
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  html.koobd-h700 .auth-car-card.is-next{
+    transform: translate(calc(-50% + 128px), -50%) scale(.74);
+  }
+
+  html.koobd-h700 .auth-car-card.is-next2{
+    transform: translate(calc(-50% + 205px), -50%) scale(.6);
+  }
+}
+
+/* The page's colour covers its whole height when it scrolls: one wash from
+   top to bottom, never repeated (a repeat drew a line across the page). */
+html{
+  height: auto;
+  min-height: 100%;
+}
+
+body.auth-split{
+  background-color: #eaf3ff !important;
+  background-repeat: no-repeat !important;
+}

@@ -8,6 +8,17 @@ $userId = (int)$user['id'];
 $username = $user['username'];
 $profile = koobdResolvedProfile($user);
 $isTeacher = koobdIsTeacher($user);
+require_once __DIR__ . '/missions_lib.php';
+require_once __DIR__ . '/achievements_lib.php';
+if (!$isTeacher) {
+    koobdMissionRecord($user, 'profile');
+    $journeyOverview = koobdMissionOverview($user);
+    $missionUnlocks = $journeyOverview['unlocks'];
+} else {
+    $journeyOverview = koobdMissionOverview($user);
+    $missionUnlocks = [];
+}
+$achievementOverview = koobdAchievementOverview($user, $journeyOverview);
 $classroomPath = 'classroom.php';
 $profileEditPath = 'profile.php';
 $characterName = koobdReaderProfileDefaults($profile['key'])['display'] ?? $profile['name'];
@@ -103,6 +114,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         exit();
     }
 }
+// Edit Banner: the character's colours, a plain colour, a gradient, or a picture of their
+// own. A picture that is replaced or no longer used is deleted.
+$banner = koobdProfileBanner($user);
+$bannerError = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_banner') {
+    $choice = (string)($_POST['banner_choice'] ?? 'default');
+    $saved = null;
+    if ($choice === 'color') {
+        $color = strtolower(trim((string)($_POST['banner_color'] ?? '')));
+        $saved = preg_match('/^#[0-9a-f]{6}$/', $color) ? 'color:' . $color : null;
+        if ($saved === null) $bannerError = 'Choose a colour for your banner.';
+    } elseif ($choice === 'gradient') {
+        $from = strtolower(trim((string)($_POST['banner_from'] ?? '')));
+        $to = strtolower(trim((string)($_POST['banner_to'] ?? '')));
+        $angle = (int)($_POST['banner_angle'] ?? 135);
+        $valid = preg_match('/^#[0-9a-f]{6}$/', $from) && preg_match('/^#[0-9a-f]{6}$/', $to) && in_array($angle, [45, 90, 135, 180], true);
+        $saved = $valid ? "gradient:{$from},{$to},{$angle}" : null;
+        if ($saved === null) $bannerError = 'Choose two colours for your gradient.';
+    } elseif ($choice === 'image') {
+        $file = $_FILES['banner_image'] ?? ['error' => UPLOAD_ERR_NO_FILE];
+        if ((int)($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            // Keeping the picture they already have.
+            $saved = $banner['type'] === 'image' ? $banner['value'] : null;
+            if ($saved === null) $bannerError = 'Choose a picture for your banner.';
+        } else {
+            $uploaded = koobdUploadProfileBanner($file, $userId);
+            if (str_starts_with($uploaded, '!')) $bannerError = substr($uploaded, 1);
+            else $saved = $uploaded;
+        }
+    } else {
+        $saved = '';
+    }
+    if ($bannerError === '' && $saved !== null) {
+        $stmt = $conn->prepare("UPDATE users SET profile_banner = ? WHERE id = ?");
+        $stored = $saved === '' ? null : $saved;
+        if ($choice === 'image' && $stored !== null) {
+            // The part of the picture they chose to show (dragged and zoomed).
+            $framing = koobdBannerFraming((string)($_POST['banner_framing'] ?? ''));
+            $stored .= '#' . $framing['x'] . ',' . $framing['y'] . ',' . $framing['zoom'];
+        }
+        $stmt->bind_param('si', $stored, $userId);
+        $stmt->execute();
+        $stmt->close();
+        if ($banner['type'] === 'image' && $banner['value'] !== $saved) {
+            @unlink(__DIR__ . '/' . $banner['value']);
+        }
+        header('Location: profile.php?banner=1');
+        exit();
+    }
+}
+$bannerUpdated = isset($_GET['banner']);
 $accountUpdated = isset($_GET['updated']);
 $passwordUpdated = ($_GET['updated'] ?? '') === 'password';
 // The Change password section stays open when there is something in it to fix.
@@ -150,7 +212,7 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
   <link rel="apple-touch-icon" href="assets/images/icons/app/apple-touch-icon.png">
   <link rel="stylesheet" href="<?= koobdAsset('css/mobile.css') ?>">
 </head>
-<body class="app-bg profile-page">
+<body class="app-bg profile-page<?= $isTeacher ? ' is-teacher-profile' : '' ?>">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-inner">
@@ -161,20 +223,27 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
           <div class="sidebar-brand-text">KoobD</div>
           <div class="sidebar-divider"></div>
           <nav class="sidebar-nav" aria-label="Main navigation">
-            <a href="home.php" class="sidebar-link">
+            <a href="home.php" class="sidebar-link" aria-label="Home">
               <div class="sidebar-icon-box">
                 <img src="assets/images/icons/HOME 1.png" alt="">
               </div>
             </a>
 
-            <a href="<?= htmlspecialchars($classroomPath) ?>" class="sidebar-link">
+            <a href="<?= htmlspecialchars($classroomPath) ?>" class="sidebar-link" aria-label="Classroom">
               <div class="sidebar-icon-box">
                 <img src="assets/images/icons/classroom 1.png" alt="">
               </div>
             </a>
-            <a href="teacher_stories.php" class="sidebar-link sidebar-link-stories" aria-label="My Stories" title="My Stories">
+            <a href="teacher_stories.php" class="sidebar-link sidebar-link-stories" aria-label="My Stories">
               <div class="sidebar-icon-box">
                 <svg class="sidebar-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H19v-5"/><path d="M8.5 7.5h6M8.5 11h4"/></svg>
+              </div>
+            </a>
+            <?php include __DIR__ . '/sidebar_approve_stories.php'; ?>
+            <?php include __DIR__ . '/sidebar_last_read.php'; ?>
+            <a href="versus.php" class="sidebar-link sidebar-link-versus" aria-label="Versus Mode">
+              <div class="sidebar-icon-box">
+                <svg class="sidebar-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6h9A5.5 5.5 0 0 1 22 11.5v1.5a4 4 0 0 1-7.2 2.4L14 14.5h-4l-.8.9A4 4 0 0 1 2 13v-1.5A5.5 5.5 0 0 1 7.5 6z"/><path d="M6 10v4M4 12h4"/><circle cx="16" cy="11" r=".6"/><circle cx="18" cy="13" r=".6"/></svg>
               </div>
             </a>
             <a href="create_story.php" class="sidebar-link sidebar-link-add" aria-label="Create story">
@@ -197,6 +266,7 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
               </span>
               <span class="sidebar-user-text"><?= htmlspecialchars($username) ?></span>
             </button>
+            <span class="sidebar-profile-visible-name" translate="no"><?= htmlspecialchars($profile['name']) ?></span>
             <div class="sidebar-profile-popover" id="sidebarProfileMenu" hidden>
               <a href="<?= htmlspecialchars($profileEditPath) ?>" class="sidebar-profile-menu-item" aria-current="page">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -219,13 +289,27 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
         <?php if ($accountUpdated): ?>
           <div class="pf-notice" role="status"><?= $passwordUpdated ? 'Your profile details and new password were saved.' : 'Your profile details were saved.' ?></div>
         <?php endif; ?>
+        <?php if ($bannerUpdated): ?>
+          <div class="pf-notice" role="status">Your banner was saved.</div>
+        <?php endif; ?>
         <?php // Header: a cover band in the reader's colours, their character, name and numbers. ?>
         <section class="pf-header pf-card" style="--profile-top:<?= htmlspecialchars($profile['top']) ?>; --profile-bottom:<?= htmlspecialchars($profile['bottom']) ?>;">
-          <div class="pf-cover" aria-hidden="true"></div>
+          <?php // The banner: the character's colours, a colour, or their own picture (tap it to see all of it). ?>
+          <div class="pf-cover<?= $banner['type'] === 'image' ? ' has-image' : '' ?>"<?= in_array($banner['type'], ['color', 'gradient'], true) ? ' style="--pf-banner-color:' . htmlspecialchars($banner['value']) . '"' : '' ?>>
+            <?php if ($banner['type'] === 'image'): ?>
+              <button type="button" class="pf-cover-view" data-view-image="<?= htmlspecialchars($banner['value']) ?>" data-view-alt="Your banner" aria-label="View your banner">
+                <img src="<?= htmlspecialchars($banner['value']) ?>" alt="" decoding="async" style="<?= htmlspecialchars(koobdBannerFramingStyle($banner['framing'])) ?>">
+              </button>
+            <?php endif; ?>
+            <button type="button" class="pf-cover-edit" id="pfEditBanner" aria-haspopup="dialog" aria-controls="pfBannerModal">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4zM12 17a4 4 0 100-8 4 4 0 000 8z"/></svg>
+              <span>Edit Banner</span>
+            </button>
+          </div>
           <div class="pf-header-body">
-            <div class="pf-avatar">
+            <button type="button" class="pf-avatar" data-view-image="<?= htmlspecialchars($profile['asset']) ?>" data-view-alt="<?= htmlspecialchars($characterName) ?>" data-view-kind="character" aria-label="View <?= htmlspecialchars($characterName) ?>">
               <img src="<?= htmlspecialchars($profile['asset']) ?>" alt="<?= htmlspecialchars($characterName) ?>">
-            </div>
+            </button>
             <div class="pf-identity">
               <h1 class="pf-name">
                 <span translate="no"><?= htmlspecialchars($profile['name']) ?></span>
@@ -267,6 +351,7 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
         </section>
 
         <div class="pf-layout">
+          <div class="pf-side">
           <?php // About: the reader's details. ?>
           <aside class="pf-about pf-card">
             <div class="pf-about-head">
@@ -304,6 +389,186 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
               <?php endif; ?>
             </ul>
           </aside>
+          </div>
+
+          <div class="pf-main">
+          <?php if (!$isTeacher): ?>
+          <?php if (!empty($missionUnlocks['learning_tools'])): ?>
+          <?php // Learning tools: the Dictionary and Writing Practice, side by side. ?>
+          <section class="pf-tools" aria-labelledby="pfToolsTitle">
+            <h2 class="pf-section-title" id="pfToolsTitle">Learning tools</h2>
+            <div class="pf-tools-grid">
+          <?php // Dictionary: look up a word straight from here (dictionary.php). ?>
+          <section class="pf-dict pf-card" aria-labelledby="pfDictTitle">
+            <div class="pf-dict-head">
+              <span class="pf-dict-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 016.5 3H12v16H6.5A2.5 2.5 0 004 21.5zM20 5.5A2.5 2.5 0 0017.5 3H12v16h5.5a2.5 2.5 0 012.5 2.5z"/></svg></span>
+              <div>
+                <h2 class="pf-card-title" id="pfDictTitle">Dictionary</h2>
+              </div>
+              <a class="pf-tool-link" href="dictionary.php"><span>Open Dictionary</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+            <form class="pf-dict-form" action="dictionary.php" method="get" role="search">
+              <input type="search" name="q" maxlength="40" placeholder="Type a word" aria-label="Word to look up" autocomplete="off" enterkeyhint="search" spellcheck="false">
+              <select name="from" aria-label="Language of the word">
+                <option value="en">English</option>
+                <option value="tl">Tagalog</option>
+              </select>
+              <button type="submit" class="pf-dict-go">Look up</button>
+            </form>
+          </section>
+
+          <?php // Writing Practice: the latest notepads, and a way in (writing.php). ?>
+          <?php
+          $writingStmt = $conn->prepare("SELECT id, title, lang, kind, challenge_status FROM writing_notes WHERE user_id = ? ORDER BY updated_at DESC, id DESC LIMIT 2");
+          $writingUserId = (int)$user['id'];
+          $writingStmt->bind_param('i', $writingUserId);
+          $writingStmt->execute();
+          $writingRecent = $writingStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+          $writingStmt->close();
+          ?>
+          <section class="pf-dict pf-card pf-writing" aria-labelledby="pfWritingTitle">
+            <div class="pf-dict-head">
+              <span class="pf-dict-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></span>
+              <div>
+                <h2 class="pf-card-title" id="pfWritingTitle">Writing Practice</h2>
+              </div>
+            </div>
+            <?php if ($writingRecent): ?>
+              <ul class="pf-writing-list">
+                <?php foreach ($writingRecent as $writingNote): ?>
+                  <li>
+                    <a href="writing.php?note=<?= (int)$writingNote['id'] ?>">
+                      <span class="pf-writing-lang is-<?= $writingNote['lang'] === 'tl' ? 'tl' : 'en' ?>"><?= $writingNote['lang'] === 'tl' ? 'TL' : 'EN' ?></span>
+                      <span class="pf-writing-title" translate="no"><?= htmlspecialchars($writingNote['title'] ?: 'Untitled notepad') ?></span>
+                      <?php if ($writingNote['kind'] === 'challenge'): ?><span class="pf-writing-kind">Challenge</span><?php endif; ?>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="pf-tool-empty">No notepads yet.</p>
+            <?php endif; ?>
+            <div class="pf-tool-foot">
+              <a class="pf-dict-go pf-writing-go" href="writing.php<?= $writingRecent ? '' : '?new=1' ?>"><?= $writingRecent ? 'Open notepads' : 'New notepad' ?></a>
+              <a class="pf-tool-link" href="writing.php?challenge=1"><span>Writing challenge</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </section>
+            </div>
+          </section>
+          <?php else: ?>
+          <section class="pf-tools pf-tools-locked" aria-labelledby="pfToolsTitle">
+            <h2 class="pf-section-title" id="pfToolsTitle">Learning tools</h2>
+            <div class="pf-tools-lock-card">
+              <span class="pf-tools-lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+              <div><strong>Learning tools are locked</strong><p>Start and finish a story in the Reading and Understanding stage to unlock Dictionary and Writing Practice.</p><a href="home.php#goalsMissions">View your journey</a></div>
+            </div>
+          </section>
+          <?php endif; ?>
+          <?php endif; ?>
+
+          <?php // Minigames: the way in (minigames.php). ?>
+          <?php if (!$isTeacher): ?>
+          <?php if (!empty($missionUnlocks['minigames'])): ?>
+          <a class="pf-games" href="minigames.php">
+            <span class="pf-games-art" aria-hidden="true"><span>A</span><span>B</span><span>C</span></span>
+            <span class="pf-games-text"><strong>Minigames</strong><small>6 games to play</small></span>
+            <span class="pf-games-go">Play<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+          <?php else: ?>
+          <div class="pf-games is-locked" aria-disabled="true">
+            <span class="pf-games-art pf-games-lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <span class="pf-games-text"><strong>Minigames</strong><small>Unlock after you complete a Versus match</small></span>
+            <span class="pf-games-go">Locked</span>
+          </div>
+          <?php endif; ?>
+          <?php endif; ?>
+          </div>
+
+          <section class="pf-achievements pf-card" id="achievements" aria-labelledby="pfAchievementsTitle">
+            <div class="pf-achievements-head">
+              <div class="pf-achievements-title">
+                <span class="pf-achievements-title-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z"/><path d="m9 12 2 2 4-4"/></svg>
+                </span>
+                <div>
+                  <h2 class="pf-card-title" id="pfAchievementsTitle">Achievements &amp; Medals</h2>
+                  <p><?= $isTeacher ? 'A record of the classrooms you lead and the students you support.' : 'Every medal celebrates a step in your learning adventure.' ?></p>
+                </div>
+              </div>
+              <div class="pf-achievements-total">
+                <strong><?= (int)$achievementOverview['earned_count'] ?><span>/<?= (int)$achievementOverview['total_count'] ?></span></strong>
+                <span>medals · <?= (int)$achievementOverview['completion_percent'] ?>%</span>
+              </div>
+            </div>
+            <div class="pf-achievements-progress" role="progressbar" aria-label="Achievement collection progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int)$achievementOverview['completion_percent'] ?>">
+              <span style="width:<?= (int)$achievementOverview['completion_percent'] ?>%"></span>
+            </div>
+
+            <div class="pf-achievements-recent">
+              <div class="pf-achievements-recent-head">
+                <h3>Recently Earned</h3>
+                <span><?= count($achievementOverview['recent']) ?> latest</span>
+              </div>
+              <?php if ($achievementOverview['recent']): ?>
+                <div class="pf-achievements-recent-list">
+                  <?php foreach ($achievementOverview['recent'] as $achievement): ?>
+                    <article class="pf-achievement-recent">
+                      <?= koobdAchievementMedalSvg($achievement) ?>
+                      <div>
+                        <strong><?= htmlspecialchars($achievement['title']) ?></strong>
+                        <time datetime="<?= htmlspecialchars(date('c', strtotime($achievement['earned_at']))) ?>"><?= htmlspecialchars(date('M j, Y · g:i A', strtotime($achievement['earned_at']))) ?></time>
+                      </div>
+                    </article>
+                  <?php endforeach; ?>
+                </div>
+              <?php else: ?>
+                <p class="pf-achievements-empty">Your medals will appear here as you reach new milestones.</p>
+              <?php endif; ?>
+            </div>
+
+            <div class="pf-achievement-categories">
+              <?php foreach ($achievementOverview['categories'] as $categoryKey => $categoryTitle): ?>
+                <?php
+                  $categoryMedals = $achievementOverview['groups'][$categoryKey] ?? [];
+                  $categoryEarned = count(array_filter($categoryMedals, static fn(array $achievement): bool => $achievement['is_earned']));
+                ?>
+                <section class="pf-achievement-category" aria-labelledby="pfAchievementCategory-<?= htmlspecialchars($categoryKey) ?>">
+                  <div class="pf-achievement-category-head">
+                    <h3 id="pfAchievementCategory-<?= htmlspecialchars($categoryKey) ?>"><?= htmlspecialchars($categoryTitle) ?></h3>
+                    <span><?= $categoryEarned ?> / <?= count($categoryMedals) ?> earned</span>
+                  </div>
+                  <div class="pf-achievement-grid">
+                    <?php foreach ($categoryMedals as $achievement): ?>
+                      <article class="pf-achievement-medal <?= $achievement['is_earned'] ? 'is-earned' : 'is-locked' ?>" data-category="<?= htmlspecialchars($achievement['category']) ?>" data-rarity="<?= htmlspecialchars($achievement['rarity']) ?>">
+                        <div class="pf-achievement-medal-top">
+                          <?= koobdAchievementMedalSvg($achievement) ?>
+                          <span class="pf-achievement-rarity is-<?= htmlspecialchars($achievement['rarity']) ?>"><?= ucfirst(htmlspecialchars($achievement['rarity'])) ?></span>
+                        </div>
+                        <div class="pf-achievement-medal-copy">
+                          <h4><?= htmlspecialchars($achievement['title']) ?></h4>
+                          <p><?= htmlspecialchars($achievement['description']) ?></p>
+                        </div>
+                        <?php if ($achievement['is_earned']): ?>
+                          <div class="pf-achievement-earned">
+                            <span class="pf-achievement-status is-earned"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Earned</span>
+                            <time datetime="<?= htmlspecialchars(date('c', strtotime($achievement['earned_at']))) ?>"><?= htmlspecialchars(date('M j, Y · g:i A', strtotime($achievement['earned_at']))) ?></time>
+                          </div>
+                        <?php else: ?>
+                          <div class="pf-achievement-progress-copy">
+                            <span class="pf-achievement-status">Locked</span>
+                            <span><?= htmlspecialchars($achievement['progress_label']) ?></span>
+                          </div>
+                          <div class="pf-achievement-progress" role="progressbar" aria-label="<?= htmlspecialchars($achievement['title']) ?> progress" aria-valuemin="0" aria-valuemax="<?= (int)$achievement['target'] ?>" aria-valuenow="<?= (int)$achievement['progress'] ?>">
+                            <span style="width:<?= (int)$achievement['progress_percent'] ?>%"></span>
+                          </div>
+                        <?php endif; ?>
+                      </article>
+                    <?php endforeach; ?>
+                  </div>
+                </section>
+              <?php endforeach; ?>
+            </div>
+          </section>
 
           <?php // Favourites: covers that open the story's pop-up; the × takes one out. ?>
           <section class="pf-favorites pf-card">
@@ -329,11 +594,11 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
                       <?php if (!empty($story['cover'])): ?>
                         <img src="<?= htmlspecialchars($story['cover']) ?>" alt="" loading="lazy" decoding="async">
                       <?php endif; ?>
-                      <?= koobdStoryModeBadge($story['mode']) ?>
                     </div>
                     <div class="profile-fav-body">
                       <span class="profile-fav-title" translate="no"><?= htmlspecialchars($story['title']) ?></span>
                       <span class="profile-fav-meta" translate="no"><?= htmlspecialchars($story['creator']) ?></span>
+                      <?= koobdStoryModeBadge($story['mode']) ?>
                     </div>
                   </a>
                   <button type="button" class="profile-fav-remove" data-remove-favorite aria-label="Remove from Favorites" title="Remove from Favorites">
@@ -502,6 +767,394 @@ $memberSince = !empty($user['created_at']) ? date('F Y', strtotime($user['create
         form.querySelector('[type="submit"]').disabled = true;
       });
       if (modal.classList.contains('is-open')) open(null);
+    })();
+  </script>
+  <?php // Edit Banner: the character's colours, a colour, a gradient, or a picture of their own. ?>
+  <?php
+  $bannerSwatches = ['#4f63d6', '#2f9e8f', '#e0614a', '#f2a93b', '#8e5bd6', '#d6538f', '#3d8bd9', '#2b3550'];
+  $bannerChoice = $bannerError !== '' ? (string)($_POST['banner_choice'] ?? $banner['type']) : $banner['type'];
+  if (!in_array($bannerChoice, ['default', 'color', 'gradient', 'image'], true)) $bannerChoice = 'default';
+  $bannerColor = $banner['type'] === 'color' ? $banner['value'] : $bannerSwatches[0];
+  if ($bannerError !== '' && preg_match('/^#[0-9a-f]{6}$/i', (string)($_POST['banner_color'] ?? ''))) $bannerColor = strtolower($_POST['banner_color']);
+  $bannerFraming = $banner['framing'] ?? ['x' => 50, 'y' => 50, 'zoom' => 1];
+  $bannerGradients = [['#4f63d6', '#16966e'], ['#72d9b4', '#3d8bd9'], ['#3d8bd9', '#8e5bd6'], ['#2f9e8f', '#a4efc5'], ['#f2a93b', '#e0614a'], ['#d6538f', '#8e5bd6'], ['#e0614a', '#d6538f'], ['#2b3550', '#4f63d6']];
+  $bannerFrom = $banner['from'] ?? $bannerGradients[0][0];
+  $bannerTo = $banner['to'] ?? $bannerGradients[0][1];
+  $bannerAngle = $banner['angle'] ?? 135;
+  ?>
+  <div class="pf-modal<?= $bannerError !== '' ? ' is-open' : '' ?>" id="pfBannerModal" aria-hidden="<?= $bannerError !== '' ? 'false' : 'true' ?>">
+    <form class="pf-modal-card pf-banner-form" method="post" action="profile.php" enctype="multipart/form-data" role="dialog" aria-modal="true" aria-labelledby="pfBannerTitle" novalidate>
+      <input type="hidden" name="action" value="update_banner">
+      <input type="hidden" name="banner_framing" id="pfBannerFraming" value="<?= $bannerFraming['x'] . ',' . $bannerFraming['y'] . ',' . $bannerFraming['zoom'] ?>">
+      <header class="pf-banner-head">
+        <div>
+          <h2 class="pf-modal-title" id="pfBannerTitle">Edit banner</h2>
+          <p class="pf-modal-copy">Choose how the top of your profile looks.</p>
+        </div>
+        <button type="button" class="pf-modal-close" data-close-banner aria-label="Close">&times;</button>
+      </header>
+
+      <?php // The cropper: the banner's exact shape is the bright frame; with a picture, the rest of it shows dimmed around the frame, and dragging moves it. ?>
+      <div class="pf-cropper" id="pfBannerPreview" style="--profile-top:<?= htmlspecialchars($profile['top']) ?>; --profile-bottom:<?= htmlspecialchars($profile['bottom']) ?>;" role="img" aria-label="Banner preview">
+        <img class="pf-cropper-image" alt="" hidden draggable="false">
+        <div class="pf-cropper-frame" aria-hidden="true"></div>
+      </div>
+      <p class="pf-cropper-caption" id="pfBannerCaption">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg>
+        <span>Drag the picture to choose what shows inside the frame.</span>
+      </p>
+
+      <?php if ($bannerError !== ''): ?><p class="pf-banner-error" role="alert"><?= htmlspecialchars($bannerError) ?></p><?php endif; ?>
+
+      <div class="pf-segmented" role="radiogroup" aria-label="Banner style">
+        <label>
+          <input type="radio" name="banner_choice" value="default"<?= $bannerChoice === 'default' ? ' checked' : '' ?>>
+          <span><i class="pf-seg-dot is-default" style="--profile-top:<?= htmlspecialchars($profile['top']) ?>; --profile-bottom:<?= htmlspecialchars($profile['bottom']) ?>;"></i>Default</span>
+        </label>
+        <label>
+          <input type="radio" name="banner_choice" value="color"<?= $bannerChoice === 'color' ? ' checked' : '' ?>>
+          <span><i class="pf-seg-dot" id="pfBannerColorSwatch" style="background:<?= htmlspecialchars($bannerColor) ?>"></i>Colour</span>
+        </label>
+        <label>
+          <input type="radio" name="banner_choice" value="gradient"<?= $bannerChoice === 'gradient' ? ' checked' : '' ?>>
+          <span><i class="pf-seg-dot" id="pfBannerGradientSwatch" style="background:linear-gradient(<?= $bannerAngle ?>deg,<?= htmlspecialchars($bannerFrom) ?>,<?= htmlspecialchars($bannerTo) ?>)"></i>Gradient</span>
+        </label>
+        <label>
+          <input type="radio" name="banner_choice" value="image"<?= $bannerChoice === 'image' ? ' checked' : '' ?>>
+          <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>
+            Picture
+          </span>
+        </label>
+      </div>
+
+      <div class="pf-banner-panel" data-banner-panel="default"<?= $bannerChoice === 'default' ? '' : ' hidden' ?>>
+        <p class="pf-banner-note">Uses the colours of your character. It changes with them when you change character.</p>
+      </div>
+
+      <div class="pf-banner-panel" data-banner-panel="color"<?= $bannerChoice === 'color' ? '' : ' hidden' ?>>
+        <div class="pf-banner-row">
+          <span class="pf-banner-label">Colour</span>
+          <div class="pf-banner-colors">
+            <?php foreach ($bannerSwatches as $swatch): ?>
+              <button type="button" class="pf-banner-color<?= $swatch === $bannerColor ? ' is-selected' : '' ?>" data-banner-color="<?= $swatch ?>" style="background:<?= $swatch ?>" aria-label="Colour <?= $swatch ?>"></button>
+            <?php endforeach; ?>
+            <label class="pf-banner-custom" title="Any colour">
+              <input type="color" name="banner_color" id="pfBannerColor" value="<?= htmlspecialchars($bannerColor) ?>" aria-label="Pick any colour">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="pf-banner-panel" data-banner-panel="gradient"<?= $bannerChoice === 'gradient' ? '' : ' hidden' ?>>
+        <div class="pf-banner-row">
+          <span class="pf-banner-label">Style</span>
+          <div class="pf-banner-colors">
+            <?php foreach ($bannerGradients as [$gradFrom, $gradTo]): ?>
+              <button type="button" class="pf-banner-grad" data-banner-from="<?= $gradFrom ?>" data-banner-to="<?= $gradTo ?>" style="background:linear-gradient(135deg,<?= $gradFrom ?>,<?= $gradTo ?>)" aria-label="Gradient <?= $gradFrom ?> to <?= $gradTo ?>"></button>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <div class="pf-banner-row">
+          <span class="pf-banner-label">Colours</span>
+          <div class="pf-banner-picks">
+            <input type="color" name="banner_from" id="pfBannerFrom" value="<?= htmlspecialchars($bannerFrom) ?>" aria-label="First colour">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <input type="color" name="banner_to" id="pfBannerTo" value="<?= htmlspecialchars($bannerTo) ?>" aria-label="Second colour">
+          </div>
+        </div>
+        <div class="pf-banner-row">
+          <span class="pf-banner-label">Direction</span>
+          <div class="pf-banner-angles" role="radiogroup" aria-label="Gradient direction">
+            <?php foreach ([90 => 'Left to right', 135 => 'Diagonal down', 180 => 'Top to bottom', 45 => 'Diagonal up'] as $angleValue => $angleName): ?>
+              <label title="<?= $angleName ?>">
+                <input type="radio" name="banner_angle" value="<?= $angleValue ?>"<?= $bannerAngle === $angleValue ? ' checked' : '' ?> aria-label="<?= $angleName ?>">
+                <span><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(<?= $angleValue - 90 ?>deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="pf-banner-panel" data-banner-panel="image"<?= $bannerChoice === 'image' ? '' : ' hidden' ?>>
+        <div class="pf-banner-row">
+          <span class="pf-banner-label">Picture</span>
+          <label class="pf-banner-upload">
+            <input type="file" name="banner_image" id="pfBannerFile" accept="image/jpeg,image/png,image/webp,image/gif">
+            <span class="pf-btn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+              <span id="pfBannerUploadLabel"><?= $banner['type'] === 'image' ? 'Replace picture' : 'Upload picture' ?></span>
+            </span>
+            <span class="pf-banner-file" id="pfBannerFileName"><?= $banner['type'] === 'image' ? 'Current picture' : 'JPG, PNG, WebP or GIF · up to 8 MB' ?></span>
+          </label>
+        </div>
+        <div class="pf-banner-row pf-banner-zoom-row" id="pfBannerZoomRow">
+          <label class="pf-banner-label" for="pfBannerZoom">Zoom</label>
+          <div class="pf-banner-zoom">
+            <input type="range" id="pfBannerZoom" min="1" max="3" step="0.01" value="<?= $bannerFraming['zoom'] ?>">
+            <output id="pfBannerZoomValue" for="pfBannerZoom"><?= number_format($bannerFraming['zoom'], 1) ?>×</output>
+          </div>
+          <button type="button" class="pf-banner-reset" id="pfBannerReset">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 108-8 8.2 8.2 0 00-5.7 2.3L4 8.5M4 4v4.5h4.5"/></svg>
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <footer class="pf-banner-foot">
+        <button type="button" class="pf-btn" data-close-banner>Cancel</button>
+        <button type="submit" class="pf-btn pf-btn-primary">Save banner</button>
+      </footer>
+    </form>
+  </div>
+
+  <?php // Picture viewer: the banner or the character, whole, over a darkened page. ?>
+  <div class="pf-viewer" id="pfViewer" role="dialog" aria-modal="true" aria-label="Picture" hidden>
+    <button type="button" class="pf-viewer-close" aria-label="Close">&times;</button>
+    <img class="pf-viewer-image" alt="">
+  </div>
+  <script>
+    (() => {
+      // Edit Banner. The preview is a cropper: the frame has the banner's own
+      // shape on this screen, so what is inside it is exactly what the banner
+      // shows; with a picture, the rest of it shows dimmed around the frame.
+      const modal = document.getElementById('pfBannerModal');
+      if (!modal) return;
+      document.body.appendChild(modal);
+      const form = modal.querySelector('form');
+      const stage = document.getElementById('pfBannerPreview');
+      const frame = stage.querySelector('.pf-cropper-frame');
+      const picture = stage.querySelector('.pf-cropper-image');
+      const caption = document.getElementById('pfBannerCaption');
+      const colorInput = document.getElementById('pfBannerColor');
+      const colorSwatch = document.getElementById('pfBannerColorSwatch');
+      const fromInput = document.getElementById('pfBannerFrom');
+      const toInput = document.getElementById('pfBannerTo');
+      const gradientSwatch = document.getElementById('pfBannerGradientSwatch');
+      const fileInput = document.getElementById('pfBannerFile');
+      const fileName = document.getElementById('pfBannerFileName');
+      const uploadLabel = document.getElementById('pfBannerUploadLabel');
+      const fileNameText = fileName.textContent;
+      const uploadLabelText = uploadLabel.textContent;
+      const zoomRow = document.getElementById('pfBannerZoomRow');
+      const zoomInput = document.getElementById('pfBannerZoom');
+      const zoomValue = document.getElementById('pfBannerZoomValue');
+      const framingInput = document.getElementById('pfBannerFraming');
+      const cover = document.querySelector('.pf-cover');
+      const currentImage = <?= json_encode($banner['type'] === 'image' ? $banner['value'] : '') ?>;
+      // What part of the picture shows: the point kept in view (% across and
+      // down) and how far in. The page's banner is framed the same way.
+      const saved = framingInput.value.split(',').map(Number);
+      const savedFraming = { x: saved[0], y: saved[1], zoom: saved[2] };
+      let framing = { ...savedFraming };
+      let pickedUrl = '';
+      let opener = null;
+      let box = null; // the frame's place in the stage, in pixels
+
+      const choice = () => form.querySelector('[name="banner_choice"]:checked')?.value || 'default';
+      const showingPicture = () => choice() === 'image' && Boolean(pickedUrl || currentImage);
+
+      // The frame: as wide as the stage allows (with a margin), in the shape of
+      // the banner on this screen, centred.
+      function layoutFrame() {
+        const stageW = stage.clientWidth;
+        const stageH = stage.clientHeight;
+        if (!stageW || !stageH) return;
+        const ratio = cover && cover.offsetWidth ? cover.offsetWidth / cover.offsetHeight : 1062 / 120;
+        const margin = Math.max(16, Math.round(stageW * 0.04));
+        let w = stageW - margin * 2;
+        let h = w / ratio;
+        if (h > stageH - margin * 2) { h = stageH - margin * 2; w = h * ratio; }
+        box = { x: (stageW - w) / 2, y: (stageH - h) / 2, w, h };
+        frame.style.left = `${box.x}px`;
+        frame.style.top = `${box.y}px`;
+        frame.style.width = `${w}px`;
+        frame.style.height = `${h}px`;
+      }
+
+      // The picture covers the frame, scaled by the zoom; the chosen point (x%,
+      // y%) of the picture lines up with the same point of the frame - the
+      // same rule the page banner follows (object-position, then the zoom
+      // about that point).
+      function placePicture() {
+        framingInput.value = `${framing.x.toFixed(2)},${framing.y.toFixed(2)},${framing.zoom.toFixed(2)}`;
+        zoomInput.value = framing.zoom;
+        zoomValue.textContent = `${framing.zoom.toFixed(1)}×`;
+        if (!box || !picture.naturalWidth) return;
+        const scale = Math.max(box.w / picture.naturalWidth, box.h / picture.naturalHeight) * framing.zoom;
+        const w = picture.naturalWidth * scale;
+        const h = picture.naturalHeight * scale;
+        const left = box.x + (box.w - w) * framing.x / 100;
+        const top = box.y + (box.h - h) * framing.y / 100;
+        picture.style.width = `${w}px`;
+        picture.style.height = `${h}px`;
+        picture.style.transform = `translate(${left}px, ${top}px)`;
+      }
+
+      function render() {
+        const kind = choice();
+        modal.querySelectorAll('[data-banner-panel]').forEach((panel) => { panel.hidden = panel.dataset.bannerPanel !== kind; });
+        const image = kind === 'image' ? (pickedUrl || currentImage) : '';
+        stage.dataset.mode = image ? 'image' : (kind === 'image' ? 'empty' : kind);
+        stage.style.setProperty('--pf-banner-color', colorInput.value);
+        const angle = form.querySelector('[name="banner_angle"]:checked')?.value || 135;
+        const gradient = `linear-gradient(${angle}deg,${fromInput.value},${toInput.value})`;
+        stage.style.setProperty('--pf-banner-gradient', gradient);
+        gradientSwatch.style.background = gradient;
+        picture.hidden = !image;
+        caption.hidden = !image;
+        zoomRow.hidden = !image;
+        if (image && picture.getAttribute('src') !== image) picture.src = image;
+        colorSwatch.style.background = colorInput.value;
+        modal.querySelectorAll('[data-banner-color]').forEach((button) => button.classList.toggle('is-selected', button.dataset.bannerColor === colorInput.value));
+        modal.querySelectorAll('[data-banner-from]').forEach((button) => button.classList.toggle('is-selected', button.dataset.bannerFrom === fromInput.value && button.dataset.bannerTo === toInput.value));
+        layoutFrame();
+        placePicture();
+      }
+      picture.addEventListener('load', placePicture);
+      window.addEventListener('resize', () => { if (modal.classList.contains('is-open')) { layoutFrame(); placePicture(); } });
+
+      // Moving the picture by (dx, dy) screen pixels.
+      const clampPct = (value) => Math.max(0, Math.min(100, value));
+      function movePicture(dx, dy) {
+        if (!box || !picture.naturalWidth) return;
+        const scale = Math.max(box.w / picture.naturalWidth, box.h / picture.naturalHeight) * framing.zoom;
+        const spareW = picture.naturalWidth * scale - box.w;
+        const spareH = picture.naturalHeight * scale - box.h;
+        if (spareW > 0.5) framing.x = clampPct(framing.x - (dx * 100) / spareW);
+        if (spareH > 0.5) framing.y = clampPct(framing.y - (dy * 100) / spareH);
+        placePicture();
+      }
+      let drag = null;
+      stage.addEventListener('pointerdown', (event) => {
+        if (!showingPicture()) return;
+        drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        stage.setPointerCapture?.(event.pointerId);
+        stage.classList.add('is-dragging');
+        event.preventDefault();
+      });
+      stage.addEventListener('pointermove', (event) => {
+        if (!drag || event.pointerId !== drag.id) return;
+        movePicture(event.clientX - drag.x, event.clientY - drag.y);
+        drag.x = event.clientX;
+        drag.y = event.clientY;
+      });
+      const endDrag = () => { drag = null; stage.classList.remove('is-dragging'); };
+      stage.addEventListener('pointerup', endDrag);
+      stage.addEventListener('pointercancel', endDrag);
+      // The arrow keys move it too, and the mouse wheel zooms.
+      stage.tabIndex = 0;
+      stage.addEventListener('keydown', (event) => {
+        const steps = { ArrowLeft: [8, 0], ArrowRight: [-8, 0], ArrowUp: [0, 8], ArrowDown: [0, -8] };
+        if (!steps[event.key] || !showingPicture()) return;
+        event.preventDefault();
+        movePicture(...steps[event.key]);
+      });
+      stage.addEventListener('wheel', (event) => {
+        if (!showingPicture()) return;
+        event.preventDefault();
+        framing.zoom = Math.max(1, Math.min(3, framing.zoom - event.deltaY * 0.0015));
+        placePicture();
+      }, { passive: false });
+      zoomInput.addEventListener('input', () => {
+        framing.zoom = Math.max(1, Math.min(3, Number(zoomInput.value) || 1));
+        placePicture();
+      });
+      document.getElementById('pfBannerReset').addEventListener('click', () => {
+        framing = { x: 50, y: 50, zoom: 1 };
+        placePicture();
+      });
+
+      form.addEventListener('change', (event) => { if (event.target !== fileInput) render(); });
+      [colorInput, fromInput, toInput].forEach((input) => input.addEventListener('input', render));
+      // Picking a colour or a picture also selects that kind of banner.
+      const select = (kind) => { form.querySelector(`[name="banner_choice"][value="${kind}"]`).checked = true; };
+      modal.querySelectorAll('[data-banner-color]').forEach((button) => button.addEventListener('click', () => {
+        colorInput.value = button.dataset.bannerColor;
+        select('color');
+        render();
+      }));
+      modal.querySelectorAll('[data-banner-from]').forEach((button) => button.addEventListener('click', () => {
+        fromInput.value = button.dataset.bannerFrom;
+        toInput.value = button.dataset.bannerTo;
+        render();
+      }));
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file && file.size > 8 * 1024 * 1024) {
+          fileInput.value = '';
+          fileName.textContent = 'That picture is too big. Choose one under 8 MB.';
+          fileName.classList.add('is-error');
+          return;
+        }
+        if (!file) return;
+        if (pickedUrl) URL.revokeObjectURL(pickedUrl);
+        pickedUrl = URL.createObjectURL(file);
+        fileName.textContent = file.name;
+        fileName.classList.remove('is-error');
+        uploadLabel.textContent = 'Replace picture';
+        // A new picture starts centred.
+        framing = { x: 50, y: 50, zoom: 1 };
+        select('image');
+        render();
+      });
+
+      const open = (trigger) => {
+        opener = trigger || null;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('pf-modal-open');
+        render();
+        window.setTimeout(() => form.querySelector('[name="banner_choice"]:checked')?.focus(), 30);
+      };
+      const close = () => {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('pf-modal-open');
+        // Unsaved changes are dropped: the next time it opens as saved.
+        form.reset();
+        fileName.textContent = fileNameText;
+        fileName.classList.remove('is-error');
+        uploadLabel.textContent = uploadLabelText;
+        if (pickedUrl) URL.revokeObjectURL(pickedUrl);
+        pickedUrl = '';
+        framing = { ...savedFraming };
+        opener?.focus();
+      };
+      document.getElementById('pfEditBanner')?.addEventListener('click', (event) => open(event.currentTarget));
+      modal.querySelectorAll('[data-close-banner]').forEach((button) => button.addEventListener('click', close));
+      modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modal.classList.contains('is-open')) close(); });
+      form.addEventListener('submit', () => { form.querySelector('[type="submit"]').disabled = true; });
+      if (modal.classList.contains('is-open')) open(null);
+    })();
+
+    (() => {
+      // The picture viewer: tap the banner picture or the character to see it
+      // whole; tap anywhere, the x, or press Esc to close.
+      const viewer = document.getElementById('pfViewer');
+      if (!viewer) return;
+      document.body.appendChild(viewer);
+      const image = viewer.querySelector('img');
+      let opener = null;
+      const close = () => {
+        if (viewer.hidden) return;
+        viewer.hidden = true;
+        document.body.classList.remove('pf-modal-open');
+        image.removeAttribute('src');
+        opener?.focus();
+      };
+      document.querySelectorAll('[data-view-image]').forEach((trigger) => trigger.addEventListener('click', () => {
+        opener = trigger;
+        image.src = trigger.dataset.viewImage;
+        image.alt = trigger.dataset.viewAlt || '';
+        viewer.classList.toggle('is-character', trigger.dataset.viewKind === 'character');
+        viewer.hidden = false;
+        document.body.classList.add('pf-modal-open');
+        viewer.querySelector('.pf-viewer-close').focus();
+      }));
+      viewer.addEventListener('click', close);
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
     })();
   </script>
   <script src="<?= koobdAsset('js/profile.js') ?>"></script>

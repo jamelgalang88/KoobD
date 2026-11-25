@@ -102,8 +102,66 @@
       voiceOverEnabled: Boolean(element.voiceOverEnabled),
       voiceOverUrl: voiceOverUrl.startsWith('data:') ? '' : voiceOverUrl,
       voiceOverName: String(element.voiceOverName || ''),
-      ...(element.type === 'title' ? { font: String(element.font || ''), size: String(element.size || '') } : {})
+      ...(element.type === 'title' ? { font: String(element.font || ''), size: String(element.size || '') } : {}),
+      // A built-in effect as the line appears (js/koobd-audio.js).
+      ...(element.sfx ? { sfx: String(element.sfx), ...(Number(element.sfxRepeat) > 1 ? { sfxRepeat: Number(element.sfxRepeat) } : {}) } : {})
     };
+  }
+
+  // --- Sound (js/koobd-audio.js) ----------------------------------------------------
+  // A Story page's music and surroundings: '' carries on from the page before.
+  const SOUND = window.KoobdAudio || null;
+  const soundLabels = SOUND ? SOUND.labels : { effects: {}, weather: {} };
+  function normalizePageAudio(audio) {
+    if (!audio || typeof audio !== 'object') return { music: '', musicVolume: 0.7, ambience: '', ambienceVolume: 0.7 };
+    return {
+      music: String(audio.music || ''),
+      musicVolume: Math.max(0, Math.min(1, Number(audio.musicVolume ?? 0.7))),
+      ambience: audio.ambience === 'none' ? 'none' : (Array.isArray(audio.ambience) ? audio.ambience.map(String) : ''),
+      ambienceVolume: Math.max(0, Math.min(1, Number(audio.ambienceVolume ?? 0.7)))
+    };
+  }
+  const isTrack = (value) => Boolean(SOUND && SOUND.hasTrack(value));
+  function pageSoundSummary(page) {
+    const audio = page.audio;
+    const music = audio.music === 'none' ? 'No music' : isTrack(audio.music) ? ((SOUND.tracks.find((track) => track.id === audio.music) || {}).name || '') : audio.music ? 'Own music' : '';
+    const ambience = audio.ambience === 'none' ? 'Quiet' : Array.isArray(audio.ambience) ? audio.ambience.map((id) => soundLabels.weather[id] || id).join(', ') : '';
+    return [music, ambience].filter(Boolean).join(' · ');
+  }
+  function pageSoundFields(page) {
+    const audio = page.audio;
+    const musicMode = audio.music === 'none' ? 'none' : isTrack(audio.music) ? audio.music : audio.music ? 'file' : '';
+    const ambienceMode = audio.ambience === 'none' ? 'none' : Array.isArray(audio.ambience) ? 'set' : '';
+    const update = () => { changed({ quiet: true }); refreshShellModal(); };
+    return [
+      UI.field('Music', UI.select([['', state.pages.indexOf(page) === 0 ? 'Gentle reading music' : 'Keep the page before\'s music'], ...(SOUND ? SOUND.tracks.map((track) => [track.id, track.name]) : []), ['file', 'My own music file…'], ['none', 'No music']], musicMode, (value) => {
+        // "My own music file": keep a file already chosen, else show the picker.
+        if (value === 'file') {
+          if (isTrack(audio.music) || audio.music === 'none') audio.music = '';
+          audio.pickingFile = !audio.music;
+        } else {
+          audio.music = value;
+          audio.pickingFile = false;
+        }
+        update();
+      }), { full: true }),
+      SOUND && isTrack(audio.music) ? el('button', { type: 'button', class: 'ed-btn ed-btn-ghost ed-btn-small', text: 'Listen', on: { click: () => SOUND.previewMusic(audio.music) } }) : null,
+      musicMode === 'file' || audio.pickingFile ? UI.mediaField('Music file (MP3, loops)', isTrack(audio.music) || audio.music === 'none' ? '' : audio.music, {
+        kinds: ['audio'], storyboards: false, title: 'Choose music',
+        onChange(value) { audio.music = value || ''; audio.pickingFile = !value; update(); }
+      }) : null,
+      musicMode === 'file' && audio.music ? UI.field(`Music volume: ${Math.round(audio.musicVolume * 100)}%`, UI.range(audio.musicVolume, (value) => { audio.musicVolume = Math.round(value * 100) / 100; changed({ quiet: true }); }, { min: 0, max: 1, step: 0.05 }), { full: true }) : null,
+      UI.field('Surroundings', UI.select([['', 'Keep the page before\'s'], ['set', 'Choose weather and sounds…'], ['none', 'Quiet']], ambienceMode, (value) => {
+        audio.ambience = value === 'none' ? 'none' : value === 'set' ? (Array.isArray(audio.ambience) ? audio.ambience : []) : '';
+        update();
+      }), { full: true }),
+      Array.isArray(audio.ambience) ? el('div', { class: 'pe-sound-grid' }, Object.entries(soundLabels.weather).map(([id, label]) => UI.toggle(label, audio.ambience.includes(id), (on) => {
+        audio.ambience = on ? [...audio.ambience, id] : audio.ambience.filter((layer) => layer !== id);
+        update();
+      }))) : null,
+      Array.isArray(audio.ambience) && audio.ambience.length ? UI.field(`Surroundings volume: ${Math.round(audio.ambienceVolume * 100)}%`, UI.range(audio.ambienceVolume, (value) => { audio.ambienceVolume = Math.round(value * 100) / 100; changed({ quiet: true }); }, { min: 0.1, max: 1, step: 0.05 }), { full: true }) : null,
+      el('p', { class: 'pe-hint', text: 'Music and surroundings carry on to the next pages until a page changes them. Readers can turn music and effects down in their Sound settings.' })
+    ];
   }
 
   // The fonts a title can use ('' = the story's own font).
@@ -139,6 +197,7 @@
       pageTitle: page.pageTitle || `Page ${index + 1}`,
       stageName: String(page.stageName || ''),
       stageSubtitle: String(page.stageSubtitle || ''),
+      audio: normalizePageAudio(page.audio),
       pageType,
       transition: TRANSITIONS.includes(page.transition) ? page.transition : 'none',
       background: page.background || '',
@@ -669,6 +728,7 @@
     shellModal = UI.openModal({ title, size, render, onClose() { shellModal = null; renderPageSettings(); } });
     return shellModal;
   }
+  const refreshShellModal = () => { if (shellModal) shellModal.refresh(); };
 
   function voicePopup(element) {
     const status = el('span', { class: 'story-builder-voiceover-status', text: element.voiceOverUrl ? `Selected: ${element.voiceOverName || 'Audio file'}` : 'No audio file' });
@@ -690,6 +750,15 @@
       }
     });
     return el('div', { class: 'pe-popup' }, [
+      UI.field('Sound effect as this part appears', UI.select([['', 'None'], ...Object.entries(soundLabels.effects)], element.sfx || '', (value) => {
+        if (value) element.sfx = value; else { delete element.sfx; delete element.sfxRepeat; }
+        changed({ content: true });
+      }), { full: true }),
+      element.sfx ? UI.field('Plays', UI.select([['1', 'Once'], ['2', 'Twice'], ['3', '3 times'], ['5', '5 times']], String(element.sfxRepeat || 1), (value) => {
+        if (value === '1') delete element.sfxRepeat; else element.sfxRepeat = Number(value);
+        changed({ content: true });
+      }), { full: true }) : null,
+      element.sfx && SOUND ? el('button', { type: 'button', class: 'ed-btn ed-btn-ghost ed-btn-small', text: 'Listen', on: { click: () => SOUND.sfx(element.sfx) } }) : null,
       UI.toggle('Play a voice over for this part', element.voiceOverEnabled, (value) => { element.voiceOverEnabled = value; changed({ content: true }); }),
       UI.field('Voice over audio file', el('div', { class: 'pe-popup' }, [fileInput, status]), { full: true }),
       element.voiceOverUrl ? el('audio', { controls: true, preload: 'none', src: element.voiceOverUrl, class: 'story-voice-preview' }) : null,
@@ -747,7 +816,7 @@
             el('div', { class: 'story-builder-element-order', text: `Part ${index + 1}` })
           ]),
           el('div', { class: 'story-builder-element-actions' }, [
-            element.type === 'choices' ? null : UI.iconButton('mic', element.voiceOverEnabled && element.voiceOverUrl ? 'Voice over: on' : 'Voice over', () => openShellModal('Voice over', () => voicePopup(element)), { class: element.voiceOverEnabled && element.voiceOverUrl ? 'is-active' : '' }),
+            element.type === 'choices' ? null : UI.iconButton('mic', (element.voiceOverEnabled && element.voiceOverUrl) || element.sfx ? 'Sound: on' : 'Sound and voice over', () => openShellModal('Sound and voice over', () => voicePopup(element)), { class: (element.voiceOverEnabled && element.voiceOverUrl) || element.sfx ? 'is-active' : '' }),
             UI.iconButton('duplicate', 'Duplicate this part (Ctrl+D)', () => duplicatePart(index)),
             UI.iconButton('clipboard', 'Copy this part (Ctrl+C)', () => copyPart(index)),
             UI.iconButton('up', 'Move up', () => move(-1)),
@@ -870,7 +939,9 @@
       UI.field('Stage name (optional)', UI.input(page.stageName, (value) => { page.stageName = value.slice(0, 60); changed({ quiet: true }); }, { placeholder: 'e.g. The Deep Forest', maxlength: 60 }), { full: true }),
       UI.field('Stage subtitle (optional)', UI.input(page.stageSubtitle, (value) => { page.stageSubtitle = value.slice(0, 60); changed({ quiet: true }); }, { placeholder: 'e.g. Late Afternoon', maxlength: 60 }), { full: true }),
       el('p', { class: 'pe-hint', text: 'Shown to readers as they arrive at the page, like a place name. Left blank, nothing is shown.' }),
-      UI.field('Page transition', UI.select(TRANSITIONS.map((value) => [value, TRANSITION_LABELS[value]]), page.transition, (value) => { page.transition = value; changed({ quiet: true }); }), { full: true })
+      UI.field('Page transition', UI.select(TRANSITIONS.map((value) => [value, TRANSITION_LABELS[value]]), page.transition, (value) => { page.transition = value; changed({ quiet: true }); }), { full: true }),
+      // Platform pages set their sound in the stage's own settings.
+      ...(isPlatform(page) ? [] : [el('h4', { class: 'pe-section-title', text: 'Sound' }), ...pageSoundFields(page)])
     ]);
   }
 
@@ -878,7 +949,7 @@
     const page = currentPage();
     const isLast = state.current === state.pages.length - 1;
     const tr = (text) => (window.KoobdI18n ? window.KoobdI18n.t(text) : text);
-    const summary = [page.stageName.trim(), tr(TRANSITION_LABELS[page.transition])].filter(Boolean).join(' · ');
+    const summary = [page.stageName.trim(), tr(TRANSITION_LABELS[page.transition]), isPlatform(page) ? '' : pageSoundSummary(page)].filter(Boolean).join(' · ');
     $('pageQuickHead').replaceChildren(
       el('strong', { text: `Page ${state.current + 1} of ${state.pages.length}` }),
       el('span', { text: isPlatform(page) ? 'Platform page' : 'Story page' })
@@ -1341,6 +1412,28 @@
     });
   });
   storyCanvas.addEventListener('click', () => { if (state.pickedSide) pickSide(null); });
+
+  // Clicking or tapping anywhere else in the editor - empty space, a panel,
+  // the area around the stage - lets go of the selected piece (Platform Mode)
+  // or character (Story Mode). Controls keep it: buttons and fields can act on
+  // the selection (Delete, Duplicate, the settings of the selected piece), and
+  // the Platform stage decides for itself (empty space there deselects too).
+  const KEEPS_SELECTION = [
+    'button', 'a[href]', 'input', 'select', 'textarea', 'label', 'summary', '[contenteditable="true"]', '[contenteditable=""]',
+    '[role="button"]', '[role="slider"]', '[role="tab"]', '[role="menu"]', '[role="menuitem"]', '[role="option"]', '[role="dialog"]',
+    '.ed-modal', '.teacher-story-exit-modal', '.pe-menu', '.pe-stage', '.pe-minimap', '#platformInspectorRoot', '.has-character'
+  ].join(',');
+  document.querySelector('.story-builder-shell')?.addEventListener('pointerdown', (event) => {
+    if (event.button > 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target || target.closest(KEEPS_SELECTION)) return;
+    if (isPlatform()) {
+      const ed = platformEditor && platformEditor.ed;
+      if (ed && ed.active && ed.ui.selection.length) ed.select([]);
+    } else if (state.pickedSide) {
+      pickSide(null);
+    }
+  });
 
   // Right-click a character or the background on a Story Mode page to remove it.
   [[canvasLeftCharacter, 'leftCharacter', 'Remove the left character'], [canvasRightCharacter, 'rightCharacter', 'Remove the right character'], [canvasBackground, 'background', 'Remove the background picture']].forEach(([node, key, label]) => {

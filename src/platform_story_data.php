@@ -126,6 +126,8 @@ function koobdPlatformerBeatFromData($beat): ?array
     if ($audio !== '') {
         $clean['audio'] = $audio;
     }
+    // A built-in effect, and music or weather changing from this line on.
+    $clean += koobdCleanLineAudio($beat);
     if ($type === 'title') {
         // '' = the story's own font.
         $clean['font'] = koobdCleanChoice($beat['font'] ?? '', array_merge([''], koobdStoryFontIds()), '');
@@ -334,9 +336,22 @@ function koobdPlatformerV3FromData(array $scene): array
             'color' => koobdCleanColor($ground['color'] ?? '', '#557d2e'),
             'gaps' => $gaps,
         ],
+        // Music: an uploaded file, a built-in track, none, or (null) Platform
+        // Mode's own; surroundings while the stage plays; and whether characters
+        // make footstep and jump sounds (and on what).
         'music' => $musicAsset !== ''
             ? ['asset' => $musicAsset, 'volume' => koobdCleanNumber($music['volume'] ?? 0.6, 0, 1, 0.6)]
+            : (in_array((string)($music['track'] ?? ''), koobdAudioTracks(), true) ? ['track' => (string)$music['track']]
+                : (!empty($music['none']) ? ['none' => true] : null)),
+        'ambience' => ($layers = koobdCleanWeatherLayers(is_array($scene['ambience'] ?? null) ? ($scene['ambience']['layers'] ?? []) : []))
+            ? ['layers' => $layers, 'volume' => koobdCleanNumber($scene['ambience']['volume'] ?? 0.7, 0, 1, 0.7)]
             : null,
+        'sounds' => [
+            'character' => (is_array($scene['sounds'] ?? null) ? ($scene['sounds']['character'] ?? true) : true) !== false,
+            'surface' => koobdCleanChoice(is_array($scene['sounds'] ?? null) ? ($scene['sounds']['surface'] ?? 'auto') : 'auto', ['auto', 'grass', 'dirt', 'stone', 'wood', 'sand', 'snow'], 'auto'),
+        ],
+        // The moving arrow at the end of the stage: shown unless turned off.
+        'endArrow' => ($scene['endArrow'] ?? true) !== false,
         'objects' => $objects,
         'characters' => $characters,
         'checkpoints' => $checkpoints,
@@ -581,6 +596,9 @@ function koobdStoryPagesForPlayer(array $pages): array
                 'font' => $element['font'] ?? '',
                 'size' => $element['size'] ?? '',
                 'rich' => $element['rich'] ?? '',
+                // A built-in effect as the line appears (js/teacher-story-player.js).
+                'sfx' => $element['sfx'] ?? '',
+                'sfxRepeat' => (int)($element['sfxRepeat'] ?? 1),
             ];
         }
         $isPlatformer = ($page['pageType'] ?? '') === 'platformer';
@@ -599,6 +617,8 @@ function koobdStoryPagesForPlayer(array $pages): array
             'leftCharacterAsset' => ($page['leftCharacterAsset'] ?? '') !== '' ? $page['leftCharacterAsset'] : ($leftCharacter['asset'] ?? ''),
             'rightCharacterAsset' => ($page['rightCharacterAsset'] ?? '') !== '' ? $page['rightCharacterAsset'] : ($rightCharacter['asset'] ?? ''),
             'platformer' => $isPlatformer ? ($page['platformer'] ?? null) : null,
+            // The page's music and surroundings (Story Mode pages).
+            'audio' => $isPlatformer ? null : ($page['audio'] ?? null),
             'elements' => $elements,
         ];
     }

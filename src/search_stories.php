@@ -55,11 +55,17 @@ $stmt = $conn->prepare(
         u.user_role,
         ts.story_mode,
         ts.description AS story_description,
-        ts.lesson AS story_lesson
+        ts.lesson AS story_lesson,
+        ts.status AS teacher_story_status,
+        ts.approved_by,
+        COALESCE(NULLIF(reviewer.profile_reader_name, ''), reviewer.username, '') AS approved_by_name,
+        reviewer.username AS approved_by_username
      FROM stories s
      INNER JOIN users u ON u.id = s.creator_user_id
      LEFT JOIN teacher_stories ts ON ts.id = s.teacher_story_id
+     LEFT JOIN users reviewer ON reviewer.id = ts.approved_by
      WHERE s.title LIKE ?
+       AND ((ts.id IS NULL AND u.user_role = 'teacher') OR (ts.status = 'published' AND (u.user_role = 'teacher' OR ts.approved_by IS NOT NULL)))
      ORDER BY s.updated_at DESC, s.created_at DESC, s.id DESC
      LIMIT 48"
 );
@@ -76,6 +82,7 @@ if ($stmt) {
             'mode' => $story['mode'],
             'key' => 'shared-' . $story['id'],
             'creator' => $story['creator_name'],
+            'approver' => $story['approved_by_name'],
             'description' => $story['description'] !== '' ? $story['description'] : $story['subtitle'],
             'lesson' => $story['lesson'],
             'resume' => koobdStoryProgressDetails(

@@ -125,13 +125,15 @@
     const card = document.createElement('a');
     card.className = 'dash-shared-card' + (story.cover ? '' : ' no-cover');
     card.href = story.href;
+    const creatorLabel = story.creator ? `Created by ${story.creator}` : '';
     // The details for the card's pop-up (js/story-details.js).
     Object.assign(card.dataset, {
       storyTitle: story.title || '',
       storyHref: story.href || '',
       storyCover: story.cover || '',
       storyMode: story.mode === 'platform' ? 'platform' : 'story',
-      storyCreator: story.creator ? `Created by ${story.creator}` : '',
+      storyCreator: creatorLabel,
+      storyApprover: story.approver || '',
       storyDescription: story.description && story.description !== 'Published story' ? story.description : '',
       storyLesson: story.lesson || '',
       storyKey: story.key || ''
@@ -167,7 +169,7 @@
     meta.className = 'dash-shared-meta';
     const author = document.createElement('span');
     author.className = 'dash-shared-author';
-    author.textContent = `Created by ${story.creator}`;
+    author.textContent = creatorLabel;
     meta.appendChild(author);
     body.append(heading, meta);
     card.appendChild(body);
@@ -299,4 +301,23 @@
     }
   });
   if (input.value.trim()) search();
+})();
+
+// The search bar stays at the top of Home while the page scrolls (css: a
+// sticky bar). Once the page has moved, the bar is marked as stuck so it
+// lifts above the stories; the check runs at most once a frame.
+(function () {
+  const wrap = document.querySelector('.dash-search-wrap');
+  if (!wrap) return;
+  let frame = 0;
+  function check() {
+    frame = 0;
+    const top = parseFloat(getComputedStyle(wrap).top) || 0;
+    const stuck = window.scrollY > 0 && wrap.getBoundingClientRect().top <= top + 0.5;
+    wrap.classList.toggle('is-stuck', stuck);
+  }
+  const schedule = () => { if (!frame) frame = window.requestAnimationFrame(check); };
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  check();
 })();

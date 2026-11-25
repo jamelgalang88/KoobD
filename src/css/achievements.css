@@ -1,0 +1,38 @@
+.achievement-toast-stack{position:fixed;right:24px;bottom:24px;z-index:1100;display:grid;gap:10px;width:min(380px,calc(100vw - 32px));pointer-events:none;}
+.achievement-toast{position:relative;display:grid;grid-template-columns:58px minmax(0,1fr) 30px;align-items:center;gap:10px;padding:13px;border:1px solid #dce8df;border-radius:17px;background:linear-gradient(145deg,#fff,#f4fbf6);color:#1b2440;box-shadow:0 16px 42px rgba(27,36,64,.2);pointer-events:auto;opacity:0;transform:translateY(12px) scale(.98);transition:opacity .22s ease,transform .22s ease;}
+.achievement-toast.is-visible{opacity:1;transform:translateY(0) scale(1);}
+.achievement-toast.is-leaving{opacity:0;transform:translateY(8px) scale(.98);}
+.achievement-toast-art{display:grid;place-items:center;width:58px;height:62px;border-radius:14px;background:#fff2d6;}
+.achievement-toast-art svg{width:48px;height:54px;animation:achievement-medal-pop .52s cubic-bezier(.2,.8,.25,1.3) both;}
+.achievement-toast-art .pf-medal-ribbon{fill:var(--medal-ribbon,#d3a04b);}
+.achievement-toast-art .pf-medal-edge{fill:var(--medal-edge,#b9802f);stroke:rgba(80,60,30,.16);stroke-width:1;}
+.achievement-toast-art .pf-medal-face{fill:var(--medal-face,#f6d88e);stroke:rgba(255,255,255,.7);stroke-width:1.2;}
+.achievement-toast-art .pf-medal-emblem{fill:none;stroke:var(--medal-ink,#805b1d);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;}
+.achievement-toast-art .pf-achievement-art.is-bronze{--medal-ribbon:#ad704a;--medal-edge:#a86742;--medal-face:#e5b28a;--medal-ink:#754b32;}
+.achievement-toast-art .pf-achievement-art.is-silver{--medal-ribbon:#8291a7;--medal-edge:#75849b;--medal-face:#e4e9f1;--medal-ink:#53647c;}
+.achievement-toast-art .pf-achievement-art.is-gold{--medal-ribbon:#d39a2e;--medal-edge:#bf8620;--medal-face:#ffe29a;--medal-ink:#865c12;}
+.achievement-toast-art .pf-achievement-art.is-platinum{--medal-ribbon:#667eb4;--medal-edge:#5b70a4;--medal-face:#dfe8ff;--medal-ink:#465c8d;}
+.achievement-toast-art .pf-achievement-art.is-special{--medal-ribbon:#8869cf;--medal-edge:#7658b9;--medal-face:#e9dcff;--medal-ink:#62449f;}
+.achievement-toast-copy{display:grid;gap:4px;min-width:0;}
+.achievement-toast-copy>span:first-child{color:#22805c;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;}
+.achievement-toast-copy strong{overflow:hidden;color:#1b2440;font-size:13px;font-weight:900;line-height:1.25;text-overflow:ellipsis;}
+.achievement-toast-copy p{margin:0;color:#69728c;font-size:11px;line-height:1.4;}
+.achievement-toast-badge{display:inline-flex;align-items:center;justify-self:start;min-height:20px;padding:0 8px;border-radius:999px;background:#e4f6eb;color:#217650;font-size:8px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;}
+.achievement-toast-actions{display:flex;align-items:center;justify-content:space-between;gap:6px;grid-column:2 / -1;margin-top:1px;}
+.achievement-toast-actions a{color:#4f63d6;font-size:10px;font-weight:850;text-decoration:none;}
+.achievement-toast-actions a:hover{text-decoration:underline;}
+.achievement-toast-rarity{color:#8a93a3;font-size:8px;font-weight:800;text-transform:uppercase;}
+.achievement-toast-close{display:grid;place-items:center;align-self:start;width:30px;height:30px;padding:0;border:0;border-radius:9px;background:transparent;color:#7a849a;font-size:20px;line-height:1;cursor:pointer;}
+.achievement-toast-close:hover{background:#edf1f5;color:#344365;}
+.achievement-toast-close:focus-visible,.achievement-toast-actions a:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.achievement-toast.is-teacher{border-color:#dbe4ed;background:linear-gradient(145deg,#fff,#f4f7fb);}
+.achievement-toast.is-teacher .achievement-toast-art{background:#edf3f8;}
+.achievement-toast.is-teacher .achievement-toast-copy>span:first-child{color:#526984;}
+.achievement-toast.is-teacher .achievement-toast-actions a{color:#415c7b;}
+@keyframes achievement-medal-pop{0%{opacity:0;transform:scale(.55) rotate(-18deg);}70%{opacity:1;transform:scale(1.12) rotate(4deg);}100%{opacity:1;transform:scale(1) rotate(0);}}
+@media(max-width:640px){
+  .achievement-toast-stack{right:12px;bottom:calc(88px + env(safe-area-inset-bottom));width:min(380px,calc(100vw - 24px));}
+}
+@media(prefers-reduced-motion:reduce){
+  .achievement-toast,.achievement-toast-art svg{transition:none;animation:none;}
+}

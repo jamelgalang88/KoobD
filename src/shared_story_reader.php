@@ -159,7 +159,8 @@ $pagesForPlayer = koobdStoryPagesForPlayer($story['pages']);
     'pages' => $pagesForPlayer,
     'textStyle' => koobdStoryTextStyle($story),
     'lesson' => $story['lesson'] ?? '',
-    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset']],
+    // The reader's character walks and jumps with its animation sheet, when it has one.
+    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset'], 'animationAsset' => koobdCharacterSheet($playerProfile['key'])],
   ];
   if ($initialPlayerX !== null) {
     $playerConfig['initialPlayerX'] = $initialPlayerX;
@@ -172,7 +173,12 @@ $pagesForPlayer = koobdStoryPagesForPlayer($story['pages']);
   <script src="<?= koobdAsset('js/platform-library.js') ?>"></script>
   <script src="<?= koobdAsset('js/rich-text.js') ?>"></script>
   <script src="<?= koobdAsset('js/platform-story-compiler.js') ?>"></script>
+  <script src="<?= koobdAsset('js/character-animation.js') ?>"></script>
   <script src="<?= koobdAsset('js/platformer-story-player.js') ?>"></script>
   <script src="<?= koobdAsset('js/teacher-story-player.js') ?>"></script>
+  <?php // Tap a word to hear it, and practise saying it (js/story-words.js). ?>
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
+  <script src="<?= koobdAsset('js/story-words.js') ?>"></script>
 </body>
 </html>

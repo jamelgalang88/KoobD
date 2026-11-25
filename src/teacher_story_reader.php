@@ -1,10 +1,21 @@
 <?php
 require_once('teacher_auth.php');
-$user = koobdRequireStudentAuth(true);
+$user = koobdRequireAuth(true);
 // A classroom activity (?activity_id=) the student has joined; its story must
-// be one made in the story editor. Progress is kept per activity.
+// be one made in the story editor. Progress is kept per activity. Its teacher
+// can preview it (&preview=1) with its questions; nothing is kept then.
 $activityId = isset($_GET['activity_id']) ? (int)$_GET['activity_id'] : 0;
-$activity = koobdStudentActivity($activityId, (int)$user['id']);
+$isPreview = isset($_GET['preview']) && koobdIsTeacher($user);
+if (koobdIsTeacher($user) && !$isPreview) {
+    header("Location: classroom.php");
+    exit();
+}
+$activity = $isPreview ? koobdTeacherActivity($activityId, (int)$user['id']) : koobdStudentActivity($activityId, (int)$user['id']);
+if ($activity && $isPreview) {
+    $titleRow = $conn->query("SELECT title FROM classrooms WHERE id = " . (int)$activity['classroom_id'])->fetch_row();
+    $activity['classroom_title'] = (string)($titleRow[0] ?? '');
+    $activity += ['username' => $user['username'], 'selected_reader' => $user['selected_reader'] ?? null, 'profile_reader_name' => $user['profile_reader_name'] ?? null];
+}
 if (!$activity) {
     // Links from before activities named only the classroom.
     $legacyClassroomId = isset($_GET['classroom_id']) ? (int)$_GET['classroom_id'] : 0;
@@ -17,13 +28,15 @@ $classroom['title'] = $activity['classroom_title'];
 
 $story = koobdStoryMeta($activity['story_id']);
 if (!$story || ($story['type'] ?? '') !== 'teacher_story') {
-    header("Location: classroom_room.php?id=" . $classroomId);
+    header("Location: " . ($isPreview ? 'teacher_classroom.php?id=' : 'classroom_room.php?id=') . $classroomId);
     exit();
 }
 $playerProfile = koobdResolvedProfile($user);
 
 $teacherProfile = koobdResolvedTeacherProfile($classroom);
-$progressContext = koobdActivityProgressContext($activityId);
+$progressContext = $isPreview ? 'preview:' . $activityId : koobdActivityProgressContext($activityId);
+$storyQuestions = koobdStoryQuestionsForPage($activityId, (int)$user['id'], $isPreview);
+$roomHref = ($isPreview ? 'teacher_classroom.php?id=' : 'classroom_room.php?id=') . $classroomId;
 $progressStmt = $conn->prepare(
     "SELECT progress_state FROM story_progress WHERE user_id = ? AND story_id = ? AND progress_context = ? LIMIT 1"
 );
@@ -85,7 +98,7 @@ $pagesForPlayer = koobdStoryPagesForPlayer($story['pages']);
   <link rel="stylesheet" href="<?= koobdAsset('css/mobile.css') ?>">
 </head>
 <body class="story-page teacher-story-player-page">
-  <a class="top-right teacher-story-top-right-link" href="classroom_room.php?id=<?= (int)$classroomId ?>">Back To Class</a>
+  <a class="top-right teacher-story-top-right-link" href="<?= htmlspecialchars($roomHref) ?>">Back To Class</a>
 
   <main class="platformer-story-stage koobd-story<?= ($story['pages'][$initialPage]['pageType'] ?? '') === 'platformer' ? '' : ' hidden' ?>" id="platformerStoryStage"><div class="platformer-story-background" id="platformerStoryBackground"></div><div class="platformer-story-world" id="platformerStoryWorld"><div class="platformer-story-ground hidden" id="platformerStoryGround"></div><div class="platformer-story-platforms" id="platformerStoryPlatforms"></div><img class="platformer-story-player" id="platformerStoryPlayer" style="--platformer-player-scale:<?= max(0.7, min(1.25, ((int)$playerProfile['scale']) / 100)) ?>" src="<?= htmlspecialchars($playerProfile['asset']) ?>" alt="<?= htmlspecialchars($playerProfile['name']) ?>"><div class="platformer-story-npcs" id="platformerStoryNpcs" translate="no"></div></div><div class="platformer-story-hud"><span class="teacher-story-player-badge" translate="no"><?= htmlspecialchars($classroom['title']) ?></span><div class="platformer-story-progress" id="platformerStoryProgress" role="slider" aria-label="Navigate the platformer world" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><span id="platformerStoryProgressFill"></span><button type="button" id="platformerStoryProgressThumb" aria-label="Navigate platformer world"></button></div><span class="platformer-story-mode" id="platformerStoryMode"></span></div><div class="platformer-story-controls"><div class="platformer-move-pad"><button id="platformerMoveLeft" class="platformer-control">&#8592;</button><button id="platformerMoveRight" class="platformer-control">&#8594;</button></div><div class="platformer-action-pad"><button id="platformerChatButton" class="platformer-control chat hidden">Chat</button><button id="platformerJumpButton" class="platformer-control jump">&#8593;</button></div></div><div class="platformer-story-dialogue hidden" id="platformerDialogue"><div class="platformer-story-dialogue-stage"><div class="platformer-story-dialogue-figure left" id="platformerDialogueFigureLeft"></div><div class="platformer-story-dialogue-card" translate="no"><div class="platformer-story-dialogue-name" id="platformerDialogueName"></div><div class="platformer-story-dialogue-text" id="platformerDialogueText"></div><div class="platformer-story-dialogue-choices" id="platformerDialogueChoices"></div><p class="platformer-story-dialogue-hint" id="platformerDialogueHint" translate="yes">Tap to continue</p></div><div class="platformer-story-dialogue-figure right" id="platformerDialogueFigureRight"></div></div></div></main>
   <div class="vn-wrapper teacher-story-vn<?= ($story['pages'][$initialPage]['pageType'] ?? '') === 'platformer' ? ' hidden' : '' ?>">
@@ -123,11 +136,12 @@ $pagesForPlayer = koobdStoryPagesForPlayer($story['pages']);
     'storyId' => $story['id'],
     'title' => $story['title'],
     'progressContext' => $progressContext,
-    'returnHref' => 'classroom_room.php?id=' . $classroomId,
+    'returnHref' => $roomHref,
     'pages' => $pagesForPlayer,
     'textStyle' => koobdStoryTextStyle($story),
     'lesson' => $story['lesson'] ?? '',
-    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset']],
+    // The reader's character walks and jumps with its animation sheet, when it has one.
+    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset'], 'animationAsset' => koobdCharacterSheet($playerProfile['key'])],
   ];
   $playerConfig['initialPage'] = $initialPage;
   $playerConfig['initialElement'] = $initialElement;
@@ -147,8 +161,19 @@ $pagesForPlayer = koobdStoryPagesForPlayer($story['pages']);
   <script src="<?= koobdAsset('js/platform-library.js') ?>"></script>
   <script src="<?= koobdAsset('js/rich-text.js') ?>"></script>
   <script src="<?= koobdAsset('js/platform-story-compiler.js') ?>"></script>
+  <script src="<?= koobdAsset('js/character-animation.js') ?>"></script>
   <script src="<?= koobdAsset('js/platformer-story-player.js') ?>"></script>
   <script src="<?= koobdAsset('js/story-shared.js') ?>"></script>
+  <?= koobdStoryQuestionTags($storyQuestions) ?>
   <script src="<?= koobdAsset('js/teacher-story-player.js') ?>"></script>
+  <?php if ($activity && !$isPreview && !empty($activity['multiplayer'])): ?>
+  <?php // Play together: classmates' silhouettes and one shared progress bar. ?>
+  <script>window.KOOBD_MULTIPLAYER = <?= json_encode(['activityId' => (int)$activity['id']]) ?>;</script>
+  <script src="<?= koobdAsset('js/story-multiplayer.js') ?>"></script>
+  <?php endif; ?>
+  <?php // Tap a word to hear it, and practise saying it (js/story-words.js). ?>
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
+  <script src="<?= koobdAsset('js/story-words.js') ?>"></script>
 </body>
 </html>

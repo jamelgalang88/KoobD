@@ -1,6 +1,9 @@
 <?php
 require_once('auth.php');
 $user = koobdRequireAuth(true);
+require_once __DIR__ . '/missions_lib.php';
+koobdMissionRequireFeature($user, 'story_creation');
+$isTeacher = koobdIsTeacher($user);
 $storyDbId = isset($_GET['id']) ? (int)$_GET['id'] : (int)($_POST['story_id'] ?? 0);
 
 if ($storyDbId <= 0) {
@@ -50,22 +53,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $status = trim((string)$storyRow['status']);
-    if ($submitAction === 'save_draft') {
-        $status = 'draft';
-    } elseif ($submitAction === 'publish') {
-        $status = 'published';
-    } elseif ($status === '') {
-        $status = 'draft';
+    $submissionCode = trim((string)($storyRow['submission_code'] ?? ''));
+    $approvedBy = isset($storyRow['approved_by']) ? (int)$storyRow['approved_by'] : null;
+    $reviewedBy = isset($storyRow['reviewed_by']) ? (int)$storyRow['reviewed_by'] : null;
+    $reviewedAt = trim((string)($storyRow['reviewed_at'] ?? ''));
+    $versionNumber = max(1, (int)($storyRow['version_number'] ?? 1));
+    $approvedVersion = isset($storyRow['approved_version']) ? (int)$storyRow['approved_version'] : 0;
+    if ($isTeacher) {
+        if ($submitAction === 'save_draft') {
+            $status = 'draft';
+        } elseif ($submitAction === 'publish') {
+            $status = 'published';
+        } elseif ($status === '') {
+            $status = 'draft';
+        }
+    } else {
+        if (in_array($status, ['published', 'unpublished', 'rejected'], true)) {
+            $versionNumber++;
+        } elseif ($status === 'revision_required' && in_array($submitAction, ['save_draft', 'publish'], true)) {
+            $versionNumber++;
+        }
+        if ($submitAction === 'publish') {
+            if ($submissionCode === '') {
+                $submissionCode = koobdNewTeacherStorySubmissionCode();
+                if ($submissionCode === '') {
+                    http_response_code(500);
+                    exit('Unable to create a submission code. Please try again.');
+                }
+            }
+            $status = 'pending_approval';
+        } elseif (in_array($status, ['published', 'unpublished', 'rejected'], true)
+            || ($status === 'revision_required' && $submitAction === 'save_draft')) {
+            // Withdraw the changed version from review/publication until it is submitted again.
+            $status = 'draft';
+        } elseif ($status === '') {
+            $status = 'draft';
+        }
     }
 
     $pagesJson = json_encode($pages);
     $updateStmt = $conn->prepare(
         "UPDATE teacher_stories
-         SET title = ?, description = ?, lesson = ?, cover_image = ?, pages_json = ?, settings_json = ?, status = ?, story_mode = ?
+         SET title = ?, description = ?, lesson = ?, cover_image = ?, pages_json = ?, settings_json = ?, status = ?, story_mode = ?,
+             version_number = ?, submission_code = ?, approved_by = ?, reviewed_by = ?, reviewed_at = NULLIF(?, '')
          WHERE id = ? AND teacher_id = ?"
     );
+    if (!$updateStmt) {
+        error_log('Unable to prepare a teacher story update.');
+        http_response_code(500);
+        exit('Unable to save this story. Please try again.');
+    }
     $updateStmt->bind_param(
-        "ssssssssii",
+        "ssssssssisiisii",
         $title,
         $description,
         $lesson,
@@ -74,10 +113,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $settingsJson,
         $status,
         $storyMode,
+        $versionNumber,
+        $submissionCode,
+        $approvedBy,
+        $reviewedBy,
+        $reviewedAt,
         $storyDbId,
         $user['id']
     );
-    $updateStmt->execute();
+    if (!$conn->begin_transaction()) {
+        $updateStmt->close();
+        error_log('Unable to begin a teacher story save transaction.');
+        http_response_code(500);
+        exit('Unable to save this story. Please try again.');
+    }
+    if (!$updateStmt->execute()) {
+        $conn->rollback();
+        $updateStmt->close();
+        error_log('Unable to save a teacher story.');
+        http_response_code(500);
+        exit('Unable to save this story. Please try again.');
+    }
     $updateStmt->close();
 
     $updatedStoryRow = $storyRow;
@@ -87,7 +143,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updatedStoryRow['cover_image'] = $coverImage;
     $updatedStoryRow['status'] = $status;
     $updatedStoryRow['story_mode'] = $storyMode;
-    koobdSyncTeacherStoryToSharedFeed($updatedStoryRow);
+    $updatedStoryRow['approved_by'] = $approvedBy;
+    $updatedStoryRow['version_number'] = $versionNumber;
+    $updatedStoryRow['approved_version'] = $approvedVersion;
+    if (!koobdSyncTeacherStoryToSharedFeed($updatedStoryRow)) {
+        $conn->rollback();
+        http_response_code(500);
+        exit("Unable to update this story's publishing status. Please try again.");
+    }
+    if (!$conn->commit()) {
+        $conn->rollback();
+        error_log('Unable to commit a teacher story save transaction.');
+        http_response_code(500);
+        exit('Unable to save this story. Please try again.');
+    }
 
     if ($submitAction === 'preview') {
         // "Play from this page" starts the preview at that page.
@@ -97,7 +166,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($submitAction === 'publish') {
-        header("Location: teacher_stories.php?published=1");
+        if ($isTeacher) {
+            header("Location: teacher_stories.php?published=1");
+        } else {
+            header("Location: teacher_stories.php?submitted=1&code=" . rawurlencode($submissionCode));
+        }
         exit();
     }
 
@@ -175,7 +248,7 @@ $savedMessage = isset($_GET['saved']) ? 'Draft saved.' : '';
           <button type="button" class="teacher-story-secondary-btn" id="shortcutsBtn" title="Keyboard shortcuts">Shortcuts</button>
           <button type="button" class="teacher-story-secondary-btn" id="previewStoryBtn">Play Preview</button>
           <button type="button" class="teacher-story-secondary-btn" id="saveDraftBtn" title="Save (Ctrl+S)">Save Draft</button>
-          <button type="button" class="teacher-story-primary-btn" id="publishStoryBtn">Finish Story</button>
+          <button type="button" class="teacher-story-primary-btn" id="publishStoryBtn"><?= $isTeacher ? 'Finish Story' : 'Submit for Approval' ?></button>
         </div>
       </header>
 

@@ -58,8 +58,48 @@
     }
   }
   const npcLayer = document.getElementById('platformerStoryNpcs');
-  const player = document.getElementById('platformerStoryPlayer');
+  // Sound (see "Sound" further down): KOOB'D's audio manager, the stage's
+  // sound settings and what the player's sounds last did - declared here, as
+  // the stage is built (and the player drawn) before that part is reached.
+  const sound = window.KoobdAudio || null;
+  const worldSounds = world.sounds || {};
+  const characterSounds = worldSounds.character !== false;
+  const rainZones = [];
+  const checkpointSoundAfter = performance.now() + 1500;
+  let soundState = 'idle';
+  let soundColumn = -1;
+  let airborneSince = 0;
+  let audioScene = undefined;
+  let lineMusic = undefined;     // set by a story line
+  let lineWeather = undefined;   // set by a story line
+  let raining = false;
+  let rainCheckAt = 0;
   const playerProfile = config.playerProfile || {};
+  let playerNode = document.getElementById('platformerStoryPlayer');
+  // A reader whose character has an animation sheet (teacher stories show the
+  // reader's own character): the picture becomes a frame-sized window holding
+  // the sheet, as The False Knight's page builds it.
+  if (playerNode?.tagName === 'IMG' && playerProfile.animationAsset) {
+    const box = document.createElement('div');
+    box.id = playerNode.id;
+    box.className = playerNode.className;
+    box.setAttribute('style', playerNode.getAttribute('style') || '');
+    box.setAttribute('aria-label', playerNode.alt || 'Player character');
+    playerNode.removeAttribute('id');
+    playerNode.removeAttribute('style');
+    playerNode.className = '';
+    playerNode.alt = '';
+    playerNode.setAttribute('aria-hidden', 'true');
+    playerNode.replaceWith(box);
+    box.append(playerNode);
+    playerNode = box;
+  }
+  const player = playerNode;
+  // Frames, squash and stretch: js/character-animation.js, shared with Versus Mode.
+  const Anim = window.KoobdCharacterAnimation;
+  const playerAnim = Anim.create();
+  let playerSpeedShare = 0;
+  let talkingId = '';
   const playerSprite = player?.tagName === 'IMG' ? player : player?.querySelector('img');
   const playerUsesSpriteSheet = Boolean(playerProfile.animationAsset && playerSprite);
   const SPRITE_FRAME_WIDTH = 32;
@@ -249,6 +289,10 @@
     && Number(initialSceneX) < Number(scene.endX || WORLD_WIDTH)
   ) || storyScenes[0] || null;
   let sceneTransitioning = false;
+  // A teacher's question about the story is open (js/story-questions.js):
+  // the world holds still until it is answered.
+  let questionPause = false;
+  const storyQuestions = () => window.KoobdStoryQuestions || null;
   {
     const resumeEvents = Array.isArray(world.storyEvents) ? world.storyEvents : [];
     const doneCount = Math.max(0, Math.min(resumeEvents.length, Number(config.initialStoryEventIndex) || 0));
@@ -468,6 +512,14 @@
   // is WORLD_WIDTH% of the stage wide, so convert scene units to the layer's
   // own %-coordinate space for CSS positioning.
   function toLayerPercent(x) { return (x / WORLD_WIDTH) * 100; }
+  // How far through the whole story the player is (0-100): this page's part
+  // of a teacher story with several pages, or the whole world.
+  function storyProgressPercent() {
+    const pageCount = Math.max(1, Number(config.storyPageCount) || 1);
+    const pageIndex = Math.max(0, Number(config.storyPageIndex) || 0);
+    const here = completed ? 1 : clamp(playerX / WORLD_WIDTH, 0, 1);
+    return Math.min(100, Math.max(0, ((pageIndex + here) / pageCount) * 100));
+  }
   // Same conversion for y: the layer is WORLD_HEIGHT% of the stage tall, so
   // CSS top/translate percentages refer to the layer's box, not the stage.
   function toLayerYPercent(y) { return (y / WORLD_LAYER_HEIGHT) * 100; }
@@ -509,9 +561,15 @@
   function hazardPlatforms() {
     return platformListsNow().hazard;
   }
+  // The active scene's characters, likewise worked out once per scene (this
+  // was refiltered several times every frame and every physics step).
+  let npcList = null;
   function npcs() {
-    return (Array.isArray(world.npcs) ? world.npcs : [])
-      .filter((npc) => belongsToActiveScene(npc));
+    const source = Array.isArray(world.npcs) ? world.npcs : [];
+    if (!npcList || npcList.scene !== activeStoryScene || npcList.source !== source || npcList.count !== source.length) {
+      npcList = { scene: activeStoryScene, source, count: source.length, all: source.filter((npc) => belongsToActiveScene(npc)) };
+    }
+    return npcList.all;
   }
   function spawn() {
     const configSpawn = world.player;
@@ -1076,6 +1134,7 @@
   function renderDecor() {
     Object.values(decorLayers).forEach((layer) => layer.replaceChildren());
     timedDecor = [];
+    rainZones.length = 0;
     cullableDecor = [];
     lastCullCameraX = null;
     (Array.isArray(world.decor) ? world.decor : []).forEach((item, index) => {
@@ -1087,6 +1146,7 @@
         rain.style.left = `${toLayerPercent(Number(item.x) - Number(item.width || 100) / 2)}%`;
         rain.style.width = `${toLayerPercent(Number(item.width || 100))}%`;
         decorLayers.front?.appendChild(rain);
+        rainZones.push({ node: rain, x: Number(item.x), width: Number(item.width || 100) });
         if (item.from || item.until) timedDecor.push({ node: rain, from: item.from, until: item.until });
         return;
       }
@@ -1338,51 +1398,45 @@
   // character's frame window by the same amount (the cell is empty below a
   // lifted pose). Moving the sheet inside the window instead would pull the
   // row above - the walk cycle's feet - into view over the character's head.
-  const JUMP_FRAME_LIFT = [0, 3, 9, 12, 6, 0];
-  function setJumpShift(element, row, column) {
+  // (The shared module gives each pose's lift in sheet pixels.)
+  function setJumpShift(element, lift) {
     if (!element) return;
-    const lift = row === 2 ? (JUMP_FRAME_LIFT[column] || 0) : 0;
     setStyle(element, '--jump-shift', lift ? `${((lift / SPRITE_FRAME_HEIGHT) * 100).toFixed(3)}%` : '0px');
   }
-  // Jump pose for the vertical speed, as the sheets' own previews choose it:
-  // rising, apex, falling.
-  function jumpFrameFor(vy) {
-    return vy > 25 ? 2 : vy < -25 ? 4 : 3;
+  // The pose's squash, stretch, bounce and sway, anchored at the feet (CSS:
+  // --squash-x/-y, --bob, --tilt); never part of the physics or the hitbox.
+  function setPoseShape(element, look, digits) {
+    if (!element) return;
+    setStyle(element, '--squash-x', look.sx.toFixed(digits));
+    setStyle(element, '--squash-y', look.sy.toFixed(digits));
+    setStyle(element, '--bob', look.bob.toFixed(3));
+    setStyle(element, '--tilt', `${look.tilt.toFixed(3)}rad`);
   }
-  const LANDING_POSE_MS = 120;
-  let playerAirborneSince = 0;
-  let playerLandingUntil = 0;
 
+  // The player's pose from what it is doing (js/character-animation.js):
+  // standing, running at its real speed, the jump row by vertical speed, the
+  // landing squash, hurt, and - while the story holds for dialogue - standing
+  // or, when it is the one speaking, talking.
   function setPlayerAnimationFrame() {
-    if (!playerUsesSpriteSheet) return;
     const now = performance.now();
-    let row = 0;
-    let column = Math.floor(now / 200) % 4;
     const paused = dialogueOpen || sceneTransitioning;
-    // Standing always has zero vertical speed, so this ignores the moment
-    // before the first physics step.
-    const airborne = !grounded && !paused && velocityY !== 0;
-    if (airborne && !playerAirborneSince) playerAirborneSince = now;
-    if (!airborne && playerAirborneSince) {
-      // A real jump or fall ends on the landing (squash) pose for a moment.
-      if (now - playerAirborneSince > 150 && !paused) playerLandingUntil = now + LANDING_POSE_MS;
-      playerAirborneSince = 0;
-    }
-    if (paused) {
-      column = 0;
-    } else if (airborne && (now - playerAirborneSince > 50 || Math.abs(velocityY) > 25)) {
-      row = 2;
-      column = jumpFrameFor(velocityY);
-    } else if (now < playerLandingUntil) {
-      row = 2;
-      column = 5;
-    } else if (direction !== 0) {
-      row = 1;
-      column = Math.floor(playerWalkAnimationTime / 0.09) % 6;
-    }
+    const look = Anim.update(playerAnim, {
+      // Standing always has zero vertical speed, so this ignores the moment
+      // before the first physics step.
+      airborne: !grounded && velocityY !== 0,
+      rise: velocityY / jumpVelocity,
+      speed: grounded ? playerSpeedShare : 0,
+      paused,
+      talking: dialogueOpen && talkingId === 'player',
+      hurt: hazardHit,
+      picture: !playerUsesSpriteSheet
+    }, now);
+    setPoseShape(player, look, 3);
+    if (!paused) playerSounds(look);
+    if (!playerUsesSpriteSheet) return;
     // Idle, walk and jump all keep the last direction travelled.
-    setSpriteFrameFacing(playerSprite, row, column, lastDirection < 0);
-    setJumpShift(player, row, column);
+    setSpriteFrameFacing(playerSprite, look.row, look.column, lastDirection < 0);
+    setJumpShift(player, look.lift);
   }
 
   function updatePlayer() {
@@ -1461,10 +1515,13 @@
     const shiftY = (cameraY / WORLD_LAYER_HEIGHT) * 100;
     setStyle(worldLayer, 'transformOrigin', 'top left');
     setStyle(worldLayer, 'transform', `scale(${WORLD_VIEW_SCALE}) translate(-${shiftX.toFixed(4)}%, -${shiftY.toFixed(4)}%)`);
-    const progressText = completed
-      ? 'Finished'
-      : `World · ${Math.min(100, Math.max(0, Math.round((playerX / WORLD_WIDTH) * 100)))}%`;
-    const progress = completed ? 100 : Math.min(100, Math.max(0, (playerX / WORLD_WIDTH) * 100));
+    // The bar and the percentage beside it (as in Geometry Dash) show how far
+    // through the whole story the player is; dragging the bar (previews) moves
+    // within this page, so it keeps showing the page there.
+    const progress = allowProgressNavigation
+      ? (completed ? 100 : Math.min(100, Math.max(0, (playerX / WORLD_WIDTH) * 100)))
+      : storyProgressPercent();
+    const progressText = `${Math.floor(progress)}%`;
     if (progressBar && progressFill) {
       const shown = `${progress.toFixed(2)}%`;
       if (styleCache.get(progressFill)?.width !== shown) progressBar.setAttribute('aria-valuenow', String(Math.round(progress)));
@@ -1953,6 +2010,7 @@
     } else {
       state.x += Math.sign(delta) * stride;
       state.walking = true;
+      state.speedShare = Math.min(1.5, speed / moveSpeed);
       state.running = speed >= SCRIPTED_RUN_SPEED * 0.8;
       state.facing = Math.sign(delta);
       state.perched = false;
@@ -2025,6 +2083,35 @@
     setPlayerAnimationFrame();
   }
 
+  // Is this character the one speaking the current line? Lines name the
+  // character by id ('npc' - the one talked to), or by a story label such as
+  // 'flowergirl' or 'head guard' (ids 'flowergirl-castle', 'head-guard-gates').
+  function npcSpeaks(npc) {
+    if (!talkingId || talkingId === 'player') return false;
+    const id = String(npc.id || '').toLowerCase();
+    const label = talkingId.replace(/\s+/g, '-');
+    return id === talkingId || id === label || id.startsWith(`${label}-`)
+      || String(npc.name || '').toLowerCase() === talkingId;
+  }
+
+  // A character's pose (js/character-animation.js), shaped onto its sprite.
+  // `still`: the author turned this character's animation off; it keeps its
+  // first standing pose while it moves.
+  function npcLook(npc, state, picture) {
+    if (!state.anim) state.anim = Anim.create();
+    const look = Anim.update(state.anim, {
+      airborne: Boolean(state.airborne),
+      rise: (Number(state.vy) || 0) / jumpVelocity,
+      speed: state.walking ? (state.speedShare || 1) : 0,
+      paused: dialogueOpen || sceneTransitioning,
+      still: Boolean(npc.still),
+      talking: dialogueOpen && npcSpeaks(npc),
+      picture
+    }, performance.now());
+    setPoseShape(state.node, look, 2);
+    return look;
+  }
+
   function updateNpcs() {
     npcs().forEach((npc) => {
       const state = npcStates.get(npc.id);
@@ -2039,23 +2126,16 @@
         }
         const image = state.sheetNode;
         if (image) {
-          // `still`: the author turned this character's animation off; it keeps
-          // its first standing pose while it moves.
-          const paused = dialogueOpen || sceneTransitioning || Boolean(npc.still);
-          let row = state.walking && !paused ? 1 : 0;
-          const columns = row === 1 ? 6 : 4;
-          let column = paused ? 0 : Math.floor((state.animationTime || 0) * 5) % columns;
-          if (state.airborne && !paused) {
-            // Jump row: rising, apex, falling - the same poses CubeBot uses.
-            row = 2;
-            column = jumpFrameFor(state.vy);
-          }
+          const look = npcLook(npc, state, false);
           // Face the direction of travel while preserving the ground-trim shift
           // (and, in the air, undoing the jump row's baked-in lift).
           const trimShift = image.dataset.trimShift ? ` translateY(${image.dataset.trimShift})` : '';
-          setSpriteFrameFacing(image, row, column, state.facing < 0, trimShift);
-          setJumpShift(state.node, row, column);
+          setSpriteFrameFacing(image, look.row, look.column, state.facing < 0, trimShift);
+          setJumpShift(state.node, look.lift);
         }
+      } else {
+        // A picture without a sheet: the same bounce, stretch and squash.
+        npcLook(npc, state, true);
       }
     });
     updateActorHitboxes();
@@ -2211,6 +2291,12 @@
   }
 
   function setDialogueFigures(npc, turn) {
+    // Who is speaking this line (their character talks in the scene).
+    const speaker = String(turn?.speaker || '').toLowerCase();
+    talkingId = speaker === 'player' ? 'player'
+      : speaker === 'narrator' ? ''
+      : speaker && speaker !== 'npc' ? speaker
+      : String(npc?.id || '').toLowerCase();
     setFigureSprite(dialogueFigureLeft, playerProfile.asset, playerProfile.animationAsset, false, playerProfile.name || 'You');
     const model = figureForTurn(npc, turn);
     setFigureSprite(dialogueFigureRight, model?.asset, model?.animationAsset, true, model?.name || npc?.name || 'Friend');
@@ -2444,7 +2530,7 @@
   // to another scene, `at` to a place within it (both happen behind black).
   function changeSceneDuringDialogue(sceneId, then, at = null) {
     const covered = titleCard?.classList.contains('visible') && !titleCard.classList.contains('hiding');
-    const swap = () => {
+    const apply = () => {
       const nextScene = storyScenes.find((scene) => scene.id === sceneId);
       if (!nextScene) { then(); return; }
       if (nextScene !== activeStoryScene) {
@@ -2465,15 +2551,24 @@
       if (at !== null) placePartyAt(at);
       then();
     };
+    // Entering another scene: a teacher's question placed before it is asked
+    // first, behind the black, and the story carries on after.
+    const swap = () => {
+      const nextScene = storyScenes.find((scene) => scene.id === sceneId);
+      const point = nextScene && nextScene !== activeStoryScene ? `scene:${nextScene.id}` : '';
+      const questions = storyQuestions();
+      if (point && questions && questions.has(point)) return questions.at(point).then(apply);
+      apply();
+      return Promise.resolve();
+    };
     if (covered) { swap(); return; }
     sceneTransitioning = true;
     stage.classList.add('is-scene-transitioning');
     window.setTimeout(() => {
-      swap();
-      window.setTimeout(() => {
+      swap().then(() => window.setTimeout(() => {
         stage.classList.remove('is-scene-transitioning');
         window.setTimeout(() => { sceneTransitioning = false; }, SCENE_FADE_MS);
-      }, PAGE_HOLD_MS);
+      }, PAGE_HOLD_MS));
     }, SCENE_FADE_MS);
   }
 
@@ -2493,6 +2588,7 @@
     }
     stopChoiceTimer();
     playLineSound(turn.audio || '');
+    playLineAudio(turn);
     const isTitle = turn.type === 'title';
     const isNarratorTurn = turn.speaker === 'narrator';
     // Titles and narration are both introductions shown as centred text on a
@@ -2575,8 +2671,37 @@
     return storyEvents.slice(storyEventIndex).some((event) => !event.optional);
   }
 
+  // --- The arrow at the end of the stage ---------------------------------------
+  // A Platform Mode page (world.endArrow, set in the editor's stage settings)
+  // shows a gently moving arrow at the spot where walking on takes the player
+  // to the next page. It is one small picture moved with a transform.
+  function renderEndArrow() {
+    worldLayer?.querySelectorAll('.platformer-end-arrow').forEach((node) => node.remove());
+    if (!world.endArrow || !worldLayer) return;
+    const arrow = document.createElement('div');
+    arrow.className = 'platformer-end-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.innerHTML = '<span class="platformer-end-arrow-shape"></span>';
+    worldLayer.appendChild(arrow);
+    const x = WORLD_WIDTH - FINISH_MARGIN + 6;
+    setStyle(arrow, 'left', `${toLayerPercent(x).toFixed(4)}%`);
+    setStyle(arrow, 'bottom', `calc(${entityBottomPct(standingFeetAt(x) + 14).toFixed(4)}% + env(safe-area-inset-bottom))`);
+  }
+
   function finishStage(action) {
-    if (completed) return;
+    if (completed || questionPause) return;
+    // The end of the story (when this page is its end): a teacher's question
+    // placed there is asked before the ending.
+    const questions = storyQuestions();
+    if (config.questionsAtEnd && questions && questions.has('end')) {
+      questionPause = true;
+      direction = 0;
+      questions.at('end').then(() => {
+        questionPause = false;
+        finishStage(action);
+      });
+      return;
+    }
     completed = true;
     direction = 0;
     stopChoiceTimer();
@@ -2831,9 +2956,21 @@
     return new Promise((resolve) => window.setTimeout(resolve, SCENE_FADE_MS + PAGE_HOLD_MS));
   }
 
+  // A teacher's question placed before a scene is asked as the story reaches
+  // it, while the screen is black; the scene is shown once it is answered.
+  function revealStoryScene(sceneId) {
+    const point = `scene:${sceneId}`;
+    const questions = storyQuestions();
+    if (questions && sceneId !== activeStoryScene?.id && questions.has(point)) {
+      questions.at(point).then(() => showStoryScene(sceneId));
+      return;
+    }
+    showStoryScene(sceneId);
+  }
+
   // Swap the world while the overlay is opaque, then fade back in from the new
   // scene's own starting camera and player position.
-  function revealStoryScene(sceneId) {
+  function showStoryScene(sceneId) {
     const nextScene = storyScenes.find((scene) => scene.id === sceneId);
     if (!nextScene) {
       console.error(`Could not find platformer story scene: ${sceneId}`);
@@ -2908,7 +3045,10 @@
   function noteCheckpointReached() {
     sceneCheckpoints().forEach((checkpoint) => {
       const x = Number(checkpoint.x);
-      if (playerX >= x && (checkpointX === null || x > checkpointX)) checkpointX = x;
+      if (playerX >= x && (checkpointX === null || x > checkpointX)) {
+        checkpointX = x;
+        if (sound && performance.now() > checkpointSoundAfter) sound.sfx('checkpoint');
+      }
     });
   }
 
@@ -3195,6 +3335,7 @@
       if (checkpoints.length || activeStoryScene) {
         // Fell into a gap: restart the obstacle from its checkpoint.
         velocityY = 0;
+        if (sound && characterSounds) sound.sfx('fall');
         returnToCheckpoint();
         return;
       }
@@ -3217,6 +3358,7 @@
       grounded = false;
       player.classList.remove('is-jumping');
       player.classList.add('is-jumping');
+      if (sound && characterSounds) sound.sfx('jump');
     }
   }
 
@@ -3347,41 +3489,137 @@
   }
 
   // --- Sound -------------------------------------------------------------
-  // The stage's music (`world.music`: { src, volume }) loops while it plays,
-  // pauses with the story, and stops when the stage ends. A story line can
-  // carry its own sound (`turn.audio`), played as the line appears.
-  let stageMusic = null;
+  // Everything goes through KOOB'D's audio manager (js/koobd-audio.js), so the
+  // reader's sound settings apply. The music, in order of say:
+  //   a story line's change (`turn.music`: a track id, or 'none'),
+  //   the scene's (`scene.audio.music`), the stage's (`world.music`:
+  //   { src, volume } a file, { track } a built-in one, or { none: true }),
+  //   else Platform Mode's own adventure music.
+  // Surroundings (`world.ambience` / `scene.audio.ambience` / `turn.weather`:
+  // rain, wind, thunder, water, birds, crickets, fire) fade as they change,
+  // and rain falling where the player stands is heard. A line can carry its
+  // own sound or voice (`turn.audio`) and a built-in effect (`turn.sfx`,
+  // repeated `turn.sfxRepeat` times). `world.sounds`: { character: false }
+  // turns off footsteps and jumps; `surface` sets what they walk on.
   let lineSound = null;
-  function startMusic() {
-    if (!world.music || !world.music.src || stageMusic) return;
-    stageMusic = new Audio(world.music.src);
-    stageMusic.loop = true;
-    stageMusic.volume = clamp(Number(world.music.volume) || 0.6, 0, 1);
-    const play = () => stageMusic && stageMusic.play().catch(() => {});
-    play();
-    // Browsers only allow sound after the reader has interacted with the page.
-    ['pointerdown', 'keydown', 'touchstart'].forEach((type) => window.addEventListener(type, play, { once: true, signal: eventController.signal }));
+  const asLayers = (value) => {
+    if (!value || value === 'none') return {};
+    if (Array.isArray(value)) return Object.fromEntries(value.map((name) => [name, 1]));
+    if (Array.isArray(value.layers)) return Object.fromEntries(value.layers.map((name) => [name, clamp(Number(value.volume ?? 1), 0, 1)]));
+    return typeof value === 'object' ? value : {};
+  };
+  function stageMusic() {
+    if (!sound) return;
+    const sceneAudio = (activeStoryScene && activeStoryScene.audio) || {};
+    const music = lineMusic !== undefined ? lineMusic : (sceneAudio.music !== undefined ? sceneAudio.music : world.music);
+    if (music && music.src) sound.musicFile(music.src, clamp(Number(music.volume) || 0.6, 0, 1));
+    else if (music && music.track) sound.music(music.track);
+    else if (typeof music === 'string' && music !== 'none') sound.music(music);
+    else if (music === 'none' || music === false || (music && music.none)) sound.stopMusic();
+    else sound.music('adventure');
+  }
+  function stageWeather() {
+    if (!sound) return;
+    const sceneAudio = (activeStoryScene && activeStoryScene.audio) || {};
+    const layers = { ...asLayers(lineWeather !== undefined ? lineWeather : (sceneAudio.ambience !== undefined ? sceneAudio.ambience : world.ambience)) };
+    if (raining) layers.rain = Math.max(Number(layers.rain) || 0, 0.9);
+    sound.ambience(layers);
+  }
+  // Rain falling over where the player is (and showing), checked a few times a second.
+  function checkStageAudio(now) {
+    if (activeStoryScene !== audioScene) {
+      audioScene = activeStoryScene;
+      stageMusic();
+      stageWeather();
+    }
+    if (now < rainCheckAt) return;
+    rainCheckAt = now + 400;
+    const wet = rainZones.some((zone) => !zone.node.classList.contains('is-gone') && zone.node.isConnected
+      && playerX >= zone.x - zone.width / 2 - 15 && playerX <= zone.x + zone.width / 2 + 15);
+    if (wet !== raining) { raining = wet; stageWeather(); }
   }
   function playLineSound(src) {
     if (lineSound) { lineSound.pause(); lineSound = null; }
     if (!src) return;
     lineSound = new Audio(src);
+    if (sound) sound.bindMedia(lineSound, 'voice');
     lineSound.play().catch(() => {});
   }
-  document.addEventListener('koobd:pause', () => { stageMusic?.pause(); lineSound?.pause(); }, { signal: eventController.signal });
-  document.addEventListener('koobd:resume', () => { stageMusic?.play().catch(() => {}); }, { signal: eventController.signal });
-  startMusic();
+  // A line's built-in effect, its music or weather change, and a soft voice
+  // blip for a character's line without a sound of its own.
+  function playLineAudio(turn) {
+    if (!sound || !turn) return;
+    if (turn.sfx) {
+      const times = clamp(Math.round(Number(turn.sfxRepeat) || 1), 1, 5);
+      for (let i = 0; i < times; i++) window.setTimeout(() => sound.sfx(turn.sfx), i * 700);
+    } else if (!turn.audio && turn.type !== 'title' && turn.speaker !== 'narrator') sound.sfx('talk');
+    if (turn.music !== undefined && turn.music !== '') { lineMusic = turn.music === 'keep' ? lineMusic : turn.music; stageMusic(); }
+    if (turn.weather !== undefined && turn.weather !== '') { lineWeather = turn.weather === 'keep' ? lineWeather : turn.weather; stageWeather(); }
+  }
+  // The story's pause menu quiets the music and surroundings (clicks still sound).
+  document.addEventListener('koobd:pause', () => { sound?.pause(); lineSound?.pause(); }, { signal: eventController.signal });
+  document.addEventListener('koobd:resume', () => { sound?.resume(); }, { signal: eventController.signal });
+
+  // What the player is standing on, for footsteps: from the tile pictures of
+  // the block or ground underfoot (grass, stone, wood, sand, snow).
+  function surfaceKind(source) {
+    const text = String(source || '').toLowerCase();
+    if (/snow|ice/.test(text)) return 'snow';
+    if (/sand|beach|carpet/.test(text)) return 'sand';
+    if (/wood|crate|barrel|roof|plank|bookshelf|bridge|log/.test(text)) return 'wood';
+    if (/stone|brick|castle|rock|cobble/.test(text)) return 'stone';
+    if (/grass/.test(text)) return 'grass';
+    if (/dirt|mud|path/.test(text)) return 'dirt';
+    return 'grass';
+  }
+  function surfaceUnderPlayer() {
+    if (worldSounds.surface && worldSounds.surface !== 'auto') return worldSounds.surface;
+    let best = null;
+    let bestTop = -Infinity;
+    platforms().forEach((platform) => {
+      if (!platform.tiles) return;
+      const rect = tiledPlatformRect(platform);
+      if (playerX + playerHalfWidth <= rect.left || playerX - playerHalfWidth >= rect.right) return;
+      const top = groundTop - rect.top;
+      if (Math.abs(top - playerY) < 1.2 && top > bestTop) { bestTop = top; best = platform; }
+    });
+    if (best) return surfaceKind(JSON.stringify(best.tiles));
+    if (playerY > 1) {
+      const standing = platforms().find((platform) => !platform.tiles && Math.abs(Number(platform.x) - playerX) < Number(platform.width || 10) / 2 + playerHalfWidth);
+      if (standing) return surfaceKind(`${standing.imageAsset || ''} ${standing.type || ''}`);
+    }
+    const segment = (Array.isArray(world.grounds) ? world.grounds : []).find((part) => !part.fill && playerX >= Number(part.x) && playerX < Number(part.x) + Number(part.width));
+    return surfaceKind(segment ? JSON.stringify(segment.tiles || segment.asset || '') : (world.groundAsset || world.groundMaterial || 'grass'));
+  }
+  // Footsteps on each footfall frame of the walk, a landing after a real jump
+  // or fall (stronger the longer the fall), and a cry when hurt - from the
+  // same animation the reader sees, so they always match it.
+  function playerSounds(look) {
+    if (!sound || !characterSounds) return;
+    const state = look.state;
+    if (state === 'run' && (look.column === 1 || look.column === 4) && look.column !== soundColumn) sound.sfx('step', { surface: surfaceUnderPlayer() });
+    soundColumn = state === 'run' ? look.column : -1;
+    if ((state === 'rise' || state === 'fall') && !airborneSince) airborneSince = performance.now();
+    if (state === 'land' && soundState !== 'land') {
+      const air = airborneSince ? performance.now() - airborneSince : 300;
+      sound.sfx('land', { surface: surfaceUnderPlayer(), strength: Math.min(1, 0.35 + air / 900) });
+    }
+    if (state !== 'rise' && state !== 'fall') airborneSince = 0;
+    if (state === 'hurt' && soundState !== 'hurt') sound.sfx('hurt');
+    soundState = state;
+  }
 
   function tick(now) {
     const elapsed = Math.min(.04, (now - lastTime) / 1000);
     lastTime = now;
-    if (!dialogueOpen && !sceneTransitioning && !completed && !exitPromptOpen) {
+    if (!dialogueOpen && !sceneTransitioning && !completed && !exitPromptOpen && !questionPause) {
       // Still handing back from a cutscene: no input moves CubeBot yet.
       if (controlsLockedUntil && (now < controlsLockedUntil || cameraHeldForPage)) {
         direction = 0;
         jumpBufferTimer = 0;
       }
       grounded = false;
+      const xBeforeStep = playerX;
       const maxSpeed = Math.max(1, Math.abs(velocityY), moveSpeed);
       const step = Math.min(elapsed, 0.6 / maxSpeed);
       let remaining = elapsed;
@@ -3401,8 +3639,12 @@
       }
       if (direction !== 0 && grounded) playerWalkAnimationTime += elapsed;
       else if (direction === 0) playerWalkAnimationTime = 0;
+      // How fast the player really went (zero against a wall), for the stride.
+      const moved = elapsed > 0 ? Math.abs(playerX - xBeforeStep) / elapsed / moveSpeed : 0;
+      playerSpeedShare = direction === 0 ? 0 : Math.min(1.2, moved);
       updatePlayer();
       updateNpcs();
+      checkStageAudio(now);
       updateCutscene(now);
       openNextStoryEventIfReady();
       if (!dialogueOpen && !completed && playerX >= WORLD_WIDTH - FINISH_MARGIN && !requiredEventsPending()) {
@@ -3412,6 +3654,7 @@
       // Paused for dialogue or a page turn: every character holds one still
       // frame until gameplay resumes, when their animations pick up again.
       freezeActors();
+      checkStageAudio(now);
     }
     if (completed) return;
     updateTalkMarkers();
@@ -3763,6 +4006,7 @@
   if (!opensWithTitle) stage.classList.remove('is-title-intro');
 
   renderWorld(true);
+  renderEndArrow();
   if (opensWithTitle) {
     // The story opens on its title at once - not when the player first walks
     // to the opening event - so the title card is a live conversation from
@@ -3801,9 +4045,45 @@
     lastTime = performance.now();
     frameId = requestAnimationFrame(tick);
   });
+
+  // What is happening in this world, for features drawn on top of it (the
+  // classroom's play-together mode, js/story-multiplayer.js): where the player
+  // is, and a way to place another figure in the world the same way.
+  const live = {
+    stage,
+    layer: worldLayer,
+    player,
+    progressBar,
+    // The bar shows this page only when it can be dragged (otherwise the story).
+    barIsPage: Boolean(allowProgressNavigation),
+    snapshot: () => ({
+      x: Math.round(playerX * 100) / 100,
+      y: Math.round(playerY * 100) / 100,
+      facing: lastDirection < 0 ? -1 : 1,
+      scene: activeStoryScene ? String(activeStoryScene.id) : '',
+      page: Math.max(0, Number(config.storyPageIndex) || 0),
+      pageCount: Math.max(1, Number(config.storyPageCount) || 1),
+      progress: Math.round(storyProgressPercent() * 100) / 100,
+      paused: Boolean(dialogueOpen || sceneTransitioning || questionPause || completed || exitPromptOpen),
+      // How the character is moving, so classmates' copies can show the same
+      // run, jump and landing.
+      running: direction !== 0,
+      grounded: Boolean(grounded),
+      vy: Math.round(velocityY * 10) / 10
+    }),
+    // The character's sprite sheet (idle, walk and jump rows), when it has one.
+    sheet: playerUsesSpriteSheet ? String(playerProfile.animationAsset) : '',
+    place: (node, x, y) => {
+      node.style.left = `${toLayerPercent(x).toFixed(4)}%`;
+      node.style.bottom = `calc(${entityBottomPct(y - playerBottomTrim).toFixed(4)}% + env(safe-area-inset-bottom))`;
+    }
+  };
+  window.KoobdPlatformerLive = live;
+  document.dispatchEvent(new CustomEvent('koobd:platformer-start'));
   return () => {
+    if (window.KoobdPlatformerLive === live) window.KoobdPlatformerLive = null;
     eventController.abort();
-    if (stageMusic) { stageMusic.pause(); stageMusic = null; }
+    if (sound) sound.ambience(null);
     if (lineSound) { lineSound.pause(); lineSound = null; }
     setCardVideo('');
     if (frameId) cancelAnimationFrame(frameId);

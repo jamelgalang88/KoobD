@@ -2,13 +2,13 @@
 require_once('auth.php');
 $user = koobdRequireAuth(true);
 $username = $user["username"];
-// Read as a classroom activity (?activity_id=): progress is kept for that activity.
-$activity = isset($_GET['activity_id']) ? koobdStudentActivity((int)$_GET['activity_id'], (int)$user['id']) : null;
-if ($activity && $activity['story_id'] !== 'book1') {
-    $activity = null;
-}
+// Read as a classroom activity (?activity_id=): progress is kept for that
+// activity, and the teacher's questions in it are asked along the way. Its
+// teacher can preview it (&preview=1): the questions, but nothing is kept.
+[$activity, $isPreview] = koobdReaderActivity($user, 'book1');
 $activityId = $activity ? (int)$activity['id'] : 0;
-$progressContext = $activity ? koobdActivityProgressContext($activityId) : 'global';
+$progressContext = $activity ? ($isPreview ? 'preview:' . $activityId : koobdActivityProgressContext($activityId)) : 'global';
+$storyQuestions = $activity ? koobdStoryQuestionsForPage($activityId, (int)$user['id'], $isPreview) : null;
 ?>
 
 <!DOCTYPE html>
@@ -74,7 +74,7 @@ $progressContext = $activity ? koobdActivityProgressContext($activityId) : 'glob
       'progressContext' => $progressContext,
       'activityId' => $activityId,
       // Home, or back to the classroom for an activity.
-      'returnHref' => $activity ? 'classroom_room.php?id=' . (int)$activity['classroom_id'] : 'home.php',
+      'returnHref' => $activity ? ($isPreview ? 'teacher_classroom.php?id=' : 'classroom_room.php?id=') . (int)$activity['classroom_id'] : 'home.php',
       // Where the reader stopped, kept on the server: Continue works on any device.
       'savedProgress' => (function () use ($user, $progressContext) {
         $saved = koobdStoryProgressFor((int)$user['id'], 'book1', $progressContext);
@@ -90,7 +90,12 @@ $progressContext = $activity ? koobdActivityProgressContext($activityId) : 'glob
   </script>
   <script src="<?= koobdAsset('js/story-orientation.js') ?>"></script>
   <script src="<?= koobdAsset('js/story-shared.js') ?>"></script>
+  <?= koobdStoryQuestionTags($storyQuestions) ?>
   <script src="<?= koobdAsset('The%20Hare%20and%20the%20Tortoise/hare-and-tortoise-story.tl.js') ?>"></script>
   <script src="<?= koobdAsset('The%20Hare%20and%20the%20Tortoise/hare-and-tortoise-story.js') ?>"></script>
+  <?php // Tap a word to hear it, and practise saying it (js/story-words.js). ?>
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
+  <script src="<?= koobdAsset('js/story-words.js') ?>"></script>
 </body>
 </html>

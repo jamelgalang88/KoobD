@@ -1,0 +1,11 @@
+{
+    "name": "koobd/php-lib",
+    "description": "Server-side PHP libraries for KoobD (installed to /opt/koobd-lib in the image, outside the web root).",
+    "require": {
+        "anthropic-ai/sdk": "*",
+        "guzzlehttp/guzzle": "^8.3"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

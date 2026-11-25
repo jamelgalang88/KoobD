@@ -111,6 +111,45 @@
     return String(value || '').trim() !== '';
   }
 
+  // --- Sound (js/koobd-audio.js) ----------------------------------------------
+  // A Story Mode page's music and surroundings (`page.audio`):
+  //   music: '' carries on from the page before, 'none' is silence, a track
+  //          id (KoobdAudio.tracks) or an uploaded file; musicVolume for a file;
+  //   ambience: '' carries on, 'none' stops it, or layers ['rain', 'birds'...]
+  //          at ambienceVolume.
+  // A line can play an effect as it appears (`element.sfx`, repeated
+  // `element.sfxRepeat` times). Stories without any of this read to gentle
+  // music. Platform Mode pages set their own (js/platformer-story-player.js).
+  const sound = window.KoobdAudio || null;
+  let storyMusic = { track: 'reading' };
+  let storyAmbience = null;
+  let audioPage = -1;
+  let audioElement = '';
+  function pageAudio(page) {
+    if (!sound) return;
+    const audio = page.audio || {};
+    const music = String(audio.music || '');
+    if (music === 'none') storyMusic = null;
+    else if (music && sound.hasTrack(music)) storyMusic = { track: music };
+    else if (music && /^(uploads\/|[a-z0-9_-]+\/|https?:)/i.test(music)) storyMusic = { file: music, volume: Math.max(0, Math.min(1, Number(audio.musicVolume ?? 0.7))) };
+    if (audio.ambience === 'none') storyAmbience = null;
+    else if (Array.isArray(audio.ambience) && audio.ambience.length) {
+      const volume = Math.max(0, Math.min(1, Number(audio.ambienceVolume ?? 0.7)));
+      storyAmbience = Object.fromEntries(audio.ambience.map((name) => [name, volume]));
+    }
+    if (!storyMusic) sound.stopMusic();
+    else if (storyMusic.file) sound.musicFile(storyMusic.file, storyMusic.volume);
+    else sound.music(storyMusic.track);
+    sound.ambience(storyAmbience);
+  }
+  function lineAudio(element) {
+    if (!sound || !element || !element.sfx) return;
+    const times = Math.max(1, Math.min(5, Math.round(Number(element.sfxRepeat) || 1)));
+    for (let i = 0; i < times; i++) window.setTimeout(() => sound.sfx(element.sfx), i * 700);
+  }
+  document.addEventListener('koobd:pause', () => { if (sound) sound.pause(); voiceOverAudio?.pause(); });
+  document.addEventListener('koobd:resume', () => { if (sound) sound.resume(); });
+
   function stopVoiceOver() {
     if (!voiceOverAudio) {
       return;
@@ -129,6 +168,7 @@
     if (!voiceOverAudio) {
       voiceOverAudio = new Audio();
       voiceOverAudio.preload = 'auto';
+      if (sound) sound.bindMedia(voiceOverAudio, 'voice');
     }
 
     voiceOverAudio.src = element.voiceOverUrl;
@@ -232,6 +272,10 @@
   function render() {
     const page = currentPage();
     const element = currentElement();
+    // A new page: its music and surroundings; a new line: its effect.
+    if (audioPage !== pageIndex) { audioPage = pageIndex; pageAudio(page); }
+    const elementKey = `${pageIndex}:${elementIndex}`;
+    if (elementKey !== audioElement) { audioElement = elementKey; lineAudio(element); }
     if (bg) {
       bg.style.backgroundColor = page.backgroundColor || '#ffffff';
       const libraryBg = page.backgroundLibrary && window.KoobdPlatformLibrary ? window.KoobdPlatformLibrary.get('backgrounds', page.backgroundLibrary) : null;
@@ -426,19 +470,85 @@
     stageTitle?.hide();
     await fadeToBlack();
     stopPlatformer();
+    await askStoryQuestions('end');
     saveProgress();
-    const home = config.returnHref || 'home.php';
+    let reviewRecorded = false;
+    if (config.reviewMode && config.reviewStatus === 'pending_approval') {
+      try {
+        const reviewResponse = await fetch(config.approvalHref || 'approve_stories.php', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: new URLSearchParams({
+            action: 'mark_reviewed',
+            csrf_token: config.approvalCsrfToken || '',
+            submission_code: config.submissionCode || '',
+            version_number: String(config.versionNumber || 1)
+          })
+        });
+        const reviewResult = await reviewResponse.json();
+        reviewRecorded = reviewResponse.ok && reviewResult.ok === true;
+      } catch (error) {
+        console.error('Unable to record the completed story review.', error);
+      }
+    }
+    const home = config.reviewMode ? (config.exitReviewHref || 'approve_stories.php') : (config.returnHref || 'home.php');
     endingRoot = document.createElement('div');
     endingRoot.className = 'koobd-story story-ending-root is-story-ended';
+    if (config.reviewMode) endingRoot.classList.add('is-approval-review');
     document.body.appendChild(endingRoot);
     if (window.KoobdStory) {
+      const postButtons = [];
+      if (config.reviewMode && config.reviewStatus === 'pending_approval' && reviewRecorded) {
+        postButtons.push(
+          { label: 'Approve Story', decision: 'approve', className: 'review-approve' },
+          { label: 'Reject Story', decision: 'reject', className: 'review-reject' }
+        );
+      } else if (config.reviewMode && config.reviewStatus === 'published') {
+        postButtons.push({ label: 'Cancel Publication', decision: 'unpublish', className: 'review-reject' });
+      } else if (config.reviewMode && config.reviewStatus === 'unpublished') {
+        postButtons.push({ label: 'Approve Story', decision: 'approve', className: 'review-approve' });
+      }
+      const reviewStatusLabels = {
+        pending_approval: 'Awaiting your decision',
+        published: 'Currently published',
+        unpublished: 'Approved · publication paused',
+        rejected: 'Previously rejected'
+      };
+      const reviewPrompts = {
+        pending_approval: config.isUpdatedVersion
+          ? 'This story has changed since its previous approval. Review the updated version before publishing it.'
+          : 'Based on your review, should this story be approved?',
+        published: 'This story is currently available to readers.',
+        unpublished: 'This story was approved and is not currently published.',
+        rejected: 'This submission was previously rejected.'
+      };
+      if (config.reviewMode && config.reviewStatus === 'pending_approval' && !reviewRecorded) {
+        reviewPrompts.pending_approval = 'Your review could not be recorded. Exit to the approval page and preview the complete story again before deciding.';
+      }
       window.KoobdStory.showEnding(endingRoot, {
-        title: 'The End',
-        kicker: label,
+        title: config.reviewMode && config.reviewStatus === 'pending_approval' && !reviewRecorded
+          ? 'Review not recorded'
+          : (config.reviewMode ? 'Review complete' : 'The End'),
+        kicker: config.reviewMode ? (reviewPrompts[config.reviewStatus] || 'Review this story submission.') : label,
+        reviewMode: Boolean(config.reviewMode),
+        reviewStatusLabel: config.reviewMode && config.reviewStatus === 'pending_approval' && !reviewRecorded
+          ? 'Decision locked until the review is recorded'
+          : (config.isUpdatedVersion
+          ? 'Updated Version - Pending Approval'
+          : (reviewStatusLabels[config.reviewStatus] || 'Submission review')),
+        reviewStoryTitle: config.title || '',
         lesson: config.lesson || '',
         onPlayAgain: () => restartStory(),
-        extraButtons: config.editorHref ? [{ label: 'Back to Editor', href: config.editorHref }] : [],
+        extraButtons: config.reviewMode ? [] : (config.editorHref ? [{ label: 'Back to Editor', href: config.editorHref }] : []),
+        postButtons: postButtons.map((action) => ({
+          ...action,
+          href: config.approvalHref,
+          code: config.submissionCode,
+          csrfToken: config.approvalCsrfToken
+        })),
         homeHref: home,
+        homeLabel: config.reviewMode ? 'Exit Preview' : 'Home',
         onHome: () => {
           if (window.storyReadingMode && typeof window.storyReadingMode.exitToMain === 'function') {
             window.storyReadingMode.exitToMain(home);
@@ -468,9 +578,19 @@
     if (!pages[nextPageIndex]) {
       return;
     }
+    isTransitioning = true;
     stageTitle?.hide();
     await fadeToBlack();
+    // A teacher's question placed before this page is asked on the black
+    // screen; the page starts once it is answered.
+    await askStoryQuestions(`page:${String(pages[nextPageIndex].key || `pg${nextPageIndex + 1}`)}`);
     await goToPage(nextPageIndex, false);
+  }
+
+  // Questions a classroom activity places in the story (js/story-questions.js).
+  function askStoryQuestions(point) {
+    const questions = window.KoobdStoryQuestions;
+    return questions && questions.has(point) ? questions.at(point) : Promise.resolve();
   }
 
   // Shows page `nextPageIndex` (the screen is already black when it is called
@@ -482,8 +602,10 @@
     if (fadeOutFirst) await fadeToBlack();
     stopPlatformer();
     stopVoiceOver();
+    if (sound && !isPlatformerPage(nextPage)) sound.sfx('page');
     pageIndex = nextPageIndex;
     elementIndex = 0;
+    audioPage = -1;
     setPageView(nextPage);
     if (isPlatformerPage(nextPage)) {
       choiceBox.replaceChildren();

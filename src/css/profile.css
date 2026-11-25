@@ -8,7 +8,6 @@
   --pf-accent:#4f63d6;
 }
 /* The page's background stays put behind the content, however long the page is. */
-.profile-page.app-bg{background-attachment:fixed;}
 .profile-page .main-inner.profile-main{max-width:1120px;margin:0 auto;padding:24px 28px 48px;}
 .profile-page .hidden{display:none !important;}
 
@@ -63,7 +62,35 @@
 .pf-fact-label{color:var(--pf-muted);font-size:12px;font-weight:600;}
 .pf-fact-value{color:var(--pf-ink);font-size:14.5px;font-weight:700;overflow-wrap:break-word;}
 
+.pf-layout > .pf-favorites{grid-column:1 / -1;margin-top:0;}
 .pf-favorites{padding:22px;}
+.pf-layout > .pf-achievements{grid-column:1 / -1;min-width:0;}
+/* About, then the Dictionary card, in the left column. */
+.pf-side{display:flex;flex-direction:column;gap:20px;min-width:0;}
+.pf-dict{display:flex;flex-direction:column;gap:14px;padding:20px 22px;}
+.pf-dict-head{display:flex;align-items:flex-start;gap:12px;}
+.pf-dict-head p{margin:3px 0 0;color:var(--pf-muted);font-size:13px;font-weight:600;line-height:1.45;}
+.pf-dict-icon{display:grid;flex:none;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--pf-soft);color:var(--pf-accent);}
+.pf-dict-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-dict-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+.pf-dict-form input{grid-column:1 / -1;min-width:0;height:46px;box-sizing:border-box;padding:0 14px;border:1px solid #d8deeb;border-radius:12px;background:#fff;color:var(--pf-ink);font:inherit;font-size:15.5px;font-weight:700;}
+.pf-dict-form input:focus,.pf-dict-form select:focus{outline:none;border-color:var(--pf-accent);box-shadow:0 0 0 3px rgba(79,99,214,.18);}
+.pf-dict-form select{min-width:0;height:44px;padding:0 10px;border:1px solid #d8deeb;border-radius:12px;background:#fff;color:var(--pf-ink);font:inherit;font-size:14px;font-weight:700;}
+.pf-dict-go{height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--pf-accent);color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;}
+.pf-dict-go:hover{background:#3f51c4;}
+.pf-dict-go:focus-visible,.pf-dict-open:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+/* Writing Practice card: the latest notepads, then the ways in. */
+.pf-writing-list{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;}
+.pf-writing-list a{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border-radius:11px;background:var(--pf-soft);color:var(--pf-ink);text-decoration:none;}
+.pf-writing-list a:hover{background:#eceff8;}
+.pf-writing-lang{flex:none;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:900;}
+.pf-writing-lang.is-en{background:#e7f0ff;color:#2459b8;}
+.pf-writing-lang.is-tl{background:#e6f6ee;color:#167450;}
+.pf-writing-title{flex:1;min-width:0;overflow:hidden;font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap;}
+.pf-writing-kind{flex:none;color:#9a5300;font-size:11.5px;font-weight:800;}
+.pf-writing-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.pf-writing-go{display:inline-flex;align-items:center;text-decoration:none;}
+.pf-link-btn.pf-dict-open{display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;padding:0 14px;text-decoration:none;}
 .profile-fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px;}
 /* Each card keeps its layers to itself, so its × never shows above the app's
    navigation bar. */
@@ -110,8 +137,14 @@
   .pf-actions{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,230px));margin-top:0;}
   .pf-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;}
   .pf-facts li:nth-child(2){border-top:0;}
+  /* The Dictionary's search on one row. */
+  .pf-dict-form{grid-template-columns:minmax(0,1fr) auto auto;}
+  .pf-dict-form input{grid-column:auto;height:44px;}
 }
 @media (max-width:640px){
+  .pf-dict{padding:18px 16px;}
+  .pf-dict-form{grid-template-columns:minmax(0,1fr) auto;}
+  .pf-dict-form input{grid-column:1 / -1;height:46px;}
   .profile-page .main-inner.profile-main{padding:14px 16px 28px;}
   .pf-cover{height:96px;}
   .pf-header-body{flex-direction:column;align-items:center;gap:12px;padding:0 18px;margin-top:-48px;text-align:center;}
@@ -159,7 +192,7 @@ button.pf-btn{font-family:inherit;cursor:pointer;}
 .pf-modal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(27,36,64,.45);}
 .pf-modal.is-open{display:flex;}
 body.pf-modal-open{overflow:hidden;}
-.pf-modal-card{position:relative;display:flex;flex-direction:column;gap:14px;width:min(480px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;padding:24px;border-radius:22px;background:#fff;box-shadow:0 30px 70px rgba(20,30,60,.3);color:var(--pf-ink);}
+.pf-modal-card{position:relative;display:flex;flex-direction:column;gap:14px;width:min(480px,100%);max-height:calc(100svh - 40px);overflow-y:auto;padding:24px;border-radius:22px;background:#fff;box-shadow:0 30px 70px rgba(20,30,60,.3);color:var(--pf-ink);}
 .pf-modal-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--pf-muted);font-size:26px;line-height:1;cursor:pointer;}
 .pf-modal-close:hover{background:var(--pf-soft);color:var(--pf-ink);}
 .pf-modal-title{margin:0;padding-right:40px;font-size:20px;font-weight:800;}
@@ -179,7 +212,7 @@ body.pf-modal-open{overflow:hidden;}
 .pf-modal-actions .pf-btn:disabled{opacity:.6;}
 @media (max-width:640px){
   .pf-modal{align-items:flex-end;padding:0;}
-  .pf-modal-card{width:100%;max-height:92dvh;border-radius:22px 22px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));}
+  .pf-modal-card{width:100%;max-height:92svh;border-radius:22px 22px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));}
   .pf-modal-actions .pf-btn{flex:1;min-width:0;}
 }
 
@@ -197,3 +230,418 @@ body.pf-modal-open{overflow:hidden;}
 .pf-password-fields[hidden]{display:none;}
 .pf-show-passwords{display:inline-flex;align-items:center;gap:8px;min-height:32px;color:var(--pf-muted);font-size:13px;font-weight:700;cursor:pointer;}
 .pf-show-passwords input{width:18px;height:18px;accent-color:var(--pf-accent);}
+
+/* --- Banner -------------------------------------------------------------------------- */
+/* A plain colour, or the reader's own picture over the colours while it loads. */
+.pf-cover{position:relative;}
+.pf-cover[style*="--pf-banner-color"]{background:var(--pf-banner-color);}
+.pf-cover-view{position:absolute;inset:0;display:block;overflow:hidden;width:100%;height:100%;padding:0;border:0;background:none;cursor:zoom-in;}
+.pf-cover-view img{display:block;width:100%;height:100%;object-fit:cover;}
+.pf-cover-view:focus-visible{outline:3px solid rgba(255,255,255,.9);outline-offset:-5px;}
+.pf-cover-edit{position:absolute;top:12px;right:12px;z-index:1;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:999px;background:rgba(15,22,42,.55);color:#fff;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;}
+.pf-cover-edit:hover{background:rgba(15,22,42,.72);}
+.pf-cover-edit:focus-visible{outline:3px solid rgba(255,255,255,.85);outline-offset:2px;}
+.pf-cover-edit svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+/* The character card is a button that opens the picture viewer. */
+button.pf-avatar{padding:0;font:inherit;cursor:zoom-in;position:relative;z-index:1;}
+button.pf-avatar:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:3px;}
+
+/* Edit Banner popup: a header, the cropper, a style switch, the options for
+   that style, and a footer - one column with even spacing. */
+.pf-banner-form{width:min(640px,100%);gap:0;padding:0;overflow-y:auto;}
+.pf-banner-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 18px;}
+.pf-banner-head .pf-modal-title{padding-right:0;font-size:19px;}
+.pf-banner-head .pf-modal-copy{margin:4px 0 0;}
+.pf-banner-head .pf-modal-close{position:static;flex:none;width:36px;height:36px;margin:-4px -6px 0 0;font-size:24px;}
+
+/* The cropper: a dark stage; the bright frame is the banner's exact shape,
+   and what lies outside it is dimmed. */
+.pf-cropper{position:relative;height:208px;margin:0 24px;border-radius:14px;overflow:hidden;background:#0f1525;touch-action:none;user-select:none;-webkit-user-select:none;outline:none;}
+.pf-cropper[data-mode="default"],.pf-cropper[data-mode="color"],.pf-cropper[data-mode="gradient"],.pf-cropper[data-mode="empty"]{background:#eef1f8;}
+.pf-cropper-image{position:absolute;left:0;top:0;max-width:none;transform-origin:0 0;will-change:transform;pointer-events:none;}
+.pf-cropper-image[hidden]{display:none;}
+.pf-cropper-frame{position:absolute;border-radius:10px;pointer-events:none;box-shadow:0 0 0 2px rgba(255,255,255,.95),0 0 0 9999px rgba(9,13,26,.62);}
+/* Without a picture the frame is simply the banner, on a light stage. */
+.pf-cropper[data-mode="default"] .pf-cropper-frame{background:linear-gradient(120deg,var(--profile-top,#c7d2fe),var(--profile-bottom,#a5f3fc));box-shadow:0 6px 18px rgba(27,36,64,.14);}
+.pf-cropper[data-mode="color"] .pf-cropper-frame{background:var(--pf-banner-color);box-shadow:0 6px 18px rgba(27,36,64,.14);}
+.pf-cropper[data-mode="gradient"] .pf-cropper-frame{background:var(--pf-banner-gradient);box-shadow:0 6px 18px rgba(27,36,64,.14);}
+.pf-cropper[data-mode="empty"] .pf-cropper-frame{background:repeating-linear-gradient(135deg,#f7f8fc 0 10px,#eef1f8 10px 20px);box-shadow:inset 0 0 0 1.5px #c9d0e2;}
+.pf-cropper[data-mode="image"]{cursor:grab;}
+.pf-cropper.is-dragging{cursor:grabbing;}
+.pf-cropper:focus-visible{box-shadow:0 0 0 3px rgba(79,99,214,.45);}
+.pf-cropper-caption{display:flex;align-items:center;gap:6px;margin:10px 24px 0;color:var(--pf-muted);font-size:12.5px;font-weight:600;}
+.pf-cropper-caption[hidden]{display:none;}
+.pf-cropper-caption svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-banner-error{margin:12px 24px 0;padding:10px 12px;border-radius:10px;background:#fdecec;color:#b42318;font-size:13px;font-weight:700;}
+
+/* Style switch: one rounded track, the chosen style raised in white. */
+.pf-segmented{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:18px 24px 0;padding:4px;border-radius:12px;background:var(--pf-soft);border:1px solid var(--pf-line);}
+.pf-segmented label{position:relative;cursor:pointer;}
+.pf-segmented input{position:absolute;opacity:0;pointer-events:none;}
+.pf-segmented span{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;border-radius:9px;color:var(--pf-muted);font-size:13.5px;font-weight:800;transition:background .15s ease,color .15s ease,box-shadow .15s ease;}
+.pf-segmented label:hover span{color:var(--pf-ink);}
+.pf-segmented input:checked + span{background:#fff;color:var(--pf-ink);box-shadow:0 1px 3px rgba(27,36,64,.12),0 0 0 1px rgba(27,36,64,.04);}
+.pf-segmented input:focus-visible + span{outline:3px solid rgba(79,99,214,.35);outline-offset:1px;}
+.pf-segmented svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pf-seg-dot{display:block;width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.pf-seg-dot.is-default{background:linear-gradient(120deg,var(--profile-top,#c7d2fe),var(--profile-bottom,#a5f3fc));}
+
+/* The options for the chosen style: label on the left, controls on the right. */
+.pf-banner-panel{display:flex;flex-direction:column;gap:14px;margin:18px 24px 0;min-height:44px;}
+.pf-banner-panel[hidden]{display:none;}
+.pf-banner-note{margin:0;color:var(--pf-muted);font-size:13px;font-weight:600;line-height:1.5;}
+.pf-banner-row{display:flex;align-items:center;gap:14px;min-height:40px;}
+.pf-banner-label{flex:none;width:64px;color:var(--pf-ink);font-size:13px;font-weight:800;}
+.pf-banner-colors{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.pf-banner-color,.pf-banner-custom{position:relative;width:30px;height:30px;padding:0;border:0;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);transition:transform .12s ease;}
+.pf-banner-color:hover,.pf-banner-custom:hover{transform:scale(1.08);}
+.pf-banner-color.is-selected{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pf-accent);}
+.pf-banner-color:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:3px;}
+.pf-banner-custom{overflow:hidden;background:conic-gradient(#f44,#fd4,#4d6,#4cf,#46f,#d4f,#f44);}
+.pf-banner-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+.pf-banner-upload{display:flex;align-items:center;gap:12px;min-width:0;cursor:pointer;}
+.pf-banner-upload input{position:absolute;width:1px;height:1px;opacity:0;}
+.pf-banner-upload .pf-btn{flex:none;min-height:38px;pointer-events:none;}
+.pf-banner-upload:hover .pf-btn{background:var(--pf-soft);border-color:#d5dbea;}
+.pf-banner-upload:has(input:focus-visible) .pf-btn{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.pf-banner-file{min-width:0;overflow:hidden;color:var(--pf-muted);font-size:12.5px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;}
+.pf-banner-file.is-error{color:#b42318;}
+.pf-banner-zoom-row[hidden]{display:none;}
+.pf-banner-zoom{display:flex;flex:1;align-items:center;gap:12px;min-width:0;}
+.pf-banner-zoom input{flex:1;min-width:0;height:4px;accent-color:var(--pf-accent);cursor:pointer;}
+.pf-banner-zoom output{flex:none;width:34px;color:var(--pf-muted);font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;}
+.pf-banner-reset{display:inline-flex;flex:none;align-items:center;gap:5px;min-height:32px;padding:0 10px;border:0;border-radius:8px;background:none;color:var(--pf-accent);font:inherit;font-size:13px;font-weight:800;cursor:pointer;}
+.pf-banner-reset:hover{background:rgba(79,99,214,.08);}
+.pf-banner-reset svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+
+.pf-banner-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding:14px 24px;border-top:1px solid var(--pf-line);background:#fbfcfe;}
+.pf-banner-foot .pf-btn{min-width:110px;}
+.pf-banner-foot .pf-btn:disabled{opacity:.6;}
+
+@media (max-width:640px){
+  .pf-banner-form{width:100%;padding:0 0 env(safe-area-inset-bottom);}
+  .pf-banner-head{padding:18px 16px 14px;}
+  .pf-cropper{height:168px;margin:0 16px;}
+  .pf-cropper-caption,.pf-banner-error,.pf-segmented,.pf-banner-panel{margin-left:16px;margin-right:16px;}
+  .pf-banner-row{flex-wrap:wrap;gap:10px;}
+  .pf-banner-label{width:100%;}
+  .pf-banner-foot{padding:12px 16px;}
+  .pf-banner-foot .pf-btn{flex:1;min-width:0;}
+}
+
+/* Picture viewer: the whole picture over a darkened page (no blur - it is
+   cheap to draw on slower tablets). */
+.pf-viewer{position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;padding:56px 16px 24px;background:rgba(6,9,18,.86);cursor:zoom-out;}
+.pf-viewer[hidden]{display:none;}
+.pf-viewer-image{display:block;max-width:min(1200px,100%);max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+/* The character is a small picture: shown large, on a light card. */
+.pf-viewer.is-character .pf-viewer-image{width:min(420px,80vw,70vh);height:auto;padding:24px;background:linear-gradient(160deg,#fff,#eef2fb);border-radius:28px;}
+.pf-viewer-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:28px;line-height:1;cursor:pointer;}
+.pf-viewer-close:hover{background:rgba(255,255,255,.24);}
+.pf-viewer-close:focus-visible{outline:3px solid rgba(255,255,255,.8);outline-offset:2px;}
+
+/* --- Layout: About on the left; Learning tools (two matching cards) and
+   My Favorites in the main column, so both columns are used evenly. --- */
+.pf-side{position:sticky;top:20px;}
+.pf-main{display:flex;flex-direction:column;gap:20px;min-width:0;}
+.pf-section-title{margin:0 0 12px;color:var(--pf-muted);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.pf-tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch;}
+.pf-tools .pf-dict{position:relative;overflow:hidden;gap:14px;min-height:100%;box-sizing:border-box;padding:22px;}
+.pf-tools .pf-dict::before{content:'';position:absolute;inset:0 0 auto;height:4px;background:var(--pf-accent);}
+.pf-tools .pf-writing::before{background:#2fa57a;}
+.pf-tools .pf-writing .pf-dict-icon{background:#e6f6ee;color:#167450;}
+.pf-tools .pf-dict-head .pf-card-title{font-size:17px;}
+.pf-tools .pf-dict-icon{width:42px;height:42px;border-radius:12px;}
+.pf-tools .pf-dict-form{grid-template-columns:minmax(0,1fr) auto;}
+.pf-tools .pf-dict-form input{grid-column:1 / -1;height:46px;}
+.pf-tools .pf-dict-form select,.pf-tools .pf-dict-go{height:44px;}
+.pf-tool-note,.pf-tool-empty{margin:0;color:var(--pf-muted);font-size:13px;font-weight:600;line-height:1.5;}
+.pf-tool-empty{padding:12px 14px;border:1px dashed #d8deeb;border-radius:12px;background:#fafbfe;}
+.pf-tool-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:14px;border-top:1px solid var(--pf-line);}
+.pf-tool-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 4px;border-radius:10px;color:var(--pf-accent);font-size:14px;font-weight:800;text-decoration:none;}
+.pf-tool-link svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s ease;}
+.pf-tool-link:hover svg{transform:translateX(3px);}
+.pf-tool-link:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+.pf-tools .pf-writing-go{justify-content:center;}
+.pf-tools .pf-writing-list a{min-height:46px;border:1px solid transparent;}
+.pf-tools .pf-writing-list a:hover{border-color:#dfe4f1;background:#fff;}
+html.koobd-lite .pf-tool-link svg{transition:none;}
+@media (max-width:1180px) and (min-width:981px){
+  .pf-layout{grid-template-columns:260px minmax(0,1fr);}
+}
+@media (max-width:980px){
+  .pf-side{position:static;}
+}
+@media (max-width:760px){
+  .pf-tools-grid{grid-template-columns:1fr;gap:16px;}
+  .pf-main{gap:16px;}
+}
+@media (max-width:640px){
+  .pf-tools .pf-dict{padding:18px 16px;}
+  .pf-tool-foot .pf-writing-go{flex:1 1 auto;}
+}
+@media (prefers-reduced-motion:reduce){.pf-tool-link svg{transition:none;}}
+/* Titles only (no descriptions): the icon sits level with the title. */
+.pf-tools .pf-dict-head{align-items:center;}
+
+/* Minigames: a bright banner between the tools and Favorites. */
+.pf-games{display:flex;align-items:center;gap:16px;min-height:84px;padding:14px 20px;border-radius:20px;background:linear-gradient(120deg,#2f9be8 0%,#6a4fd6 60%,#ef6a55 100%);color:#fff;text-decoration:none;box-shadow:0 8px 20px rgba(79,99,214,.22);transition:transform .15s ease;}
+.pf-games:hover{transform:translateY(-2px);}
+.pf-games:focus-visible{outline:3px solid rgba(79,99,214,.5);outline-offset:3px;}
+.pf-games-art{display:flex;flex:none;}
+.pf-games-art span{display:grid;place-items:center;width:38px;height:38px;margin-right:-6px;border-radius:11px;background:#fff;color:#4f63d6;font-size:19px;font-weight:1000;box-shadow:0 2px 5px rgba(0,0,0,.18);transform:rotate(-7deg);}
+.pf-games-art span:nth-child(2){color:#ef6a55;transform:rotate(5deg) translateY(-3px);}
+.pf-games-art span:nth-child(3){color:#1d9d6b;transform:rotate(-3deg);}
+.pf-games-text{display:flex;flex:1;flex-direction:column;min-width:0;margin-left:6px;}
+.pf-games-text strong{font-size:18px;font-weight:900;}
+.pf-games-text small{font-size:13px;font-weight:700;opacity:.92;}
+.pf-games-go{display:inline-flex;flex:none;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:#fff;color:#4f63d6;font-size:14.5px;font-weight:900;}
+.pf-games-go svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+html.koobd-lite .pf-games{transition:none;box-shadow:none;}
+@media (prefers-reduced-motion:reduce){.pf-games{transition:none;}}
+@media (max-width:460px){
+  .pf-games{gap:10px;padding:12px 14px;}
+  .pf-games-art{display:none;}
+  .pf-games-text{margin-left:0;}
+}
+
+/* Compact layout: About and the tools end level with each other, and Favorites
+   runs the full width as short rows, so no column is left half empty. */
+.pf-layout{gap:16px;margin-top:16px;align-items:stretch;}
+.pf-layout > .pf-favorites{margin-top:0;}
+.pf-side{position:static;gap:16px;}
+.pf-main,.pf-tools-grid{gap:16px;}
+.pf-section-title{margin-bottom:8px;}
+.pf-about{display:flex;flex:1;flex-direction:column;padding:16px 18px 8px;}
+.pf-about-head{margin-bottom:4px;}
+.pf-facts{flex:1;}
+.pf-facts li{flex:1;align-items:center;gap:10px;padding:5px 0;}
+.pf-facts svg{width:30px;height:30px;padding:7px;}
+.pf-facts li > div{flex:1;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;}
+.pf-fact-label{flex:none;}
+.pf-fact-value{min-width:0;font-size:14px;text-align:right;}
+.pf-tools .pf-dict{gap:12px;padding:16px 18px;}
+.pf-tools .pf-dict-head{flex-wrap:wrap;gap:4px 10px;}
+.pf-tools .pf-dict-head .pf-tool-link{margin-left:auto;font-size:13.5px;}
+.pf-tools .pf-dict-icon{width:36px;height:36px;border-radius:10px;}
+.pf-tools .pf-dict-form input{height:44px;}
+.pf-tools .pf-writing-list a{min-height:44px;}
+.pf-tool-foot{padding-top:0;border-top:0;}
+.pf-games{flex:1 0 auto;min-height:68px;padding:10px 18px;}
+.pf-favorites{margin-top:16px;padding:16px 18px 18px;}
+.pf-favorites .pf-card-head{margin-bottom:12px;}
+.profile-fav-empty{padding:18px 16px;}
+.profile-fav-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;}
+.profile-fav-card{flex-direction:row;}
+.profile-fav-cover{flex:none;width:116px;min-height:88px;aspect-ratio:auto;}
+.profile-fav-cover img{position:absolute;inset:0;}
+.profile-fav-body{flex:1;justify-content:center;min-width:0;padding:8px 52px 8px 14px;}
+.profile-fav-body .story-mode-badge{position:static;align-self:flex-start;max-width:100%;margin-top:3px;padding:3px 8px 3px 6px;box-shadow:none;font-size:9.5px;}
+.profile-fav-body .story-mode-badge svg{width:12px;height:12px;}
+.profile-fav-remove{top:50%;right:8px;width:36px;height:36px;margin-top:-18px;background:#f1f3f9;color:#5b6478;}
+.pf-tools-lock-card{display:flex;align-items:center;gap:14px;padding:20px;border:1px solid #dfe5f2;border-radius:16px;background:linear-gradient(135deg,#fff,#f6f8fd);color:var(--pf-ink);}
+.pf-tools-lock-icon{display:grid;flex:none;place-items:center;width:44px;height:44px;border-radius:13px;background:#eef1fb;color:#6574bf;}
+.pf-tools-lock-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.pf-tools-lock-card strong{font-size:15px;font-weight:850;}
+.pf-tools-lock-card p{margin:4px 0 7px;color:var(--pf-muted);font-size:13px;line-height:1.45;}
+.pf-tools-lock-card a{color:var(--pf-accent);font-size:13px;font-weight:800;text-decoration:none;}
+.pf-tools-lock-card a:hover{text-decoration:underline;}
+.pf-tools-locked .pf-section-title,.pf-tools-lock-card strong,.pf-tools-lock-card p{color:#858d9d;}
+.pf-tools-lock-icon{background:#f0f2f6;color:#929bad;}
+.pf-games.is-locked{background:#f0f2f6;border:1px solid #e0e4eb;color:#858d9d;box-shadow:none;cursor:not-allowed;}
+.pf-games.is-locked:hover{transform:none;}
+.pf-games-lock-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#e4e7ed;color:#858d9d;}
+.pf-games-lock-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.pf-games.is-locked .pf-games-text strong,.pf-games.is-locked .pf-games-text small{color:#858d9d;}
+.pf-games.is-locked .pf-games-go{background:#e4e7ed;color:#858d9d;}
+@media (hover:none){.profile-fav-remove{width:44px;height:44px;margin-top:-22px;}}
+@media (max-width:980px){
+  .pf-facts li{flex:none;}
+}
+@media (max-width:640px){
+  .pf-about,.pf-favorites{padding:14px 16px;}
+  .pf-tools .pf-dict{padding:14px 16px;}
+  .profile-fav-grid{grid-template-columns:1fr;gap:10px;}
+  .profile-fav-title{font-size:14px;}
+}
+/* Where the title and its link can't share a line, the link becomes just the arrow. */
+.pf-tools .pf-dict-form{flex:1;align-content:center;}
+@media (max-width:1180px) and (min-width:761px),(max-width:400px){
+  .pf-tools .pf-dict-head{flex-wrap:nowrap;}
+  .pf-tools .pf-dict-head .pf-tool-link{justify-content:center;min-width:44px;}
+  .pf-tools .pf-dict-head .pf-tool-link span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+  .pf-tool-foot{flex-wrap:nowrap;gap:6px;}
+  .pf-tool-foot .pf-writing-go{flex:none;padding:0 12px;white-space:nowrap;}
+  .pf-tool-foot .pf-tool-link{gap:4px;font-size:13px;white-space:nowrap;}
+}
+@media (max-width:1180px){
+  .profile-fav-cover{width:92px;}
+}
+
+/* Teacher profiles use the available row for About and Favorites side by side. */
+.profile-page.is-teacher-profile .pf-layout{grid-template-columns:minmax(260px,300px) minmax(0,1fr);}
+.profile-page.is-teacher-profile .pf-main{display:none;}
+.profile-page.is-teacher-profile .pf-layout > .pf-favorites{grid-column:2;grid-row:1;align-self:start;}
+.profile-page.is-teacher-profile .profile-fav-grid{grid-template-columns:minmax(0,1fr);}
+@media (max-width:980px){
+  .profile-page.is-teacher-profile .pf-layout{grid-template-columns:minmax(0,1fr);}
+  .profile-page.is-teacher-profile .pf-layout > .pf-favorites{grid-column:1;grid-row:auto;}
+}
+
+/* Colour: KoobD's own palette (indigo, mint and sky), a tint per section, so the
+   page isn't a stack of white cards. Only the fields you type in stay white. */
+.profile-page{--pf-muted:#4d5d75;}
+body.profile-page{background:#edf9fb;}
+.pf-header{border-color:#cfd7f5;background:#e6ebfa;}
+.pf-stats{gap:8px;margin-top:14px;padding:0 14px 14px;border-top:0;}
+.pf-stats > div{padding:10px 8px;border-radius:14px;}
+.pf-stats > div + div{border-left:0;}
+.pf-stats > div:nth-child(1){background:#d0d8f7;}
+.pf-stats > div:nth-child(1) dd,.pf-stats > div:nth-child(1) dt{color:#3f51c4;}
+.pf-stats > div:nth-child(2){background:#bbf6cf;}
+.pf-stats > div:nth-child(2) dd,.pf-stats > div:nth-child(2) dt{color:#0d6b4e;}
+.pf-stats > div:nth-child(3){background:#c1e2f4;}
+.pf-stats > div:nth-child(3) dd,.pf-stats > div:nth-child(3) dt{color:#33415d;}
+.pf-actions .pf-btn:not(.pf-btn-primary){border-color:#b9c4f0;background:#d0d8f7;color:#3f51c4;}
+.pf-actions .pf-btn:not(.pf-btn-primary):hover{background:#c3cdf4;}
+
+.pf-about{--pf-line:#cfd7f5;border-color:#cfd7f5;background:#e6ebfa;}
+.pf-about .pf-link-btn{background:#d0d8f7;color:#3f51c4;}
+.pf-about .pf-link-btn:hover{background:#c3cdf4;}
+.pf-facts li:nth-child(3n+1) svg{background:#d0d8f7;color:#3f51c4;}
+.pf-facts li:nth-child(3n+2) svg{background:#bbf6cf;color:#0d6b4e;}
+.pf-facts li:nth-child(3n) svg{background:#c1e2f4;color:#33415d;}
+
+.pf-tools .pf-dict{border-color:#b9dcef;background:#ddf0f9;}
+.pf-tools .pf-dict::before{background:#6277c3;}
+.pf-tools .pf-dict .pf-dict-icon{background:#c1e2f4;color:#3f51c4;}
+.pf-tools .pf-dict .pf-tool-link{color:#3f51c4;}
+.pf-tools .pf-writing{border-color:#a4efc5;background:#d6f9e3;}
+.pf-tools .pf-writing::before{background:#72d9b4;}
+.pf-tools .pf-writing .pf-dict-icon{background:#a4efc5;color:#0d6b4e;}
+.pf-tools .pf-writing .pf-tool-link{color:#0d6b4e;}
+.pf-tools .pf-writing .pf-dict-go{background:#0f7f5c;}
+.pf-tools .pf-writing .pf-dict-go:hover{background:#0d6b4e;}
+.pf-tools .pf-writing-list a{background:#bbf6cf;}
+.pf-tools .pf-writing-list a:hover{border-color:#72d9b4;background:#a4efc5;}
+.pf-tools .pf-writing .pf-tool-empty{border-color:#72d9b4;background:#bbf6cf;color:#0d6b4e;}
+
+.pf-games{background:linear-gradient(120deg,#4f63d6,#0f7f5c);}
+
+.pf-favorites{--pf-line:#cfd7f5;border-color:#cfd7f5;background:#e6ebfa;}
+.pf-favorites .pf-card-count{padding:3px 10px;border-radius:999px;background:#d0d8f7;color:#3f51c4;}
+.profile-fav-card{background:#d0d8f7;border-color:#b9c4f0;}
+.profile-fav-card:hover{background:#c3cdf4;border-color:#a6b3ea;}
+.profile-fav-remove{background:#b9c4f0;color:#293449;}
+.profile-fav-empty{border-color:#b9c4f0;background:#d0d8f7;}
+.profile-fav-empty svg{background:#b9c4f0;color:#3f51c4;}
+
+/* Edit banner: the Gradient tab. */
+.pf-segmented{grid-template-columns:repeat(4,1fr);}
+[data-banner-panel="gradient"]{gap:10px;}
+[data-banner-panel="gradient"] .pf-banner-row{flex-wrap:nowrap;}
+[data-banner-panel="gradient"] .pf-banner-label{width:70px;}
+.pf-banner-grad{width:44px;height:34px;padding:0;border:0;border-radius:10px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.pf-banner-grad.is-selected{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pf-accent);}
+.pf-banner-grad:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:3px;}
+.pf-banner-picks{display:flex;align-items:center;gap:8px;}
+.pf-banner-picks input{width:64px;height:44px;padding:3px;border:1px solid #d8deeb;border-radius:12px;background:#fff;cursor:pointer;}
+.pf-banner-picks input:focus-visible{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+.pf-banner-picks svg,.pf-banner-angles svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.pf-banner-picks svg{color:var(--pf-muted);}
+.pf-banner-angles{display:flex;gap:6px;}
+.pf-banner-angles label{position:relative;cursor:pointer;}
+.pf-banner-angles input{position:absolute;opacity:0;pointer-events:none;}
+.pf-banner-angles span{display:grid;place-items:center;width:44px;height:44px;border:1px solid #d8deeb;border-radius:12px;background:#fff;color:var(--pf-muted);}
+.pf-banner-angles input:checked + span{border-color:var(--pf-accent);background:var(--pf-accent);color:#fff;}
+.pf-banner-angles input:focus-visible + span{outline:3px solid rgba(79,99,214,.35);outline-offset:2px;}
+@media (hover:none){.pf-banner-grad{height:44px;}}
+@media (max-width:640px){
+  .pf-segmented span{flex-direction:column;gap:3px;min-height:48px;font-size:12px;}
+  .pf-segmented svg{width:14px;height:14px;}
+  [data-banner-panel="gradient"] .pf-banner-row:first-child{flex-wrap:wrap;gap:6px;}
+  [data-banner-panel="gradient"] .pf-banner-row:first-child .pf-banner-label{width:100%;}
+  [data-banner-panel="gradient"] .pf-banner-colors{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+  .pf-banner-grad{width:100%;}
+}
+
+/* Achievement collection: role-specific medals, progress and award history. */
+.pf-achievements{scroll-margin-top:20px;padding:22px;}
+.pf-achievements-head{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.pf-achievements-title{display:flex;align-items:center;gap:12px;min-width:0;}
+.pf-achievements-title-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;background:#fff2d6;color:#ae781c;}
+.pf-achievements-title-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.pf-achievements-title h2{margin:0;}
+.pf-achievements-title p{margin:4px 0 0;color:var(--pf-muted);font-size:12.5px;line-height:1.45;}
+.pf-achievements-total{display:grid;justify-items:end;gap:2px;flex:none;color:var(--pf-muted);font-size:11px;font-weight:750;}
+.pf-achievements-total strong{color:var(--pf-ink);font-size:22px;line-height:1.1;}
+.pf-achievements-total strong span{color:#8791a6;font-size:14px;}
+.pf-achievements-progress,.pf-achievement-progress{height:7px;overflow:hidden;border-radius:999px;background:#e8ebf3;}
+.pf-achievements-progress{margin-top:14px;}
+.pf-achievements-progress>span,.pf-achievement-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d9a441,#51b88a);transition:width .3s ease;}
+.pf-achievements-recent{margin-top:18px;padding:14px;border:1px solid #e8ebf3;border-radius:15px;background:#fafbfe;}
+.pf-achievements-recent-head,.pf-achievement-category-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.pf-achievements-recent-head h3,.pf-achievement-category-head h3{margin:0;color:var(--pf-ink);font-size:13px;font-weight:850;}
+.pf-achievements-recent-head>span,.pf-achievement-category-head>span{color:var(--pf-muted);font-size:10px;font-weight:750;}
+.pf-achievements-recent-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px;}
+.pf-achievement-recent{display:flex;align-items:center;gap:9px;min-width:0;padding:8px;border:1px solid #e8ebf3;border-radius:12px;background:#fff;}
+.pf-achievement-recent .pf-achievement-art{width:36px;height:42px;flex:none;}
+.pf-achievement-recent>div{display:grid;gap:3px;min-width:0;}
+.pf-achievement-recent strong{overflow:hidden;color:var(--pf-ink);font-size:10px;line-height:1.3;text-overflow:ellipsis;}
+.pf-achievement-recent time{color:var(--pf-muted);font-size:8px;line-height:1.3;}
+.pf-achievements-empty{margin:9px 0 0;color:var(--pf-muted);font-size:11px;}
+.pf-achievement-categories{display:grid;gap:20px;margin-top:20px;}
+.pf-achievement-category{min-width:0;}
+.pf-achievement-category-head{margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--pf-line);}
+.pf-achievement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;}
+.pf-achievement-medal{display:grid;grid-template-columns:48px minmax(0,1fr);align-content:start;column-gap:11px;row-gap:8px;min-width:0;min-height:130px;padding:12px;border:1px solid var(--pf-line);border-radius:15px;background:#fff;}
+.pf-achievement-medal.is-earned{border-color:#dbe9df;background:linear-gradient(145deg,#fff,#f8fcf9);}
+.pf-achievement-medal.is-locked{background:#f8f9fb;}
+.pf-achievement-medal-top{grid-row:span 2;display:grid;justify-items:center;align-content:start;gap:3px;}
+.pf-achievement-art{display:block;width:48px;height:54px;overflow:visible;}
+.pf-medal-ribbon{fill:var(--medal-ribbon,#d3a04b);}
+.pf-medal-edge{fill:var(--medal-edge,#b9802f);stroke:rgba(80,60,30,.16);stroke-width:1;}
+.pf-medal-face{fill:var(--medal-face,#f6d88e);stroke:rgba(255,255,255,.7);stroke-width:1.2;}
+.pf-medal-emblem{fill:none;stroke:var(--medal-ink,#805b1d);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;}
+.pf-achievement-art.is-bronze{--medal-ribbon:#ad704a;--medal-edge:#a86742;--medal-face:#e5b28a;--medal-ink:#754b32;}
+.pf-achievement-art.is-silver{--medal-ribbon:#8291a7;--medal-edge:#75849b;--medal-face:#e4e9f1;--medal-ink:#53647c;}
+.pf-achievement-art.is-gold{--medal-ribbon:#d39a2e;--medal-edge:#bf8620;--medal-face:#ffe29a;--medal-ink:#865c12;}
+.pf-achievement-art.is-platinum{--medal-ribbon:#667eb4;--medal-edge:#5b70a4;--medal-face:#dfe8ff;--medal-ink:#465c8d;}
+.pf-achievement-art.is-special{--medal-ribbon:#8869cf;--medal-edge:#7658b9;--medal-face:#e9dcff;--medal-ink:#62449f;}
+.pf-achievement-medal.is-locked .pf-achievement-art{filter:grayscale(1);opacity:.45;}
+.pf-achievement-rarity{display:inline-flex;align-items:center;min-height:16px;padding:0 6px;border-radius:999px;background:#f0f2f6;color:#6b7486;font-size:7px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+.pf-achievement-rarity.is-bronze{background:#f4e8df;color:#885436;}
+.pf-achievement-rarity.is-silver{background:#edf0f5;color:#596a82;}
+.pf-achievement-rarity.is-gold{background:#fff2d2;color:#8e6318;}
+.pf-achievement-rarity.is-platinum{background:#e8edfb;color:#50638e;}
+.pf-achievement-rarity.is-special{background:#eee7fc;color:#694fa8;}
+.pf-achievement-medal-copy{min-width:0;}
+.pf-achievement-medal-copy h4{margin:1px 0 4px;color:var(--pf-ink);font-size:12px;font-weight:850;line-height:1.3;}
+.pf-achievement-medal-copy p{margin:0;color:var(--pf-muted);font-size:10px;line-height:1.4;}
+.pf-achievement-earned,.pf-achievement-progress-copy{grid-column:2;display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;}
+.pf-achievement-earned time{color:var(--pf-muted);font-size:8px;text-align:right;}
+.pf-achievement-status{display:inline-flex;align-items:center;gap:3px;color:#8a93a3;font-size:8px;font-weight:850;text-transform:uppercase;white-space:nowrap;}
+.pf-achievement-status.is-earned{color:#24825f;}
+.pf-achievement-status svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+.pf-achievement-progress-copy>span:last-child{color:#6f7a91;font-size:9px;font-weight:750;font-variant-numeric:tabular-nums;}
+.pf-achievement-medal>.pf-achievement-progress{grid-column:2;height:5px;margin-top:-3px;}
+.is-teacher-profile .pf-achievements-title-icon{background:#edf3f8;color:#526984;}
+.is-teacher-profile .pf-achievement-medal.is-earned{border-color:#dbe5e2;background:linear-gradient(145deg,#fff,#f7faf9);}
+.is-teacher-profile .pf-achievements-progress>span,.is-teacher-profile .pf-achievement-progress>span{background:linear-gradient(90deg,#5b7698,#63aa8d);}
+@media(max-width:760px){
+  .pf-achievements-recent-list{grid-template-columns:1fr;}
+}
+@media(max-width:640px){
+  .pf-achievements{padding:18px 16px;}
+  .pf-achievements-head{align-items:flex-start;}
+  .pf-achievements-title{gap:9px;}
+  .pf-achievements-title-icon{width:36px;height:36px;border-radius:11px;}
+  .pf-achievements-title h2{font-size:15px;}
+  .pf-achievements-title p{font-size:11px;}
+  .pf-achievements-total strong{font-size:19px;}
+  .pf-achievement-grid{grid-template-columns:1fr;}
+  .pf-achievement-medal{min-height:116px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .pf-achievements-progress>span,.pf-achievement-progress>span{transition:none;}
+}

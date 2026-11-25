@@ -19,13 +19,13 @@ if (!$story || ($story['type'] ?? '') !== 'builtin') {
 
 // Read as a classroom activity (?activity_id=): progress is kept for that
 // activity, and its links keep the activity and lead back to the classroom.
-$activity = isset($_GET['activity_id']) ? koobdStudentActivity((int)$_GET['activity_id'], (int)$user['id']) : null;
-if ($activity && $activity['story_id'] !== $story['id']) {
-    $activity = null;
-}
-$progressContext = $activity ? koobdActivityProgressContext((int)$activity['id']) : 'global';
-$activityQuery = $activity ? 'activity_id=' . (int)$activity['id'] . '&' : '';
-$exitHref = $activity ? 'classroom_room.php?id=' . (int)$activity['classroom_id'] : 'home.php';
+// The teacher's questions in the activity are asked along the way; its teacher
+// can preview it (&preview=1), and then nothing is kept.
+[$activity, $isPreview] = koobdReaderActivity($user, (string)$story['id']);
+$progressContext = $activity ? ($isPreview ? 'preview:' . (int)$activity['id'] : koobdActivityProgressContext((int)$activity['id'])) : 'global';
+$activityQuery = $activity ? 'activity_id=' . (int)$activity['id'] . '&' . ($isPreview ? 'preview=1&' : '') : '';
+$exitHref = $activity ? ($isPreview ? 'teacher_classroom.php?id=' : 'classroom_room.php?id=') . (int)$activity['classroom_id'] : 'home.php';
+$storyQuestions = $activity ? koobdStoryQuestionsForPage((int)$activity['id'], (int)$user['id'], $isPreview) : null;
 
 $initialPlayerX = null;
 $initialStoryEventIndex = 0;
@@ -96,6 +96,8 @@ $config = [
     'restartUrl' => 'false_knight.php?' . $activityQuery . 'restart=1',
     'exitUrl' => $exitHref,
     'userId' => (int)$user['id'],
+    // This page is the whole story: questions placed at its end come here.
+    'questionsAtEnd' => true,
 ];
 ?>
 <!DOCTYPE html>
@@ -187,8 +189,15 @@ $config = [
   <script src="<?= koobdAsset('The%20False%20Knight/false-knight-story.tl.js') ?>"></script>
   <script src="<?= koobdAsset('The%20False%20Knight/false-knight-story.js') ?>"></script>
   <script src="<?= koobdAsset('js/story-shared.js') ?>"></script>
+  <?= koobdStoryQuestionTags($storyQuestions) ?>
   <script src="<?= koobdAsset('js/platformer-blocks.js') ?>"></script>
+  <script src="<?= koobdAsset('js/character-animation.js') ?>"></script>
   <script src="<?= koobdAsset('js/platformer-story-player.js') ?>"></script>
+  <?php if ($activity && !$isPreview && !empty($activity['multiplayer'])): ?>
+  <?php // Play together: classmates' silhouettes and one shared progress bar. ?>
+  <script>window.KOOBD_MULTIPLAYER = <?= json_encode(['activityId' => (int)$activity['id']]) ?>;</script>
+  <script src="<?= koobdAsset('js/story-multiplayer.js') ?>"></script>
+  <?php endif; ?>
   <script>
     const config = {
       ...window.KOOBD_FALSE_KNIGHT_CONFIG,
@@ -240,5 +249,9 @@ $config = [
     document.getElementById('endingChooseStage')?.addEventListener('click', () => showStages(true));
     document.getElementById('endingStagesBack')?.addEventListener('click', () => showStages(false));
   </script>
+  <?php // Tap a word to hear it, and practise saying it (js/story-words.js). ?>
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
+  <script src="<?= koobdAsset('js/story-words.js') ?>"></script>
 </body>
 </html>

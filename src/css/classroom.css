@@ -3,29 +3,6 @@
   max-width: none;
   width: 100%;
   padding: 24px 28px 34px;
-  overflow: hidden;
-}
-
-.classroom-page .main-inner::before,
-.classroom-page .main-inner::after{
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.classroom-page .main-inner::before{
-  inset: 0;
-  background:
-    radial-gradient(circle at 22% -6%, rgba(162, 181, 195, .55) 0, rgba(162, 181, 195, .55) 16%, transparent 17%),
-    radial-gradient(circle at 90% 2%, rgba(197, 241, 214, .7) 0, rgba(197, 241, 214, .7) 11%, transparent 12%);
-}
-
-.classroom-page .main-inner::after{
-  inset: auto 0 0 0;
-  height: 240px;
-  background:
-    linear-gradient(135deg, transparent 0 18%, rgba(207, 214, 223, .42) 18% 34%, transparent 34% 76%, rgba(207, 214, 223, .42) 76% 92%, transparent 92%);
 }
 
 .classroom-shell{
@@ -1702,14 +1679,17 @@
 .activity-add-btn.is-quiz{background:linear-gradient(135deg,#7a62c3,#6fb6e6);}
 .activity-card.is-quiz .activity-card-number{background:linear-gradient(135deg,#7a62c3,#6fb6e6);}
 .activity-type-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:rgba(122,98,195,.14);color:#5c47a6;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;}
-.activity-card-quiz-cover{display:grid;place-items:center;width:100%;height:100%;background:linear-gradient(135deg,#e6dcff,#d5ecff);color:#5c47a6;font-size:30px;font-weight:1000;}
+/* Quizzes have no picture: their card is text only, across the full width. */
+.activity-card-student.is-quiz{grid-template-columns:minmax(0,1fr);}
 .activity-card-progress-label.is-muted{color:rgba(51,65,93,.6);font-weight:800;}
+/* The quiz hint (no score yet) wraps instead of running under the Start button. */
+.activity-card-progress-label.is-muted{flex:1 1 auto;min-width:0;line-height:1.4;}
 
 /* The story activity form, in a popup opened from "+ Story activity". */
 .activity-form-modal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(30,40,70,.45);}
 .activity-form-modal.is-open{display:flex;}
 body.has-activity-form{overflow:hidden;}
-.activity-form-modal .activity-form-panel{position:relative;width:min(640px,100%);background:#fff;max-height:calc(100dvh - 40px);overflow-y:auto;padding:22px 24px;border-radius:22px;box-shadow:0 30px 70px rgba(20,30,60,.3);animation:activityFormIn .18s ease;}
+.activity-form-modal .activity-form-panel{position:relative;width:min(640px,100%);background:#fff;max-height:calc(100svh - 40px);overflow-y:auto;padding:22px 24px;border-radius:22px;box-shadow:0 30px 70px rgba(20,30,60,.3);animation:activityFormIn .18s ease;}
 @keyframes activityFormIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
 @media (prefers-reduced-motion:reduce){.activity-form-modal .activity-form-panel{animation:none;}}
 .activity-form-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:transparent;color:#5d6d9b;font-size:26px;line-height:1;cursor:pointer;}
@@ -1730,10 +1710,2855 @@ body.has-activity-form{overflow:hidden;}
 
 @media (max-width:640px){
   .activity-form-modal{align-items:flex-end;padding:0;}
-  .activity-form-modal .activity-form-panel{width:100%;max-height:90dvh;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));}
+  .activity-form-modal .activity-form-panel{width:100%;max-height:90svh;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));}
   .activity-form-grid{grid-template-columns:minmax(0,1fr);}
   .activity-form-actions .classroom-teacher-btn{flex:1;min-width:0;}
   .activity-add-actions{width:100%;}
   .activity-add-actions .activity-add-btn{flex:1;}
 }
 
+/* --- Classroom cards (classroom.php) -------------------------------------------
+   A slim band in the teacher's colour with their character, then the class
+   name, a few numbers with small icons, and the class code (teachers can copy
+   it). The whole card opens the classroom; teachers have a menu in the band.
+   One look for teachers and students, the same at every screen size. */
+.cr-grid{
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.cr-card{
+  --cr-ink: #1b2440;
+  --cr-muted: #6b7596;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid rgba(107,120,168,.16);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 8px 22px rgba(27,36,64,.07);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.cr-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(79,99,214,.24);
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 14px 30px rgba(27,36,64,.11);
+}
+
+/* The card in use sits above its neighbours, so its open menu is never
+   covered by the next card. */
+.cr-card:hover,
+.cr-card:focus-within{
+  z-index: 3;
+}
+
+.cr-card:focus-visible{
+  outline: 3px solid rgba(79,99,214,.4);
+  outline-offset: 3px;
+}
+
+.cr-card-band{
+  position: relative;
+  height: 64px;
+  border-radius: 17px 17px 0 0;
+  background: var(--cr-color, #6f7fe0);
+  background:
+    radial-gradient(circle at 88% -30%, rgba(255,255,255,.28) 0 46px, transparent 47px),
+    linear-gradient(120deg, var(--cr-color, #6f7fe0), color-mix(in srgb, var(--cr-color, #6f7fe0) 72%, #1b2440));
+}
+
+.cr-card-avatar{
+  position: absolute;
+  left: 16px;
+  bottom: -26px;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #fff, #eef2fb);
+  box-shadow: 0 4px 12px rgba(27,36,64,.14);
+  overflow: hidden;
+}
+
+.cr-card-avatar img{
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+}
+
+/* The teacher's menu, in the band's corner. */
+.cr-card-menu{
+  top: 10px;
+  right: 10px;
+}
+
+.cr-card-menu-btn{
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(15,22,42,.28);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.cr-card-menu-btn:hover,
+.cr-card-menu-btn:focus-visible{
+  background: rgba(15,22,42,.42);
+  outline: none;
+}
+
+.cr-card-menu-btn svg{
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.cr-card-dropdown{
+  min-width: 176px;
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.cr-card-dropdown a,
+.cr-card-dropdown button{
+  min-height: 40px;
+  padding: 0 12px;
+  color: #33415d;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.cr-card-body{
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 34px 16px 14px;
+}
+
+.cr-card-title{
+  overflow: hidden;
+  color: var(--cr-ink);
+  font-size: 17px;
+  font-weight: 1000;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cr-card-stats{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+  color: var(--cr-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cr-card-stats > span{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cr-card-stats strong{
+  color: var(--cr-ink);
+  font-weight: 900;
+}
+
+.cr-card-stats svg,
+.cr-card-open svg,
+.cr-card-copy svg{
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cr-card-foot{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+.cr-card-code{
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding-left: 10px;
+  border: 1px solid rgba(107,120,168,.2);
+  border-radius: 10px;
+  background: #f6f7fc;
+}
+
+.cr-card-code-label{
+  color: var(--cr-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cr-card-code-value{
+  margin-left: 8px;
+  overflow: hidden;
+  color: var(--cr-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cr-card-copy{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 10px 10px 0;
+  background: transparent;
+  color: #56607f;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease;
+}
+
+.cr-card-copy:hover{
+  background: rgba(79,99,214,.08);
+  color: #4f63d6;
+}
+
+.cr-card-copy:focus-visible{
+  outline: 3px solid rgba(79,99,214,.35);
+  outline-offset: 1px;
+}
+
+/* Copied: the icon briefly becomes a tick. */
+.cr-card-copy.is-copied{
+  color: #1fae78;
+}
+
+.cr-card-copy.is-copied svg{
+  display: none;
+}
+
+.cr-card-copy.is-copied::after{
+  content: "";
+  width: 12px;
+  height: 7px;
+  border-left: 2.4px solid currentColor;
+  border-bottom: 2.4px solid currentColor;
+  transform: translateY(-2px) rotate(-45deg);
+}
+
+.cr-card-open{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: #4f63d6;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Lite mode: no lift on hover. */
+html.koobd-lite .cr-card,
+html.koobd-lite .cr-card:hover{
+  transform: none;
+  transition: none;
+}
+
+/* Touch screens: the menu opens when its button is tapped (focus), as before. */
+@media (max-width: 420px){
+  .cr-card-body{
+    padding: 32px 14px 14px;
+  }
+}
+
+/* --- New Classroom (classroom.php) ----------------------------------------------
+   The button beside My Stories, and the pop-up it opens (also used to rename a
+   classroom). The page around it is darkened, not blurred, which is cheap to
+   draw on slower tablets. On phones the pop-up rises from the bottom. */
+.classroom-teacher-grid.is-single{
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.classroom-action-new{
+  background: #4f63d6;
+  color: #fff;
+  border: 0;
+  box-shadow: 0 10px 20px rgba(79,99,214,.24);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.classroom-action-new:hover{
+  background: #4355c4;
+}
+
+.classroom-action-new svg{
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.classroom-action-new:focus-visible{
+  outline: 3px solid rgba(79,99,214,.4);
+  outline-offset: 2px;
+}
+
+.classroom-empty-action{
+  margin-top: 14px;
+}
+
+html.cr-modal-open{
+  overflow: hidden;
+}
+
+.cr-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15,22,42,.5);
+}
+
+.cr-modal.is-open{
+  display: flex;
+}
+
+.cr-modal-card{
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 70px rgba(15,22,42,.3);
+  color: #1b2440;
+}
+
+.cr-modal-head{
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 22px 6px;
+}
+
+.cr-modal-icon{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(79,99,214,.1);
+  color: #4f63d6;
+}
+
+.cr-modal-icon svg{
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cr-modal-head > div{
+  flex: 1;
+  min-width: 0;
+}
+
+.cr-modal-title{
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 1000;
+  letter-spacing: -.01em;
+}
+
+.cr-modal-copy{
+  margin: 4px 0 0;
+  color: #6b7596;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.cr-modal-close{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -6px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #6b7596;
+  cursor: pointer;
+}
+
+.cr-modal-close:hover{
+  background: #f3f5fb;
+  color: #1b2440;
+}
+
+.cr-modal-close svg{
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.cr-modal-body{
+  display: grid;
+  gap: 16px;
+  padding: 16px 22px 4px;
+}
+
+.cr-modal-body .classroom-teacher-field[hidden]{
+  display: none;
+}
+
+.cr-modal-body .classroom-teacher-field input,
+.cr-modal-body .classroom-teacher-field select{
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.cr-modal-actions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 14px 22px;
+  border-top: 1px solid rgba(107,120,168,.14);
+  background: #fbfcfe;
+}
+
+.cr-modal-btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(107,120,168,.24);
+  border-radius: 12px;
+  background: #fff;
+  color: #1b2440;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.cr-modal-btn:hover{
+  border-color: rgba(79,99,214,.35);
+  background: #f6f7fd;
+}
+
+.cr-modal-btn.is-primary{
+  border-color: transparent;
+  background: #4f63d6;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(79,99,214,.26);
+}
+
+.cr-modal-btn.is-primary:hover{
+  background: #4355c4;
+}
+
+.cr-modal-btn:disabled{
+  opacity: .6;
+  cursor: progress;
+}
+
+.cr-modal-btn:focus-visible,
+.cr-modal-close:focus-visible{
+  outline: 3px solid rgba(79,99,214,.38);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px){
+  .cr-modal{
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .cr-modal-card{
+    width: 100%;
+    max-height: 92svh;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .cr-modal-head{
+    padding: 20px 16px 4px;
+  }
+
+  .cr-modal-body{
+    padding: 14px 16px 4px;
+  }
+
+  .cr-modal-actions{
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .cr-modal-btn{
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* --- Teacher classroom page (teacher_classroom.php) -------------------------------
+   The same quiet, white-card look as the rest of KoobD's teacher pages: a
+   header card with a thin band in the teacher's colour, the class code with
+   Copy, the activities as cards (a number tile coloured by type: stories
+   indigo, quizzes violet) and the class's progress. Only this page's shell
+   (.teacher-room-shell) is restyled; the students' classroom page is not. */
+.teacher-room-shell{
+  --tr-ink: #1b2440;
+  --tr-muted: #6b7596;
+  --tr-line: rgba(107,120,168,.16);
+  --tr-accent: #4f63d6;
+  --tr-quiz: #7b5bd6;
+}
+
+.teacher-room-shell svg{
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Header. */
+.teacher-room-shell .teacher-room-hero{
+  position: relative;
+  align-items: center;
+  overflow: hidden;
+  padding: 26px 26px 22px;
+  border: 1px solid var(--tr-line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 10px 26px rgba(27,36,64,.07);
+}
+
+.teacher-room-shell .teacher-room-hero::before{
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: var(--room-top, #6f7fe0);
+  background: linear-gradient(90deg, var(--room-top, #6f7fe0), var(--room-bottom, #74ddb1));
+}
+
+.teacher-room-shell .classroom-room-back{
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  margin: 0 0 6px -8px;
+  padding: 0 10px 0 4px;
+  border-radius: 10px;
+  color: var(--tr-muted);
+  font-size: 13px;
+}
+
+.teacher-room-shell .classroom-room-back:hover{
+  background: #f3f5fb;
+  color: var(--tr-ink);
+}
+
+.teacher-room-shell .classroom-room-back svg{
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
+
+.teacher-room-shell .classroom-room-kicker{
+  color: var(--tr-muted);
+}
+
+.teacher-room-shell .classroom-room-title{
+  color: var(--tr-ink);
+  letter-spacing: -.02em;
+}
+
+.tr-hero-meta{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.tr-code{
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding-left: 12px;
+  border: 1px solid var(--tr-line);
+  border-radius: 12px;
+  background: #f6f7fc;
+}
+
+.tr-code-label{
+  margin-right: 10px;
+  color: var(--tr-muted);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.tr-code-value{
+  color: var(--tr-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.tr-code-copy{
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 11px 11px 0;
+  background: transparent;
+  color: #56607f;
+  cursor: pointer;
+}
+
+.tr-code-copy:hover{
+  background: rgba(79,99,214,.08);
+  color: var(--tr-accent);
+}
+
+.tr-code-copy:focus-visible{
+  outline: 3px solid rgba(79,99,214,.35);
+  outline-offset: 1px;
+}
+
+.tr-code-copy svg{
+  width: 16px;
+  height: 16px;
+}
+
+.tr-code-copy.is-copied{
+  color: #1fae78;
+}
+
+.tr-code-copy.is-copied svg{
+  display: none;
+}
+
+.tr-code-copy.is-copied::after{
+  content: "";
+  width: 12px;
+  height: 7px;
+  border-left: 2.4px solid currentColor;
+  border-bottom: 2.4px solid currentColor;
+  transform: translateY(-2px) rotate(-45deg);
+}
+
+.teacher-room-shell .activity-hero-stats{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.teacher-room-shell .activity-hero-stats span{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--tr-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.teacher-room-shell .activity-hero-stats strong{
+  color: var(--tr-ink);
+  font-weight: 900;
+}
+
+.teacher-room-shell .activity-hero-stats svg{
+  width: 16px;
+  height: 16px;
+}
+
+.teacher-room-shell .classroom-room-teacher{
+  border: 1px solid var(--tr-line);
+  border-radius: 16px;
+  background: #f8f9fd;
+  box-shadow: none;
+}
+
+/* Section cards. */
+.teacher-room-shell .classroom-stream-card{
+  padding: 20px 22px 22px;
+  border: 1px solid var(--tr-line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 10px 26px rgba(27,36,64,.06);
+}
+
+.teacher-room-shell .classroom-stream-head{
+  align-items: center;
+  gap: 12px;
+}
+
+.teacher-room-shell .classroom-stream-head h2{
+  color: var(--tr-ink);
+  letter-spacing: -.01em;
+}
+
+.teacher-room-shell .classroom-room-panel-kicker{
+  color: var(--tr-muted);
+}
+
+/* Add an activity. */
+.tr-add-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px 0 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--tr-accent);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(79,99,214,.24);
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.tr-add-btn:link,
+.tr-add-btn:visited{
+  color: #fff;
+  text-decoration: none;
+}
+
+.tr-add-btn:hover{
+  background: #4355c4;
+}
+
+.tr-add-btn.is-quiz,
+.tr-add-btn.is-quiz:link,
+.tr-add-btn.is-quiz:visited{
+  border-color: rgba(123,91,214,.3);
+  background: #fff;
+  color: var(--tr-quiz);
+  box-shadow: none;
+}
+
+.tr-add-btn.is-quiz:hover{
+  border-color: rgba(123,91,214,.5);
+  background: #f6f2fd;
+}
+
+.tr-add-btn svg{
+  width: 17px;
+  height: 17px;
+}
+
+.tr-add-btn:focus-visible{
+  outline: 3px solid rgba(79,99,214,.38);
+  outline-offset: 2px;
+}
+
+/* Activity cards. */
+.teacher-room-shell .activity-list{
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.teacher-room-shell .activity-card{
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--tr-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.teacher-room-shell .activity-card:hover{
+  border-color: rgba(79,99,214,.28);
+  box-shadow: 0 6px 18px rgba(27,36,64,.07);
+}
+
+.teacher-room-shell .activity-card.is-focused{
+  border-color: var(--tr-accent);
+  box-shadow: 0 0 0 3px rgba(79,99,214,.12);
+}
+
+.teacher-room-shell .activity-card-number{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(79,99,214,.1);
+  color: var(--tr-accent);
+  font-size: 16px;
+}
+
+.teacher-room-shell .activity-card.is-quiz .activity-card-number{
+  background: rgba(123,91,214,.12);
+  color: var(--tr-quiz);
+}
+
+.teacher-room-shell .activity-card-title{
+  color: var(--tr-ink);
+  font-size: 16.5px;
+  letter-spacing: -.01em;
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-btn{
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -6px 0 0;
+  border-radius: 10px;
+  color: var(--tr-muted);
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-btn svg{
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-btn:hover,
+.teacher-room-shell .activity-card-menu .classroom-story-menu-btn:focus-visible{
+  background: #f3f5fb;
+  color: var(--tr-ink);
+  outline: none;
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-dropdown{
+  min-width: 170px;
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-dropdown a,
+.teacher-room-shell .activity-card-menu .classroom-story-menu-dropdown button{
+  min-height: 40px;
+  padding: 0 12px;
+  color: #33415d;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.teacher-room-shell .activity-card-menu .classroom-story-menu-dropdown .is-danger{
+  color: #c93c3c;
+}
+
+/* The card's facts: a type tag, then the story, mode, status and dates as quiet chips. */
+.teacher-room-shell .activity-card-meta{
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.teacher-room-shell .activity-type-badge{
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(123,91,214,.12);
+  color: var(--tr-quiz);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.teacher-room-shell .activity-type-badge.is-story{
+  background: rgba(79,99,214,.1);
+  color: var(--tr-accent);
+}
+
+.teacher-room-shell .activity-card-story{
+  color: var(--tr-ink);
+  font-size: 13.5px;
+  font-weight: 900;
+}
+
+.teacher-room-shell .activity-card-meta .story-mode-badge.is-inline{
+  margin: 0;
+  padding: 0 8px 0 6px;
+  min-height: 22px;
+  background: rgba(22,150,110,.1);
+  color: #16966e;
+  font-size: 10px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.teacher-room-shell .activity-card-meta .story-mode-badge.is-story.is-inline{
+  background: rgba(79,99,214,.1);
+  color: var(--tr-accent);
+}
+
+.teacher-room-shell .activity-chip,
+.teacher-room-shell .activity-card-meta .activity-status{
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.teacher-room-shell .activity-chip{
+  background: #f3f5fb;
+  color: var(--tr-muted);
+}
+
+.teacher-room-shell .activity-card-text{
+  margin-top: 8px;
+  color: #56607f;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Progress: a thin bar with the average, and how many finished. */
+.teacher-room-shell .activity-card-stats{
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.teacher-room-shell .activity-card-progress{
+  gap: 10px;
+}
+
+.teacher-room-shell .teacher-student-progress-bar{
+  height: 6px;
+  border-radius: 999px;
+  background: #e8ebf5;
+}
+
+.teacher-room-shell .teacher-student-progress-bar span{
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6f7fe0, #4f63d6);
+}
+
+.teacher-room-shell .activity-card.is-quiz .teacher-student-progress-bar span{
+  background: linear-gradient(90deg, #9a7fe6, #7b5bd6);
+}
+
+.teacher-room-shell .activity-card-progress-label,
+.teacher-room-shell .activity-card-count{
+  color: var(--tr-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Actions: quiet outlined buttons, touch-sized; the first is the main one. */
+.teacher-room-shell .activity-card-actions{
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.teacher-room-shell .activity-link{
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(107,120,168,.24);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--tr-ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.teacher-room-shell .activity-link:hover{
+  border-color: rgba(79,99,214,.35);
+  background: #f6f7fd;
+  color: var(--tr-accent);
+}
+
+.teacher-room-shell .activity-link:first-child{
+  border-color: transparent;
+  background: rgba(79,99,214,.1);
+  color: var(--tr-accent);
+}
+
+.teacher-room-shell .activity-link:first-child:hover{
+  background: rgba(79,99,214,.16);
+}
+
+/* Progress by activity: filter chips. */
+.teacher-room-shell .activity-tabs{
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.teacher-room-shell .activity-tab{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--tr-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tr-muted);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.teacher-room-shell .activity-tab:hover{
+  border-color: rgba(79,99,214,.3);
+  color: var(--tr-ink);
+}
+
+.teacher-room-shell .activity-tab.is-active{
+  border-color: var(--tr-ink);
+  background: var(--tr-ink);
+  color: #fff;
+}
+
+/* No students yet. */
+.tr-empty{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 16px;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px dashed rgba(107,120,168,.32);
+  border-radius: 16px;
+  background: #fafbfe;
+}
+
+.tr-empty-icon{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(79,99,214,.1);
+  color: var(--tr-accent);
+}
+
+.tr-empty-icon svg{
+  width: 22px;
+  height: 22px;
+}
+
+.tr-empty-copy{
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.tr-empty-copy strong{
+  color: var(--tr-ink);
+  font-size: 14.5px;
+  font-weight: 900;
+}
+
+.tr-empty-copy span{
+  color: var(--tr-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.tr-code.is-light{
+  background: #fff;
+}
+
+/* Phones. */
+@media (max-width: 640px){
+  .teacher-room-shell .teacher-room-hero{
+    padding: 22px 16px 18px;
+  }
+
+  .teacher-room-shell .classroom-stream-card{
+    padding: 16px 14px 18px;
+  }
+
+  .teacher-room-shell .activity-add-actions{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .tr-add-btn{
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .teacher-room-shell .activity-card{
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px 12px;
+  }
+
+  .teacher-room-shell .activity-card-number{
+    width: 36px;
+    height: 36px;
+  }
+
+  .teacher-room-shell .activity-card-stats{
+    flex-wrap: wrap;
+  }
+
+  .teacher-room-shell .activity-link{
+    min-height: 42px;
+  }
+}
+
+/* Phones: the teacher shows as a compact row under the class details. */
+@media (max-width: 640px){
+  .teacher-room-shell .teacher-room-hero{
+    align-items: stretch;
+  }
+
+  .teacher-room-shell .classroom-room-teacher{
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-height: 0;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .teacher-room-shell .classroom-room-teacher-avatar{
+    width: 44px;
+    height: 44px;
+    flex: none;
+  }
+
+  .teacher-room-shell .classroom-room-teacher-meta{
+    text-align: left;
+  }
+}
+/* --- Activities in two sections: story activities, then quizzes ----------------
+   (teacher_classroom.php and classroom_room.php). Each section has a small
+   header - an icon tile in its colour (stories indigo, quizzes violet), its
+   name and count, and on the teacher's page its own add button - and a thin
+   line between the two. */
+.tr-group{
+  --tr-group-color: #4f63d6;
+  --tr-group-soft: rgba(79,99,214,.1);
+  margin-top: 18px;
+}
+
+.tr-group.is-quiz{
+  --tr-group-color: #7b5bd6;
+  --tr-group-soft: rgba(123,91,214,.12);
+}
+
+.tr-group + .tr-group{
+  padding-top: 18px;
+  border-top: 1px solid rgba(107,120,168,.14);
+}
+
+.tr-group-head{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tr-group-icon{
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--tr-group-soft);
+  color: var(--tr-group-color);
+}
+
+.tr-group-icon svg{
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tr-group-title{
+  margin: 0;
+  color: #1b2440;
+  font-size: 15.5px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+.tr-group-count{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #f0f2f8;
+  color: #6b7596;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tr-group-head .tr-add-btn{
+  margin-left: auto;
+}
+
+.tr-group .activity-list{
+  margin-top: 12px;
+}
+
+.tr-group-empty{
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px dashed rgba(107,120,168,.3);
+  border-radius: 14px;
+  background: #fafbfe;
+  color: #6b7596;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+@media (max-width: 640px){
+  .tr-group-head .tr-add-btn{
+    flex: 1 1 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+/* Side by side when there is room: story activities on the left, quizzes on
+   the right, each a single column of cards in its own tinted panel.
+   Narrower (phones, a tablet held upright) they stack as before. When a
+   student's class has only one kind, that section uses the whole width. */
+.tr-groups{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  container-type: inline-size;
+}
+
+.tr-groups > .tr-group{
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+@container (min-width: 760px){
+  .tr-groups > .tr-group{
+    flex: 1 1 0;
+  }
+
+  .tr-groups > .tr-group{
+    align-self: stretch;
+  }
+
+  .tr-groups:not(.has-tabs) > .tr-group:not(:only-child) .activity-list{
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* --- Colour: each part of a classroom in its own soft tint -------------------
+   (teacher_classroom.php and classroom_room.php). Story activities are indigo,
+   quizzes violet and class progress mint: each section is a lightly tinted
+   panel with a border in its colour, and its cards stay white (so text keeps
+   full contrast) with a stripe of that colour down their left side. Chips,
+   counts and the quieter buttons pick up the same colours. Flat colours only:
+   nothing here costs a slow tablet anything to draw. */
+.classroom-room-shell{
+  --tc-story: #4f63d6;
+  --tc-story-bg: #f2f4ff;
+  --tc-story-line: rgba(79,99,214,.2);
+  --tc-quiz: #7b5bd6;
+  --tc-quiz-bg: #f6f2ff;
+  --tc-quiz-line: rgba(123,91,214,.22);
+  --tc-mint: #1d8f6a;
+  --tc-mint-bg: #eefaf4;
+  --tc-mint-line: rgba(29,143,106,.2);
+}
+
+/* Section cards: a faint blue-grey fill and a firmer border, so they stand
+   apart from the page. */
+.classroom-room-shell .classroom-stream-card{
+  border-color: rgba(79,99,214,.14);
+  background: #fbfcff;
+}
+
+.classroom-room-shell .classroom-stream-head .classroom-room-panel-kicker{
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tc-story-bg);
+  color: var(--tc-story);
+}
+
+.classroom-room-shell #progress .classroom-stream-head .classroom-room-panel-kicker{
+  background: var(--tc-mint-bg);
+  color: var(--tc-mint);
+}
+
+/* The two activity sections: tinted panels. */
+.classroom-room-shell .tr-group{
+  padding: 16px;
+  border: 1px solid var(--tc-story-line);
+  border-radius: 18px;
+  background: var(--tc-story-bg);
+}
+
+.classroom-room-shell .tr-group.is-quiz{
+  border-color: var(--tc-quiz-line);
+  background: var(--tc-quiz-bg);
+}
+
+.classroom-room-shell .tr-groups{
+  gap: 16px;
+}
+
+.classroom-room-shell .tr-group + .tr-group{
+  padding-top: 16px;
+  border-top: 1px solid var(--tc-quiz-line);
+}
+
+.classroom-room-shell .tr-groups > .tr-group{
+  margin-top: 0;
+}
+
+.classroom-room-shell .tr-groups{
+  margin-top: 16px;
+}
+
+.classroom-room-shell .tr-group-icon{
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--tc-story-line);
+}
+
+.classroom-room-shell .tr-group.is-quiz .tr-group-icon{
+  box-shadow: inset 0 0 0 1px var(--tc-quiz-line);
+}
+
+.classroom-room-shell .tr-group-count{
+  background: var(--tr-group-color);
+  color: #fff;
+}
+
+.classroom-room-shell .tr-group-empty{
+  border-color: var(--tc-story-line);
+  background: #fff;
+  color: #56607f;
+}
+
+.classroom-room-shell .tr-group.is-quiz .tr-group-empty{
+  border-color: var(--tc-quiz-line);
+}
+
+/* Cards inside them: white, with the section's colour down the left. */
+.classroom-room-shell .tr-group .activity-card{
+  border: 1px solid var(--tc-story-line);
+  border-left: 4px solid var(--tc-story);
+  background: #fff;
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-card{
+  border-color: var(--tc-quiz-line);
+  border-left-color: var(--tc-quiz);
+}
+
+.classroom-room-shell .tr-group .activity-card:hover{
+  border-color: rgba(79,99,214,.38);
+  border-left-color: var(--tc-story);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-card:hover{
+  border-color: rgba(123,91,214,.4);
+  border-left-color: var(--tc-quiz);
+}
+
+.classroom-room-shell .tr-group .activity-card-number{
+  background: var(--tc-story-bg);
+  color: var(--tc-story);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-card-number{
+  background: var(--tc-quiz-bg);
+  color: var(--tc-quiz);
+}
+
+/* Chips (question count, due date): a cool grey-blue instead of plain grey. */
+.classroom-room-shell .activity-chip{
+  background: #eef1fa;
+  color: #46527a;
+}
+
+/* Quieter buttons take the section's colour on their border. */
+.classroom-room-shell .tr-group .activity-link{
+  border-color: var(--tc-story-line);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-link{
+  border-color: var(--tc-quiz-line);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-link:first-child{
+  border-color: transparent;
+  background: rgba(123,91,214,.12);
+  color: var(--tc-quiz);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-link:first-child:hover{
+  background: rgba(123,91,214,.18);
+}
+
+.classroom-room-shell .tr-group .activity-card .teacher-student-progress-bar{
+  background: var(--tc-story-bg);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-card .teacher-student-progress-bar{
+  background: var(--tc-quiz-bg);
+}
+
+/* Class progress: mint. */
+.classroom-room-shell .teacher-student-progress-card{
+  border: 1px solid var(--tc-mint-line);
+  border-left: 4px solid var(--tc-mint);
+  background: #fff;
+}
+
+.classroom-room-shell .teacher-student-progress-bar{
+  background: var(--tc-mint-bg);
+}
+
+.classroom-room-shell .teacher-student-progress-card .teacher-student-progress-bar span{
+  background: linear-gradient(90deg, #4fc79c, var(--tc-mint));
+}
+
+/* The header's numbers: little tinted chips. */
+.teacher-room-shell .activity-hero-stats span{
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--tc-story-bg);
+  color: #4a5578;
+}
+
+.teacher-room-shell .activity-hero-stats span:nth-child(2){
+  background: var(--tc-mint-bg);
+}
+
+.teacher-room-shell .activity-hero-stats svg{
+  color: var(--tc-story);
+}
+
+.teacher-room-shell .activity-hero-stats span:nth-child(2) svg{
+  color: var(--tc-mint);
+}
+
+/* The teacher's box and the student's progress panel beside the activities. */
+.classroom-room-shell .classroom-room-teacher{
+  border-color: var(--tc-story-line);
+  background: var(--tc-story-bg);
+}
+
+.classroom-room-shell .classroom-room-progress{
+  border: 1px solid var(--tc-mint-line);
+  background: var(--tc-mint-bg);
+}
+
+@media (max-width: 640px){
+  .classroom-room-shell .tr-group{
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .classroom-room-shell .tr-groups{
+    gap: 12px;
+  }
+}
+
+/* --- Classmates (classroom_room.php): under "Your progress", everyone in the
+   classroom with their picture and name (never their progress: that stays
+   private to each student).
+   A compact list; on wide screens it scrolls inside its panel when the class
+   is large, so the side column stays short. The reader's own row is tinted. */
+.cm-panel{
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(79,99,214,.16);
+  border-radius: 20px;
+  background: #fbfcff;
+}
+
+.cm-head{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cm-title{
+  margin: 0;
+  color: #1b2440;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+.cm-count{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #4f63d6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cm-empty{
+  margin: 0 0 10px;
+  color: #56607f;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cm-list{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cm-item{
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 10px;
+  border: 1px solid rgba(79,99,214,.12);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.cm-item.is-you{
+  border-color: rgba(29,143,106,.28);
+  background: #eefaf4;
+}
+
+.cm-avatar{
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--cm-top, #dfe6ff), var(--cm-bottom, #d3f5e6));
+}
+
+.cm-avatar img{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cm-info{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cm-name,
+.cm-user{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-name{
+  color: #1b2440;
+  font-size: 13.5px;
+  font-weight: 900;
+}
+
+.cm-you{
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #1d8f6a;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 900;
+  vertical-align: 1px;
+}
+
+.cm-user{
+  color: #56607f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Wide screens: a large class scrolls inside the panel. */
+@media (min-width: 981px){
+  .cm-list{
+    max-height: 420px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+
+/* --- The student's classroom page on tablets (portrait too) ----------------
+   Your progress and Classmates stay in a column on the left, the activities
+   on the right, from 600px wide up; only phones stack them. Between 600 and
+   980px everything is a little more compact so both columns fit: a slimmer
+   side column, tighter padding, smaller covers and pictures. The side column
+   stays in view while the activities scroll. */
+@media (min-width: 600px) and (max-width: 980px){
+  .classroom-room-grid:not(.is-full){
+    grid-template-columns: minmax(190px, 34%) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .classroom-room-side{
+    position: sticky;
+    top: 10px;
+    gap: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .classroom-room-panel,
+  .classroom-room-grid:not(.is-full) .classroom-stream-card{
+    padding: 14px;
+  }
+
+  .classroom-room-grid:not(.is-full) .classroom-room-progress-number{
+    font-size: 26px;
+  }
+
+  .classroom-room-grid:not(.is-full) .classroom-room-progress-copy{
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  .classroom-room-grid:not(.is-full) .cm-panel{
+    margin-top: 0;
+    padding: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .cm-list{
+    gap: 6px;
+  }
+
+  .classroom-room-grid:not(.is-full) .cm-item{
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 48px;
+    padding: 7px 8px;
+    border-radius: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .cm-avatar{
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .classroom-room-grid:not(.is-full) .cm-name{
+    font-size: 13px;
+  }
+
+  .classroom-room-grid:not(.is-full) .classroom-stream-head h2{
+    font-size: 20px;
+  }
+
+  .classroom-room-grid:not(.is-full) .tr-group{
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .classroom-room-grid:not(.is-full) .tr-groups{
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .activity-card-student{
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .classroom-room-grid:not(.is-full) .activity-card-student.is-quiz{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .classroom-room-grid:not(.is-full) .activity-card-cover{
+    width: 64px;
+  }
+
+  .classroom-room-grid:not(.is-full) .activity-card-title{
+    font-size: 15px;
+  }
+
+  .classroom-room-grid:not(.is-full) .activity-open-btn{
+    min-height: 40px;
+    padding: 0 16px;
+  }
+}
+
+/* Classmates on phones (below 600px): a button under Your progress opens the
+   list as a sheet from the bottom of the screen, over a dimmed page, so the
+   activities come straight after Your progress. Tablets and computers keep
+   the list in the side column (no button, no close). */
+.cm-open-btn,
+.cm-close{
+  display: none;
+}
+
+.cm-backdrop[hidden]{
+  display: none;
+}
+
+@media (max-width: 599px){
+  .cm-open-btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    margin-top: 12px;
+    padding: 0 14px;
+    border: 1px solid rgba(79,99,214,.22);
+    border-radius: 12px;
+    background: #fff;
+    color: #33415d;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .cm-open-btn:focus-visible,
+  .cm-close:focus-visible{
+    outline: 3px solid rgba(79,99,214,.38);
+    outline-offset: 2px;
+  }
+
+  .cm-open-btn svg{
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: #4f63d6;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .cm-panel{
+    display: none;
+  }
+
+  .cm-panel.is-open{
+    display: block;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1300;
+    max-height: 80vh;
+    max-height: 80svh;
+    margin: 0;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 0;
+    border-radius: 22px 22px 0 0;
+    background: #fbfcff;
+    box-shadow: 0 -16px 40px rgba(20,30,60,.22);
+    animation: cmSheetIn .22s ease;
+  }
+
+  .cm-close{
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px -6px auto;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #5d6d9b;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .cm-backdrop{
+    position: fixed;
+    inset: 0;
+    z-index: 1290;
+    background: rgba(30,40,70,.45);
+  }
+
+  body.has-cm-open{
+    overflow: hidden;
+  }
+
+  /* The page's content sits in its own layer (z-index 1) below the bottom
+     menu; while the sheet is open that layer goes on top so the sheet and
+     its dimmed backdrop cover the menu too. */
+  body.has-cm-open .classroom-room-shell{
+    z-index: 1300;
+  }
+}
+
+@keyframes cmSheetIn{
+  from{ transform: translateY(24px); opacity: .6; }
+  to{ transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .cm-panel.is-open{
+    animation: none;
+  }
+}
+
+html.koobd-lite .cm-panel.is-open{
+  animation: none;
+}
+
+/* A quiz with essays waiting for the teacher's grade (teacher_classroom.php). */
+.activity-chip.is-to-grade{background:#fff1d6 !important;color:#8a5a0c !important;}
+
+/* "Play together" in the story activity form (teacher_classroom.php). */
+.activity-form-check{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid rgba(79,99,214,.18);border-radius:12px;background:#f6f8ff;color:#46527a;font-size:13px;font-weight:600;line-height:1.45;cursor:pointer;}
+.activity-form-check input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#4f63d6;}
+.activity-form-check strong{color:#1b2440;}
+
+/* An activity card's progress opens that activity's own class-progress page
+   (teacher_classroom.php): a full-width row that reacts like a button. */
+.activity-card-stats.is-link{display:flex;align-items:center;margin-left:-8px;margin-right:-8px;padding:8px;border-radius:12px;color:inherit;text-decoration:none;transition:background-color .15s ease;}
+.activity-card-stats.is-link:hover{background:rgba(79,99,214,.07);}
+.activity-card-stats.is-link:focus-visible{outline:3px solid rgba(79,99,214,.38);outline-offset:2px;}
+.activity-card-stats-go{margin-left:auto;color:#7c86a8;font-size:22px;font-weight:900;line-height:1;}
+
+/* --- Reading / Quiz tabs (js/activity-tabs.js) ----------------------------------
+   Above the activities, two tabs choose which kind is shown: reading
+   activities (indigo) or quizzes (violet). The chosen one is filled in its
+   colour; the other stays white. On phones they share the row equally. Only
+   one section shows at a time, so its cards can use the whole width (two to a
+   row where there is room). */
+.tr-tabs{
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 5px;
+  border: 1px solid rgba(79,99,214,.16);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tr-tab{
+  --tr-tab-color: #4f63d6;
+  --tr-tab-soft: #f2f4ff;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #46527a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.tr-tab.is-quiz{
+  --tr-tab-color: #7b5bd6;
+  --tr-tab-soft: #f6f2ff;
+}
+
+.tr-tab:hover{
+  background: var(--tr-tab-soft);
+  color: var(--tr-tab-color);
+}
+
+.tr-tab.is-active{
+  background: var(--tr-tab-color);
+  color: #fff;
+}
+
+.tr-tab:focus-visible{
+  outline: 3px solid rgba(79,99,214,.35);
+  outline-offset: 2px;
+}
+
+.tr-tab-icon{
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.tr-tab-icon svg{
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tr-tab-label{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-tab-count{
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--tr-tab-soft);
+  color: var(--tr-tab-color);
+  font-size: 12px;
+}
+
+.tr-tab.is-active .tr-tab-count{
+  background: rgba(255,255,255,.22);
+  color: #fff;
+}
+
+.tr-groups.has-tabs > .tr-group[hidden]{
+  display: none;
+}
+
+/* The tab already names the section: its header keeps the add button and a
+   plain title. */
+.tr-groups.has-tabs .tr-group-icon,
+.tr-groups.has-tabs .tr-group-count{
+  display: none;
+}
+
+.classroom-room-shell .tr-groups.has-tabs{
+  margin-top: 12px;
+}
+
+.classroom-room-shell .tr-groups.has-tabs > .tr-group{
+  padding-top: 16px;
+  border-top-width: 1px;
+}
+
+@container (min-width: 760px){
+  .tr-groups.has-tabs .activity-list{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 420px){
+  .tr-tabs{ gap: 4px; padding: 4px; }
+  .tr-tab{ gap: 6px; padding: 0 8px; font-size: 13px; }
+  .tr-tab-icon{ display: none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .tr-tab{ transition: none; }
+}
+html.koobd-lite .tr-tab{ transition: none; }
+
+/* Phones: "Reading" and "Quiz" (the word "Activities" fits from 481px). */
+@media (max-width: 480px){
+  .tr-tab-more{ display: none; }
+}
+
+/* --- Compact teacher classroom header --------------------------------------------
+   One tight block: the back link, the kicker and title close together, then
+   one row with the class code, the counts, Messages and the bell. The
+   teacher's box is a slim card beside it (a slim row under it on phones). */
+.teacher-room-shell .teacher-room-hero{
+  gap: 16px;
+  padding: 16px 20px 16px;
+}
+
+.teacher-room-shell .classroom-room-back{
+  min-height: 30px;
+  margin: 0 0 2px -8px;
+}
+
+.teacher-room-shell .classroom-room-title{
+  margin: 4px 0 0;
+}
+
+.teacher-room-shell .tr-hero-meta{
+  gap: 8px 10px;
+  margin-top: 12px;
+}
+
+.teacher-room-shell .tr-hero-meta .sc-social-actions{
+  gap: 8px;
+  margin-top: 0;
+}
+
+.teacher-room-shell .classroom-room-teacher{
+  align-self: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 16px 8px 8px;
+}
+
+.teacher-room-shell .classroom-room-teacher-avatar{
+  width: 48px;
+  height: 48px;
+}
+
+.teacher-room-shell .classroom-room-teacher-name{
+  margin-top: 2px;
+}
+
+@media (max-width: 640px){
+  .teacher-room-shell .teacher-room-hero{
+    gap: 12px;
+    padding: 14px 14px 14px;
+  }
+
+  .teacher-room-shell .tr-hero-meta{
+    margin-top: 10px;
+  }
+
+  .teacher-room-shell .classroom-room-teacher{
+    padding: 6px 12px 6px 6px;
+  }
+
+  .teacher-room-shell .classroom-room-teacher-avatar{
+    width: 38px;
+    height: 38px;
+  }
+}
+
+.teacher-room-shell .teacher-room-hero .classroom-room-hero-copy{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Stacked (tablets held upright, phones): the teacher's box is a slim card at
+   the left, not a centred block. */
+@media (max-width: 960px){
+  .teacher-room-shell .classroom-room-teacher{
+    align-self: flex-start;
+    width: auto;
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .teacher-room-shell .classroom-room-teacher-meta{
+    text-align: left;
+  }
+}
+
+/* --- Closed activities (past their due date) ---------------------------------------
+   The due chip turns rose ("Closed · was due ..."), the open button becomes a
+   flat locked label, and a short note explains it when a student is sent
+   back from a closed activity. */
+.activity-chip.is-closed,
+.classroom-room-shell .activity-chip.is-closed{
+  background: #fdeef1;
+  color: #b4465f;
+}
+
+.activity-open-btn.is-closed{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed rgba(180,70,95,.35);
+  background: #fff6f8;
+  color: #b4465f;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.activity-open-btn.is-closed svg{
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.activity-closed-notice{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(180,70,95,.22);
+  border-radius: 14px;
+  background: #fdeef1;
+  color: #7d2f42;
+}
+
+.activity-closed-notice svg{
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  fill: none;
+  stroke: #b4465f;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.activity-closed-notice p{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+/* --- Compact student classroom header (classroom_room.php) ------------------------
+   The same shape as the teacher's: a white card with the classroom's colours
+   as a thin stripe on top, the title, then one row with the class code, the
+   activity count, Message Teacher and the bell, and the teacher as a slim
+   card beside it (a slim card under it when there is no room). */
+.student-room-hero{
+  position: relative;
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+  padding: 16px 20px;
+  border: 1px solid rgba(79,99,214,.14);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(27,36,64,.04), 0 10px 26px rgba(27,36,64,.07);
+}
+
+.student-room-hero::before{
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--room-top, #6f7fe0), var(--room-bottom, #74ddb1));
+}
+
+.student-room-hero .classroom-room-hero-copy{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.student-room-hero .classroom-room-back{
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 30px;
+  margin: 0 0 2px -8px;
+  padding: 0 10px 0 4px;
+  border-radius: 10px;
+  color: #6b7596;
+  font-size: 13px;
+}
+
+.student-room-hero .classroom-room-back:hover{
+  background: #f3f5fb;
+  color: #1b2440;
+}
+
+.student-room-hero .classroom-room-back svg{
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.student-room-hero .classroom-room-title{
+  margin: 4px 0 0;
+  color: #1b2440;
+  letter-spacing: -.02em;
+}
+
+.student-room-hero .tr-hero-meta{
+  gap: 8px 10px;
+  margin-top: 12px;
+}
+
+.student-room-hero .tr-code{
+  padding-right: 12px;
+  border-color: rgba(79,99,214,.16);
+}
+
+.student-room-hero .tr-code-label{
+  color: #6b7596;
+}
+
+.student-room-hero .tr-code-value{
+  color: #1b2440;
+}
+
+.student-room-hero .activity-hero-stats{
+  margin: 0;
+}
+
+.student-room-hero .activity-hero-stats span{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  background: #f2f4ff;
+  color: #4a5578;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.student-room-hero .activity-hero-stats strong{
+  color: #1b2440;
+  font-weight: 900;
+}
+
+.student-room-hero .activity-hero-stats svg{
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #4f63d6;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.student-room-hero .sc-social-actions{
+  gap: 8px;
+  margin-top: 0;
+}
+
+.classroom-room-shell .student-room-hero .classroom-room-teacher{
+  flex: none;
+  flex-direction: row;
+  align-self: center;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 16px 8px 8px;
+  border: 1px solid rgba(79,99,214,.16);
+  border-radius: 16px;
+  background: #f6f7fc;
+  box-shadow: none;
+  text-align: left;
+}
+
+.student-room-hero .classroom-room-teacher-avatar{
+  width: 48px;
+  height: 48px;
+  flex: none;
+}
+
+.student-room-hero .classroom-room-teacher-name{
+  margin-top: 2px;
+}
+
+/* Stacked (tablets held upright, phones): the teacher card sits at the left. */
+@media (max-width: 960px){
+  .student-room-hero{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .classroom-room-shell .student-room-hero .classroom-room-teacher{
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 640px){
+  .student-room-hero{
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .student-room-hero .tr-hero-meta{
+    margin-top: 10px;
+  }
+
+  .classroom-room-shell .student-room-hero .classroom-room-teacher{
+    padding: 6px 12px 6px 6px;
+  }
+
+  .student-room-hero .classroom-room-teacher-avatar{
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Tabs in a narrow column (a tablet held sideways, with the progress panel
+   beside the activities): the short labels, so nothing is cut off. */
+.tr-tabs{
+  container-type: inline-size;
+}
+
+@container (max-width: 420px){
+  .tr-tab-more{ display: none; }
+}
+
+/* Stacked headers: the teacher card moves into the top-right corner, beside
+   the "Classes" link, instead of taking a row of its own. */
+@media (max-width: 960px){
+  .classroom-room-shell .student-room-hero .classroom-room-teacher{
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    max-width: 46%;
+    padding: 5px 12px 5px 5px;
+    border-radius: 14px;
+  }
+
+  .student-room-hero .classroom-room-teacher-avatar{
+    width: 34px;
+    height: 34px;
+  }
+
+  .student-room-hero .classroom-room-teacher-meta{
+    min-width: 0;
+  }
+
+  .student-room-hero .classroom-room-teacher-label{
+    font-size: 10px;
+  }
+
+  .student-room-hero .classroom-room-teacher-name{
+    margin-top: 0;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* The teacher's own header, stacked: the same corner card as the students'. */
+@media (max-width: 960px){
+  .teacher-room-shell .teacher-room-hero .classroom-room-teacher{
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    max-width: 46%;
+    padding: 5px 12px 5px 5px;
+    border-radius: 14px;
+  }
+
+  .teacher-room-shell .teacher-room-hero .classroom-room-teacher-avatar{
+    width: 34px;
+    height: 34px;
+  }
+
+  .teacher-room-shell .teacher-room-hero .classroom-room-teacher-label{
+    font-size: 10px;
+  }
+
+  .teacher-room-shell .teacher-room-hero .classroom-room-teacher-name{
+    margin-top: 0;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* --- Depth: sections that stand apart (teacher_classroom.php, classroom_room.php)
+   Before, the page and its white boxes were nearly the same colour and the
+   borders too faint to see on a tablet. Now the page behind is a cool grey,
+   every section is solid white with a clear border and a short, soft shadow
+   under it, and the panels and cards inside have firmer edges. Flat shadows
+   only (no glow, no blur filters), so slower tablets draw them easily. */
+body:has(.classroom-room-shell){
+  background: #e9edf5;
+}
+
+.classroom-room-shell{
+  --depth-line: #cfd7e6;
+  --depth-shadow: 0 1px 2px rgba(20,30,60,.08), 0 4px 14px rgba(20,30,60,.08);
+}
+
+/* Sections: the header, progress, classmates and the activities box. */
+.classroom-room-shell .classroom-room-hero,
+.classroom-room-shell .teacher-room-shell .teacher-room-hero,
+.classroom-room-shell .classroom-stream-card,
+.classroom-room-shell .classroom-room-panel{
+  border: 1px solid var(--depth-line);
+  background: #fff;
+  box-shadow: var(--depth-shadow);
+}
+
+.classroom-room-shell.teacher-room-shell .teacher-room-hero,
+.classroom-room-shell.teacher-room-shell .classroom-stream-card{
+  border: 1px solid var(--depth-line);
+  box-shadow: var(--depth-shadow);
+}
+
+/* The progress panel keeps its mint, with an edge you can see. */
+.classroom-room-shell .classroom-room-progress{
+  border: 1px solid #a9dcc6;
+  background: #eaf8f1;
+  box-shadow: var(--depth-shadow);
+}
+
+/* The teacher's slim card in the header. */
+.classroom-room-shell .student-room-hero .classroom-room-teacher,
+.classroom-room-shell.teacher-room-shell .classroom-room-teacher{
+  border-color: var(--depth-line);
+  background: #f3f5fa;
+}
+
+/* The class code, the counts and the header buttons. */
+.classroom-room-shell .tr-code{
+  border-color: var(--depth-line);
+  background: #f3f5fa;
+}
+
+.classroom-room-shell .sc-chat-btn,
+.classroom-room-shell .sc-bell{
+  border-color: var(--depth-line);
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+/* The Reading / Quiz tabs. */
+.classroom-room-shell .tr-tabs{
+  border-color: var(--depth-line);
+  background: #f3f5fa;
+}
+
+.classroom-room-shell .tr-tab:not(.is-active){
+  color: #3d4766;
+}
+
+/* The tinted panel holding the activities, and the cards in it. */
+.classroom-room-shell .tr-group{
+  border-color: rgba(79,99,214,.32);
+}
+
+.classroom-room-shell .tr-group.is-quiz{
+  border-color: rgba(123,91,214,.34);
+}
+
+.classroom-room-shell .tr-group .activity-card{
+  border-color: rgba(79,99,214,.3);
+  box-shadow: 0 1px 3px rgba(20,30,60,.08);
+}
+
+.classroom-room-shell .tr-group.is-quiz .activity-card{
+  border-color: rgba(123,91,214,.32);
+}
+
+.classroom-room-shell .tr-group-empty{
+  border-color: rgba(79,99,214,.34);
+}
+
+/* Lines inside a card (above the comments) and the progress bars. */
+.classroom-room-shell .activity-comments{
+  border-top-color: #dfe4ef;
+}
+
+.classroom-room-shell .teacher-student-progress-bar{
+  background: #e3e8f3;
+}
+
+/* Rows in the classmates list. */
+.classroom-room-shell .cm-item{
+  border-color: var(--depth-line);
+}
+
+.classroom-room-shell .cm-item.is-you{
+  border-color: #a9dcc6;
+}
+
+/* --- The teacher's Classroom page header (classroom.php) --------------------------
+   One compact card: kicker, title and one line on the left; the three actions
+   in a row on the right - New Classroom solid indigo, Create Story and My
+   Stories lighter - all the same height. Tablets and phones put the actions
+   in one row under the text instead of three full-width bars. */
+.classroom-teacher-hero.is-compact{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 20px 22px;
+}
+
+.classroom-teacher-hero.is-compact h2{
+  margin: 4px 0 6px;
+  font-size: clamp(22px, 2.3vw, 28px);
+  line-height: 1.15;
+}
+
+.classroom-teacher-hero.is-compact p{
+  max-width: 520px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #56607f;
+}
+
+.classroom-teacher-hero.is-compact .classroom-teacher-hero-actions{
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin: 0;
+}
+
+.classroom-teacher-hero.is-compact .classroom-teacher-btn{
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  letter-spacing: .01em;
+  transform: none;
+  filter: none;
+}
+
+.classroom-teacher-hero.is-compact .classroom-teacher-btn svg{
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.classroom-teacher-hero.is-compact .classroom-action-new{
+  border: 1px solid #4f63d6;
+  background: #4f63d6;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(20,30,60,.12);
+}
+
+.classroom-teacher-hero.is-compact .classroom-action-new:hover{
+  background: #4355c4;
+}
+
+.classroom-teacher-hero.is-compact .classroom-action-create,
+.classroom-teacher-hero.is-compact .classroom-action-create:link,
+.classroom-teacher-hero.is-compact .classroom-action-create:visited{
+  border: 1px solid rgba(79,99,214,.35);
+  background: #fff;
+  color: #3f51c4;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+.classroom-teacher-hero.is-compact .classroom-action-library,
+.classroom-teacher-hero.is-compact .classroom-action-library:link,
+.classroom-teacher-hero.is-compact .classroom-action-library:visited{
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #46527a;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+.classroom-teacher-hero.is-compact .classroom-action-create:hover,
+.classroom-teacher-hero.is-compact .classroom-action-library:hover{
+  background: #f2f4ff;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+/* Tablets held upright and phones: the actions in one row under the text. */
+@media (max-width: 1000px){
+  .classroom-teacher-hero.is-compact{
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .classroom-teacher-hero.is-compact .classroom-teacher-hero-actions{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .classroom-teacher-hero.is-compact .classroom-teacher-btn{
+    width: 100%;
+    min-height: 46px;
+    padding: 0 10px;
+  }
+}
+
+/* Narrow phones: New Classroom across the top, the other two side by side. */
+@media (max-width: 480px){
+  .classroom-teacher-hero.is-compact{
+    padding: 16px;
+  }
+
+  .classroom-teacher-hero.is-compact .classroom-teacher-hero-actions{
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .classroom-teacher-hero.is-compact .classroom-action-new{
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- The student's "Join a classroom" card (classroom.php) -----------------------
+   Compact, like the teacher's header: the short text on the left; on the
+   right one input group - the class code with its Join button - and Create
+   Story / My Stories in a row under it. Phones stack the three. */
+.classroom-join-panel.is-compact{
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  gap: 16px 24px;
+  padding: 20px 22px;
+}
+
+.classroom-join-panel.is-compact .classroom-join-copy h2{
+  margin: 4px 0 6px;
+  font-size: clamp(22px, 2.3vw, 28px);
+  line-height: 1.15;
+}
+
+.classroom-join-panel.is-compact .classroom-join-copy p{
+  max-width: 460px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #56607f;
+}
+
+.classroom-join-side{
+  display: grid;
+  gap: 10px;
+}
+
+.classroom-join-panel.is-compact .classroom-join-form{
+  gap: 6px;
+}
+
+/* The code field and Join, joined into one control. */
+.classroom-join-group{
+  display: flex;
+  min-height: 48px;
+  border: 1px solid #cfd7e6;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+.classroom-join-group:focus-within{
+  border-color: #4f63d6;
+  box-shadow: 0 0 0 3px rgba(79,99,214,.18);
+}
+
+.classroom-join-panel.is-compact .classroom-join-input{
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  letter-spacing: .12em;
+}
+
+.classroom-join-panel.is-compact .classroom-join-input::placeholder{
+  color: #8a93b2;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+
+.classroom-join-panel.is-compact .classroom-join-btn{
+  flex: none;
+  min-height: 0;
+  padding: 0 22px;
+  border-radius: 0;
+  background: #4f63d6;
+  font-size: 14px;
+  letter-spacing: .02em;
+}
+
+.classroom-join-panel.is-compact .classroom-join-btn:hover{
+  background: #4355c4;
+}
+
+.classroom-join-panel.is-compact .classroom-join-btn:focus-visible{
+  outline: 3px solid rgba(255,255,255,.7);
+  outline-offset: -5px;
+}
+
+.classroom-join-panel.is-compact .classroom-join-error{
+  color: #b4465f;
+  font-size: 12.5px;
+}
+
+/* Create Story and My Stories: two equal, lighter buttons. */
+.classroom-join-panel.is-compact .classroom-student-actions{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.classroom-join-panel.is-compact .classroom-teacher-btn{
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  letter-spacing: .01em;
+  transform: none;
+  filter: none;
+}
+
+.classroom-join-panel.is-compact .classroom-teacher-btn svg{
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.classroom-join-panel.is-compact .classroom-action-create,
+.classroom-join-panel.is-compact .classroom-action-create:link,
+.classroom-join-panel.is-compact .classroom-action-create:visited{
+  border: 1px solid rgba(79,99,214,.35);
+  background: #fff;
+  color: #3f51c4;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+.classroom-join-panel.is-compact .classroom-action-library,
+.classroom-join-panel.is-compact .classroom-action-library:link,
+.classroom-join-panel.is-compact .classroom-action-library:visited{
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #46527a;
+  box-shadow: 0 1px 2px rgba(20,30,60,.06);
+}
+
+.classroom-join-panel.is-compact .classroom-action-create:hover,
+.classroom-join-panel.is-compact .classroom-action-library:hover{
+  background: #f2f4ff;
+}
+
+@media (max-width: 1000px){
+  .classroom-join-panel.is-compact{
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px){
+  .classroom-join-panel.is-compact{
+    padding: 16px;
+  }
+}

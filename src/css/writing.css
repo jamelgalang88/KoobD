@@ -1,0 +1,431 @@
+/* Writing Practice (writing.php, js/writing.js). A header, the student's
+   notepads on the left (a drawer on phones and upright tablets), and the
+   notepad: lined paper with the suggestions marked under the words.
+
+   The marks: each kind has its own colour and its own line, so they stay
+   distinguishable for colour-blind readers and on any screen -
+     spelling       red, wavy underline
+     grammar        orange, solid underline (grammar, prefixes, suffixes)
+     organization   blue, dashed underline
+     vocabulary     purple, dotted underline (optional ideas)
+     mismatch       yellow highlight (the other language)
+     emoji          blue highlight
+   Flat colours, no blur or glow. */
+.writing-page{
+  --ink:#1f2756; --soft:#5a6390; --muted:#8a93b2; --line:#e1e6f3; --paper:#fffef9; --rule:#e8edf7; --indigo:#4f63d6;
+  --c-spelling:#d62d43; --c-grammar:#d97300; --c-organization:#2f6fdb; --c-vocabulary:#8b3fd9; --c-mismatch:#f2c200; --c-emoji:#2f6fdb;
+  --lh:34px; --fs:18px;
+}
+.wp{
+  display:flex; flex-direction:column; gap:16px; max-width:1360px; margin:0 auto; color:var(--ink);
+}
+.wp h1,.wp h2,.wp h3,.wp h4{margin:0;}
+.wp-svg{display:inline-grid;place-items:center;flex:none;}
+.wp-svg svg,.wp-pop svg,.wp-dialog svg,.wp-toast svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+
+/* Buttons. */
+.wp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:12px;font:inherit;font-size:14.5px;font-weight:800;text-decoration:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+.wp-icon-btn > svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+
+.wp-btn > svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wp-btn-primary{background:var(--indigo);color:#fff;}
+.wp-btn-primary:hover{background:#3f51c4;}
+.wp-btn-primary:disabled{background:#aab3d8;cursor:not-allowed;}
+.wp-btn-ghost{border-color:#d8deee;background:#fff;color:var(--ink);}
+.wp-btn-ghost:hover{background:#f4f6fd;}
+.wp-btn-ghost:disabled{opacity:.6;cursor:wait;}
+.wp-btn-danger{background:#c63a55;color:#fff;}
+.wp-btn-danger:hover{background:#ad2f47;}
+.wp-btn-sm{min-height:40px;padding:0 12px;font-size:13.5px;}
+.wp-btn-lg{min-height:52px;padding:0 24px;font-size:16px;}
+.wp-icon-btn{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--soft);cursor:pointer;}
+.wp-icon-btn:hover{background:#eef1f8;color:var(--ink);}
+.wp-btn:focus-visible,.wp-icon-btn:focus-visible,.wp-seg-btn:focus-visible,.wp-chip:focus-visible,.wp-list-item:focus-visible,.wp-issue:focus-visible,.wp-choice:focus-visible,.wp-legend-item:focus-visible,.wp-lang-card:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+
+/* Header. */
+.wp-top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:#fff;}
+.wp-top-title{display:flex;align-items:center;gap:12px;min-width:0;}
+.wp-top-icon{display:grid;flex:none;place-items:center;width:46px;height:46px;border-radius:13px;background:#eef1ff;color:var(--indigo);}
+.wp-top-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wp-top h1{font-size:clamp(20px,2.4vw,26px);font-weight:1000;line-height:1.15;}
+.wp-top p{margin:2px 0 0;color:var(--soft);font-size:13.5px;font-weight:700;}
+.wp-top-actions{display:flex;flex-wrap:wrap;gap:8px;}
+
+/* An open notepad (or challenge) takes the whole screen: the app's sidebar
+   and the page header step aside. */
+body.wp-focus .sidebar,body.wp-focus .wp-top{display:none !important;}
+body.wp-focus .main{margin-left:0 !important;padding-bottom:0 !important;}
+body.wp-focus .main-inner.wp{max-width:none;padding:0 0 32px;}
+
+/* The list: notepads as cards. */
+.wp-home{display:flex;flex-direction:column;gap:14px;}
+.wp-home-title{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:900;}
+.wp-home-title b{min-width:26px;padding:2px 9px;border-radius:999px;background:#eef1ff;color:#3443a8;font-size:13px;text-align:center;}
+.wp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.wp-note-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:170px;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(20,30,60,.04);transition:border-color .15s,transform .15s;}
+.wp-note-card:hover{border-color:#b9c3e6;transform:translateY(-2px);}
+.wp-note-card:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+.wp-note-card-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+.wp-note-card-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef1ff;color:var(--indigo);}
+.wp-note-card.is-challenge .wp-note-card-icon{background:#fff3e0;color:#b36200;}
+.wp-note-card-title{max-width:100%;overflow:hidden;font-size:17px;font-weight:900;line-height:1.3;text-overflow:ellipsis;white-space:nowrap;}
+.wp-note-card-text{display:-webkit-box;flex:1;overflow:hidden;color:var(--soft);font-size:14px;font-weight:600;line-height:1.5;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.wp-note-card-meta{color:var(--muted);font-size:12.5px;font-weight:700;}
+
+/* The notepad's bar: Back, the title, then the language, Check my writing
+   and More. It stays at the top while writing. */
+.wp-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px max(16px,calc((100% - 1180px) / 2));border-bottom:1px solid var(--line);background:#fff;}
+.wp-bar.is-plain{position:static;border-bottom:0;background:transparent;}
+.wp-back{display:inline-flex;flex:none;align-items:center;gap:6px;min-height:48px;padding:0 16px 0 12px;border:1px solid #d8deee;border-radius:14px;background:#fff;color:var(--ink);font:inherit;font-size:16px;font-weight:900;cursor:pointer;}
+.wp-back:hover{background:#f4f6fd;}
+.wp-back svg{width:22px;height:22px;stroke-width:2.6;}
+.wp-bar-title{display:flex;flex:1;align-items:center;gap:10px;min-width:220px;}
+.wp-bar-tools{display:flex;flex:none;align-items:center;gap:8px;}
+.wp-btn-check{background:#eefaf3;border-color:#bfe3cf;color:#135f43;}
+.wp-btn-check:hover{background:#dff4e8;}
+.wp-btn-check.is-on{background:#135f43;border-color:#135f43;color:#fff;}
+.wp-check-count{min-width:22px;padding:1px 7px;border-radius:999px;background:#135f43;color:#fff;font-size:12px;font-weight:900;text-align:center;}
+.wp-check-count[hidden]{display:none;}
+.wp-more{position:relative;}
+.wp-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:30;display:flex;flex-direction:column;min-width:210px;padding:6px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 14px 30px rgba(15,22,45,.16);}
+.wp-menu[hidden]{display:none;}
+.wp-menu-item{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ink);font:inherit;font-size:15px;font-weight:800;text-align:left;cursor:pointer;}
+.wp-menu-item:hover,.wp-menu-item:focus-visible{background:#f4f6fd;outline:none;}
+.wp-menu-item.is-danger{color:#b4465f;}
+.wp-menu-item.is-danger:hover{background:#fff4f6;}
+.wp-back:focus-visible,.wp-btn-check:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+
+.wp-lang-tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:900;letter-spacing:.04em;}
+.wp-lang-tag.is-en{background:#e7f0ff;color:#2459b8;}
+.wp-lang-tag.is-tl{background:#e6f6ee;color:#167450;}
+.wp-lang-tag.is-big{min-height:32px;padding:0 10px;border-radius:9px;font-size:12.5px;}
+.wp-status{padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:900;}
+.wp-status.is-running{background:#fff3e0;color:#9a5300;}
+.wp-status.is-completed{background:#e6f6ee;color:#167450;}
+.wp-status.is-interrupted{background:#fde8ec;color:#a8324a;}
+
+/* Empty state, set-up. */
+.wp-stage{min-width:0;}
+.wp-empty,.wp-setup{display:flex;flex-direction:column;align-items:center;gap:12px;padding:36px 24px;border:1px solid var(--line);border-radius:18px;background:#fff;text-align:center;}
+.wp-empty h2,.wp-setup h2{font-size:22px;font-weight:1000;}
+.wp-empty p,.wp-setup-head p{max-width:520px;margin:0;color:var(--soft);font-size:15px;font-weight:700;line-height:1.5;}
+.wp-empty-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:16px;background:#eef1ff;color:var(--indigo);}
+.wp-empty-icon svg{width:30px;height:30px;}
+/* How it works (the empty page): three short steps. */
+.wp-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;max-width:720px;margin:8px 0 6px;padding:0;list-style:none;text-align:left;}
+.wp-how-step{display:flex;flex-direction:column;gap:4px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafbfe;}
+.wp-how-step strong{font-size:14.5px;font-weight:900;}
+.wp-how-step > span:last-child{color:var(--soft);font-size:13px;font-weight:600;line-height:1.45;}
+.wp-how-icon{display:grid;place-items:center;width:34px;height:34px;margin-bottom:4px;border-radius:10px;background:#eef1ff;color:var(--indigo);}
+@media (max-width:600px){
+  .wp-how{grid-template-columns:minmax(0,1fr);}
+  .wp-how-step{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;}
+  .wp-how-icon{grid-row:span 2;margin:0;}
+}
+.wp-setup{align-items:stretch;gap:20px;max-width:640px;margin:0 auto;text-align:left;}
+.wp-setup-head{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;}
+.wp-field{display:flex;flex-direction:column;gap:10px;}
+.wp-field-label{color:var(--soft);font-size:12.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.wp-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.wp-chip{min-height:44px;min-width:72px;padding:0 14px;border:1px solid #d8deee;border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:800;cursor:pointer;}
+.wp-chip.is-on{border-color:var(--indigo);background:#eef1ff;color:#3443a8;box-shadow:inset 0 0 0 1px var(--indigo);}
+.wp-custom-wrap{display:inline-flex;align-items:center;gap:6px;color:var(--soft);font-size:14px;font-weight:800;}
+.wp-custom{width:84px;height:44px;box-sizing:border-box;padding:0 10px;border:1px solid #d8deee;border-radius:12px;font:inherit;font-size:15px;font-weight:800;color:var(--ink);}
+.wp-custom:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(79,99,214,.18);}
+.wp-seg{display:inline-flex;gap:4px;padding:4px;border:1px solid #d8deee;border-radius:12px;background:#f4f6fb;}
+.wp-seg.is-wide{display:flex;}
+.wp-seg.is-wide .wp-seg-btn{flex:1;}
+.wp-seg-btn{min-height:40px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--soft);font:inherit;font-size:14px;font-weight:800;cursor:pointer;}
+.wp-seg-btn.is-on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,30,60,.12);}
+.wp-idea{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:#fff8e6;color:#7a5200;}
+.wp-idea[hidden]{display:none;}
+.wp-idea-text{margin:0;font-size:15px;font-weight:800;line-height:1.45;}
+.wp-error{margin:0;color:#b4465f;font-size:14px;font-weight:800;}
+.wp-error[hidden]{display:none;}
+
+/* The colour legend. */
+.wp-legend{display:flex;flex-wrap:wrap;gap:6px;}
+.wp-legend-item{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:12.5px;font-weight:800;}
+button.wp-legend-item{min-height:40px;cursor:pointer;}
+.wp-legend-item b{min-width:18px;padding:0 5px;border-radius:6px;background:#f1f3f9;font-size:11.5px;text-align:center;}
+.wp-legend-item.is-off{opacity:.5;}
+.wp-legend-item.is-off .wp-swatch{text-decoration-color:#b9c0d6;background:none;}
+.wp-swatch{font-size:13px;font-weight:900;line-height:1.3;text-underline-offset:3px;}
+
+/* The notepad: the page fills the screen; Things to check sits beside it
+   only while Check my writing is on. */
+.wp-editor-body{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;max-width:960px;margin:16px auto 0;padding:0 16px;}
+.wp-editor.is-checking .wp-editor-body{grid-template-columns:minmax(0,1fr) 300px;max-width:1280px;}
+.wp-editor:not(.is-checking) .wp-panel{display:none;}
+.wp-editor-main{display:flex;flex-direction:column;gap:10px;min-width:0;}
+/* The title: a field that looks tappable (a soft box with a pencil), so it
+   is clear on every screen that it can be renamed. */
+.wp-title-field{display:flex;flex:1 1 auto;align-items:center;min-width:0;max-width:520px;height:48px;box-sizing:border-box;border:1px solid #dfe4f1;border-radius:12px;background:#f7f8fc;cursor:text;transition:border-color .15s,background-color .15s;}
+.wp-title-field:hover{border-color:#c5cde6;background:#fff;}
+.wp-title-field:focus-within{border-color:var(--indigo);background:#fff;box-shadow:0 0 0 3px rgba(79,99,214,.15);}
+.wp-title{flex:1 1 auto;min-width:0;height:100%;box-sizing:border-box;padding:0 4px 0 12px;border:0;border-radius:12px;background:transparent;color:var(--ink);font:inherit;font-size:clamp(18px,2.2vw,22px);font-weight:1000;text-overflow:ellipsis;}
+.wp-title:focus{outline:none;}
+.wp-title-pen{display:grid;flex:none;place-items:center;width:40px;height:100%;color:var(--muted);}
+.wp-title-field:focus-within .wp-title-pen{color:var(--indigo);}
+.wp-title-pen svg{width:18px;height:18px;}
+.wp-save{display:inline-flex;flex:none;align-items:center;gap:4px;color:#2f8a5f;font-size:13px;font-weight:800;white-space:nowrap;}
+.wp-save svg{width:16px;height:16px;stroke-width:2.6;}
+.wp-save.is-saving{color:var(--muted);}
+.wp-save.is-saving svg{opacity:.35;}
+.wp-save.is-error{color:#b4465f;}
+.wp-paper-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 6px;}
+.wp-count{color:var(--soft);font-size:13.5px;font-weight:800;}
+.wp-checking{color:var(--indigo);font-size:12.5px;font-weight:800;}
+.wp-checking[hidden]{display:none;}
+.wp-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:700;line-height:1.45;}
+.wp-banner[hidden]{display:none;}
+.wp-banner.is-mismatch{background:#fff8d6;color:#6b5300;}
+.wp-banner.is-status.is-running{background:#fff3e0;color:#8a4b00;}
+.wp-banner.is-status.is-completed{background:#e6f6ee;color:#135f43;}
+.wp-banner.is-status.is-interrupted{background:#fde8ec;color:#8f2a3f;}
+.wp-banner .wp-btn{margin-left:auto;}
+
+/* Lined paper: the marks under the textarea, in exactly the same place. */
+.wp-paper{position:relative;border:1px solid #e6e2cf;border-radius:16px;background-color:var(--paper);
+  background-image:linear-gradient(90deg,transparent 47px,#f3c9cf 47px,#f3c9cf 49px,transparent 49px),repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--lh) - 1px),var(--rule) calc(var(--lh) - 1px),var(--rule) var(--lh));
+  background-position:0 0,0 18px;box-shadow:0 1px 2px rgba(20,30,60,.05);}
+/* Phones' text autosizing would enlarge one and not the other: off for both. */
+.wp-marks,.wp-text{-webkit-text-size-adjust:100%;text-size-adjust:100%;box-sizing:border-box;width:100%;margin:0;padding:18px 20px 28px 64px;border:0;font-family:inherit;font-size:var(--fs);font-weight:600;line-height:var(--lh);letter-spacing:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;}
+.wp-marks{position:absolute;inset:0;overflow:hidden;color:transparent;pointer-events:none;}
+.wp-text{position:relative;z-index:1;display:block;min-height:calc(100vh - 170px);min-height:calc(100dvh - 170px);resize:none;overflow:hidden;background:transparent;color:var(--ink);caret-color:var(--indigo);}
+.wp-text:focus{outline:none;}
+.wp-paper:focus-within{border-color:#c9d1f3;box-shadow:0 0 0 3px rgba(79,99,214,.12);}
+.wp-text::placeholder{color:#a3abc6;font-weight:600;}
+.wp-mark{background:none;color:transparent;border-radius:3px;text-decoration-skip-ink:none;}
+.wp-mark.is-spelling,.wp-swatch.is-spelling{text-decoration:underline wavy var(--c-spelling) 2px;text-underline-offset:5px;}
+.wp-mark.is-grammar,.wp-swatch.is-grammar{text-decoration:underline solid var(--c-grammar) 3px;text-underline-offset:5px;}
+.wp-mark.is-organization,.wp-swatch.is-organization{text-decoration:underline dashed var(--c-organization) 2px;text-underline-offset:9px;}
+.wp-mark.is-vocabulary,.wp-swatch.is-vocabulary{text-decoration:underline dotted var(--c-vocabulary) 3px;text-underline-offset:5px;}
+.wp-mark.is-mismatch,.wp-swatch.is-mismatch{background:rgba(242,194,0,.42);box-shadow:0 0 0 1px rgba(242,194,0,.42);}
+.wp-mark.is-emoji,.wp-swatch.is-emoji{background:rgba(47,111,219,.18);}
+.wp-swatch.is-emoji{color:var(--c-emoji);}
+.wp-swatch{color:var(--ink);}
+.wp-swatch.is-mismatch{padding:0 2px;border-radius:3px;}
+
+/* Suggestions panel. */
+.wp-panel{position:sticky;top:84px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px);max-height:calc(100dvh - 100px);padding:14px;border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden;}
+.wp-panel-head{display:flex;align-items:center;justify-content:space-between;}
+.wp-panel-head h2{font-size:15px;font-weight:900;}
+.wp-panel-count{min-width:24px;padding:2px 8px;border-radius:999px;background:#eef1ff;color:#3443a8;font-size:12.5px;font-weight:900;text-align:center;}
+.wp-panel-hint{margin:0;color:var(--soft);font-size:12.5px;font-weight:700;line-height:1.45;}
+.wp-panel-empty{margin:0;padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--soft);font-size:13.5px;font-weight:700;text-align:center;}
+.wp-issues{display:flex;flex-direction:column;gap:6px;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+.wp-issue{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.wp-issue:hover{background:#f7f8fd;}
+.wp-issue-body{display:flex;flex:1;flex-direction:column;min-width:0;gap:2px;}
+.wp-issue-title{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:800;}
+.wp-issue-text{overflow:hidden;color:var(--soft);font-size:12.5px;font-weight:700;text-overflow:ellipsis;white-space:nowrap;}
+.wp-dot{flex:none;width:12px;height:12px;border-radius:50%;}
+.wp-dot.is-spelling{background:var(--c-spelling);}
+.wp-dot.is-grammar{background:var(--c-grammar);}
+.wp-dot.is-organization{background:var(--c-organization);}
+.wp-dot.is-vocabulary{background:var(--c-vocabulary);}
+.wp-dot.is-mismatch{background:var(--c-mismatch);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);}
+.wp-dot.is-emoji{background:#9cbcf0;}
+.wp-kind{flex:none;padding:2px 7px;border-radius:6px;background:#f1f3f9;color:var(--soft);font-size:11px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;}
+.wp-kind.is-definite{background:#fde8ec;color:#a8324a;}
+.wp-ai-tag{padding:1px 5px;border-radius:5px;background:#efe6ff;color:#6b2fc0;font-size:10.5px;font-weight:900;}
+
+/* The explanation pop-up (a sheet from the bottom on phones). */
+.wp-pop{position:absolute;z-index:60;display:flex;flex-direction:column;gap:8px;width:min(380px,calc(100vw - 24px));box-sizing:border-box;padding:14px 16px 16px;border:1px solid var(--line);border-top:4px solid var(--c-grammar);border-radius:16px;background:#fff;color:#1f2756;box-shadow:0 14px 34px rgba(15,22,45,.22);font-family:inherit;}
+.wp-pop.is-spelling{border-top-color:var(--c-spelling);}
+.wp-pop.is-organization,.wp-pop.is-emoji{border-top-color:var(--c-organization);}
+.wp-pop.is-vocabulary{border-top-color:var(--c-vocabulary);}
+.wp-pop.is-mismatch{border-top-color:var(--c-mismatch);}
+.wp-pop.is-sheet{position:fixed;left:0 !important;right:0;bottom:0;top:auto !important;width:100%;max-height:70vh;max-height:70dvh;overflow-y:auto;border-radius:20px 20px 0 0;padding-bottom:max(16px,env(safe-area-inset-bottom));}
+.wp-pop-head{display:flex;align-items:center;gap:8px;margin-right:-8px;}
+.wp-pop-type{flex:1;min-width:0;color:var(--soft,#5a6390);font-size:12.5px;font-weight:900;}
+.wp-pop-x{width:40px;height:40px;}
+.wp-pop-found{margin:0;}
+.wp-pop-quote{display:inline;padding:2px 4px;border-radius:5px;background:#f6f7fc;font-size:16px;font-weight:800;line-height:1.6;}
+.wp-pop-quote.is-spelling{text-decoration:underline wavy #d62d43 2px;text-underline-offset:4px;}
+.wp-pop-quote.is-grammar{text-decoration:underline solid #d97300 3px;text-underline-offset:4px;}
+.wp-pop-quote.is-organization{text-decoration:underline dashed #2f6fdb 2px;text-underline-offset:4px;}
+.wp-pop-quote.is-vocabulary{text-decoration:underline dotted #8b3fd9 3px;text-underline-offset:4px;}
+.wp-pop-quote.is-mismatch{background:rgba(242,194,0,.42);}
+.wp-pop-quote.is-emoji{background:rgba(47,111,219,.15);}
+.wp-pop-title{font-size:16px;font-weight:900;}
+.wp-pop-msg{margin:0;color:#3d4672;font-size:14.5px;font-weight:600;line-height:1.5;}
+.wp-pop-example{margin:0;padding:8px 10px;border-radius:10px;background:#f6f7fc;color:#3d4672;font-size:13.5px;font-weight:600;line-height:1.45;}
+.wp-pop-label{margin:4px 0 0;color:#8a93b2;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.wp-pop-choices{display:flex;flex-wrap:wrap;gap:8px;}
+.wp-choice{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid #bcd9c9;border-radius:12px;background:#eefaf3;color:#135f43;font:inherit;font-size:15px;font-weight:800;cursor:pointer;}
+.wp-choice:hover{background:#dff4e8;}
+.wp-pop-wait{color:#5a6390;font-size:13.5px;font-weight:700;}
+.wp-pop-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+
+/* Feedback. */
+.wp-feedback{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fff;}
+.wp-feedback[hidden]{display:none;}
+.wp-fb-head{position:relative;padding-right:48px;}
+.wp-fb-head h2{font-size:20px;font-weight:1000;}
+.wp-fb-head p{margin:2px 0 0;color:var(--soft);font-size:13.5px;font-weight:700;}
+.wp-fb-head .wp-icon-btn{position:absolute;top:-6px;right:-6px;}
+.wp-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+.wp-stat{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:#f6f7fc;}
+.wp-stat b{font-size:22px;font-weight:1000;line-height:1.1;}
+.wp-stat span{color:var(--soft);font-size:12px;font-weight:800;}
+.wp-fb-card{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:14px;background:#f8f9fd;}
+.wp-fb-card h3{display:flex;align-items:center;gap:8px;font-size:15.5px;font-weight:900;}
+.wp-fb-card ul{display:flex;flex-direction:column;gap:6px;margin:0;padding-left:20px;font-size:14.5px;font-weight:600;line-height:1.5;}
+.wp-fb-card p{margin:0;font-size:14.5px;font-weight:600;line-height:1.5;}
+.wp-fb-card.is-strengths{background:#eefaf3;}
+.wp-fb-card.is-strengths h3{color:#135f43;}
+.wp-fb-card.is-advice{background:#fff8e6;}
+.wp-fb-card.is-advice h3{color:#7a5200;}
+.wp-fb-card.is-ai{background:#f4eeff;}
+.wp-fb-card.is-ai h3{color:#6b2fc0;}
+.wp-fb-group h4{display:flex;align-items:center;gap:8px;margin:6px 0 4px;font-size:14px;font-weight:900;}
+.wp-fb-group ul{padding-left:0;list-style:none;}
+.wp-fb-group li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:#fff;}
+.wp-fb-from{padding:1px 5px;border-radius:5px;background:#fde8ec;color:#8f2a3f;font-weight:800;text-decoration:line-through;text-decoration-thickness:1.5px;}
+.wp-fb-to{padding:1px 5px;border-radius:5px;background:#e6f6ee;color:#135f43;font-weight:800;}
+.wp-fb-arrow{color:var(--muted);font-weight:900;}
+.wp-fb-why{flex-basis:100%;color:#3d4672;font-size:13.5px;}
+.wp-fb-example{flex-basis:100%;color:var(--soft);font-size:13px;font-style:italic;}
+.wp-fb-card.is-improved li{display:flex;flex-direction:column;gap:4px;}
+.wp-fb-before{color:var(--soft);text-decoration:line-through;text-decoration-color:#d9a2ad;}
+.wp-fb-after{color:#135f43;font-weight:800;}
+.wp-fb-note{margin:0;color:var(--soft);font-size:13px;font-weight:700;}
+
+/* The challenge while it runs: the clock stays at the top. */
+.wp-challenge{display:flex;flex-direction:column;gap:12px;max-width:960px;margin:0 auto;padding:12px 16px 0;}
+.wp-timer-top .wp-back{margin-right:auto;}
+.wp-setup{margin-top:4px;}
+.wp-timer{position:sticky;top:8px;z-index:5;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 4px 14px rgba(20,30,60,.08);}
+.wp-timer-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.wp-timer-clock{display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:clamp(26px,4vw,34px);font-weight:1000;font-variant-numeric:tabular-nums;}
+.wp-timer-clock svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wp-timer.is-low .wp-timer-clock{color:#c63a55;}
+.wp-timer.is-low .wp-timer-fill{background:#c63a55;}
+.wp-timer-bar{height:8px;border-radius:999px;background:#eef1f8;overflow:hidden;}
+.wp-timer-fill{display:block;height:100%;background:var(--indigo);transform-origin:left center;transition:transform .25s linear;}
+.wp-timer-foot{display:flex;justify-content:space-between;gap:10px;color:var(--soft);font-size:13px;font-weight:800;}
+.wp-idea.is-prompt{background:#eef1ff;color:#2b3a9e;}
+.wp-paper.is-focus .wp-text{padding-left:64px;min-height:56vh;}
+
+/* Dialogs and notices. */
+.wp-dialog{width:min(440px,calc(100vw - 24px));padding:0;border:0;border-radius:20px;background:transparent;}
+.wp-dialog::backdrop{background:rgba(15,22,45,.5);}
+.wp-dialog-card{display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:20px;background:#fff;color:#1f2756;}
+.wp-dialog-card h2{margin:0;font-size:20px;font-weight:1000;}
+.wp-dialog-card p{margin:0;color:#5a6390;font-size:14.5px;font-weight:700;line-height:1.45;}
+.wp-lang-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wp-lang-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:84px;padding:14px;border:1px solid #d8deee;border-radius:14px;background:#fff;color:#1f2756;font:inherit;text-align:left;cursor:pointer;}
+.wp-lang-card:hover{border-color:#4f63d6;background:#f4f6ff;}
+.wp-lang-card strong{font-size:17px;font-weight:900;}
+.wp-lang-card span{color:#5a6390;font-size:13px;font-weight:700;}
+.wp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;}
+.wp-dialog-cancel{align-self:flex-end;}
+.wp-toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:80;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:#1f2756;color:#fff;font-size:14px;font-weight:800;opacity:0;transform:translate(-50%,10px);transition:opacity .2s,transform .2s;pointer-events:none;}
+.wp-toast.is-on{opacity:1;transform:translate(-50%,0);}
+
+/* Touch screens: css/mobile.css makes every textarea 16px (so phones do not
+   zoom in); the marks under it use the same size. The notepad's bar takes
+   two rows - Back, the title and Saved; then the language, Check and More -
+   so the title always has room to read and to tap. */
+@media (max-width:1024px){
+  .writing-page{--fs:16px;}
+  .wp-bar{flex-wrap:wrap;row-gap:8px;}
+  .wp-bar-title{flex:1 1 0;min-width:0;}
+  .wp-bar-tools{flex:1 1 100%;}
+  .wp-bar-tools .wp-btn-check{flex:1;min-width:0;}
+  .wp-title-field{max-width:none;}
+}
+
+/* Smaller screens: Things to check goes under the page. */
+@media (max-width:1100px){
+  .wp-editor.is-checking .wp-editor-body{grid-template-columns:minmax(0,1fr);max-width:960px;}
+  .wp-panel{position:static;max-height:none;}
+  .wp-issues{max-height:340px;}
+}
+
+/* Tablets upright and phones. */
+@media (max-width:899px){
+  .writing-page{--lh:32px;}
+  .wp{gap:12px;}
+  .wp-top{padding:12px 14px;}
+  .wp-paper{background-image:repeating-linear-gradient(180deg,transparent 0,transparent calc(var(--lh) - 1px),var(--rule) calc(var(--lh) - 1px),var(--rule) var(--lh));background-position:0 14px;}
+  .wp-marks,.wp-text{padding:14px 16px 24px;}
+  .wp-paper.is-focus .wp-text{padding-left:16px;min-height:50vh;}
+  .wp-text{min-height:calc(100vh - 230px);min-height:calc(100dvh - 230px);}
+}
+
+/* Phones. */
+@media (max-width:600px){
+  .wp-top p{display:none;}
+  .wp-top-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;}
+  .wp-top-actions .wp-btn{min-width:0;padding:6px 10px;white-space:normal;text-align:center;line-height:1.2;}
+  /* The bar on two rows: Back and the title, then the tools. */
+  .wp-bar{gap:8px;padding:8px 12px;}
+  .wp-back{min-height:44px;padding:0 12px 0 8px;font-size:15px;}
+  .wp-title-field{height:44px;max-width:none;}
+  .wp-title{font-size:18px;}
+  /* "Saved" as just its tick, so the title has room. */
+  .wp-bar-title .wp-save > span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  .wp-bar-title .wp-save.is-error > span:last-child{position:static;width:auto;height:auto;clip:auto;}
+  .wp-bar-tools .wp-btn-check{padding:0 12px;}
+  .wp-bar-tools .wp-seg-btn{padding:0 10px;}
+  .wp-more-btn > span:last-child{display:none;}
+  .wp-more-btn{width:44px;padding:0;}
+  .wp-editor-body{margin-top:10px;padding:0 10px;}
+  .wp-cards{grid-template-columns:minmax(0,1fr);}
+  .wp-note-card{min-height:0;}
+  .wp-empty,.wp-setup{padding:24px 16px;}
+  .wp-feedback{padding:14px;}
+  .wp-stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .wp-stat b{font-size:19px;}
+  .wp-timer-clock{font-size:26px;}
+  .wp-lang-pick{grid-template-columns:1fr;}
+}
+
+/* The narrowest phones: the language buttons say EN / TL (their full names
+   are still read out), and the challenge clock gets a row of its own. */
+.wp-lang-short{display:none;}
+@media (max-width:400px){
+  .wp-bar-tools .wp-lang-full{display:none;}
+  .wp-bar-tools .wp-lang-short{display:inline;}
+  .wp-bar-tools .wp-seg-btn{min-width:44px;padding:0 8px;}
+  .wp-timer-top{flex-wrap:wrap;row-gap:6px;}
+  .wp-timer-clock{order:3;flex:1 1 100%;justify-content:center;}
+}
+
+/* Phones turned sideways: the header and timer get out of the way. */
+@media (max-height:500px) and (orientation:landscape){
+  .wp-top{flex-wrap:nowrap;padding:8px 12px;}
+  .wp-top-icon{display:none;}
+  .wp-top h1{font-size:18px;}
+  .wp-top-actions{flex-wrap:nowrap;}
+  .wp-top-actions .wp-btn{min-height:40px;padding:0 12px;font-size:13.5px;}
+  .wp-top p{display:none;}
+  .wp-timer{position:static;}
+  .wp-paper.is-focus .wp-text{min-height:60vh;}
+  .wp-bar{position:static;}
+  .wp-more-btn > span:last-child{display:none;}
+  .wp-more-btn{width:44px;padding:0;}
+  .wp-text{min-height:60vh;}
+}
+/* Wider phones on their side: the bar fits on one row ("Saved" as its tick). */
+@media (max-height:500px) and (orientation:landscape) and (min-width:700px){
+  .wp-bar{flex-wrap:nowrap;}
+  .wp-bar-title{flex:1 1 0;min-width:160px;}
+  .wp-bar-tools{flex:none;}
+  .wp-bar-tools .wp-btn-check{flex:none;}
+  .wp-save span{display:none;}
+}
+
+/* Moving between the list, a notepad and a challenge: a short fade. */
+@keyframes wpIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.wp-stage > *{animation:wpIn .18s ease-out;}
+html.koobd-lite .wp-stage > *{animation:none;}
+@media (prefers-reduced-motion:reduce){.wp-stage > *{animation:none;}}
+
+html.koobd-lite .wp-toast,html.koobd-lite .wp-timer-fill,html.koobd-lite .wp-note-card{transition:none;}
+html.koobd-lite .wp-pop,html.koobd-lite .wp-timer,html.koobd-lite .wp-menu{box-shadow:0 4px 12px rgba(15,22,45,.18);}
+@media (prefers-reduced-motion:reduce){.wp-toast,.wp-timer-fill,.wp-note-card{transition:none;}.wp-note-card:hover{transform:none;}}

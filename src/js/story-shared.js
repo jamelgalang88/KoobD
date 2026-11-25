@@ -237,18 +237,44 @@
   }
 
   // The ending page. `options`: { title, kicker, lesson, playAgainHref,
-  // homeHref, stages: [{ name, href }] }. The story fades to black first.
+  // homeHref, homeLabel, postButtons, stages: [{ name, href }] }. The story fades to black first.
   function showEnding(root, options) {
     const opts = options || {};
     root.querySelectorAll(".ending-screen").forEach((node) => node.remove());
     root.classList.add("is-story-ended");
     const screen = document.createElement("div");
     screen.className = "ending-screen";
+    if (opts.reviewMode) screen.classList.add("is-review-ending");
     screen.setAttribute("role", "dialog");
     screen.setAttribute("aria-modal", "true");
     screen.setAttribute("aria-labelledby", "koobdEndingTitle");
     const content = document.createElement("div");
     content.className = "ending-content";
+    if (opts.reviewMode) {
+      content.classList.add("is-review-content");
+      const context = document.createElement("div");
+      context.className = "ending-review-context";
+      const mark = document.createElement("span");
+      mark.className = "ending-review-mark";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "✓";
+      const labels = document.createElement("span");
+      labels.className = "ending-review-labels";
+      const eyebrow = document.createElement("span");
+      eyebrow.textContent = "TEACHER REVIEW";
+      const status = document.createElement("strong");
+      status.textContent = opts.reviewStatusLabel || "Submission review";
+      labels.append(eyebrow, status);
+      context.append(mark, labels);
+      content.appendChild(context);
+      if (opts.reviewStoryTitle) {
+        const storyTitle = document.createElement("p");
+        storyTitle.className = "ending-review-story-title";
+        storyTitle.setAttribute("translate", "no");
+        storyTitle.textContent = opts.reviewStoryTitle;
+        content.appendChild(storyTitle);
+      }
+    }
     const heading = document.createElement("h1");
     heading.id = "koobdEndingTitle";
     heading.textContent = opts.title || "The End";
@@ -269,6 +295,16 @@
     }
     const buttons = document.createElement("div");
     buttons.className = "ending-buttons";
+    const decisionGroup = opts.reviewMode ? document.createElement("div") : buttons;
+    if (opts.reviewMode) {
+      decisionGroup.className = "ending-review-decisions";
+      decisionGroup.setAttribute("aria-label", "Publishing decision");
+      const decisionLabel = document.createElement("span");
+      decisionLabel.className = "ending-action-label";
+      decisionLabel.textContent = "PUBLISHING DECISION";
+      buttons.appendChild(decisionLabel);
+      buttons.appendChild(decisionGroup);
+    }
     const playAgain = document.createElement("a");
     playAgain.className = "choice-btn blue-btn";
     playAgain.href = opts.playAgainHref || "#";
@@ -279,14 +315,58 @@
         opts.onPlayAgain();
       });
     }
-    buttons.appendChild(playAgain);
+    const utilityGroup = opts.reviewMode ? document.createElement("div") : buttons;
+    if (opts.reviewMode) {
+      utilityGroup.className = "ending-review-tools";
+      utilityGroup.setAttribute("aria-label", "Review tools");
+      const utilityLabel = document.createElement("span");
+      utilityLabel.className = "ending-action-label";
+      utilityLabel.textContent = "REVIEW TOOLS";
+      buttons.appendChild(utilityLabel);
+      buttons.appendChild(utilityGroup);
+    }
+    utilityGroup.appendChild(playAgain);
     // Extra links, e.g. "Back to Editor" when a teacher is testing a story.
     (Array.isArray(opts.extraButtons) ? opts.extraButtons : []).forEach((extra) => {
       const link = document.createElement("a");
       link.className = `choice-btn ${extra.className || "gray-btn"}`;
       link.href = extra.href;
       link.textContent = extra.label;
-      buttons.appendChild(link);
+      utilityGroup.appendChild(link);
+    });
+    (Array.isArray(opts.postButtons) ? opts.postButtons : []).forEach((action) => {
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = action.href || "approve_stories.php";
+      form.className = "ending-review-form";
+      [["csrf_token", action.csrfToken], ["submission_code", action.code], ["decision", action.decision]].forEach(([name, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value || "";
+        form.appendChild(input);
+      });
+      const button = document.createElement("button");
+      button.type = "submit";
+      button.className = `choice-btn ${action.className || "gray-btn"}`;
+      if (opts.reviewMode) {
+        const icon = document.createElement("span");
+        icon.className = "ending-decision-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = action.decision === "approve" ? "✓" : "×";
+        const label = document.createElement("span");
+        label.textContent = action.label || "Submit";
+        button.append(icon, label);
+      } else {
+        button.textContent = action.label || "Submit";
+      }
+      form.appendChild(button);
+      form.addEventListener("submit", () => {
+        button.disabled = true;
+        button.textContent = "Saving decision...";
+        form.classList.add("is-submitting");
+      });
+      decisionGroup.appendChild(form);
     });
     const stages = Array.isArray(opts.stages) ? opts.stages : [];
     let stageList = null;
@@ -296,7 +376,7 @@
       choose.className = "choice-btn gray-btn";
       choose.textContent = "Choose Stage";
       choose.addEventListener("click", () => content.classList.add("is-choosing-stage"));
-      buttons.appendChild(choose);
+      utilityGroup.appendChild(choose);
       stageList = document.createElement("div");
       stageList.className = "ending-stages";
       stageList.innerHTML = '<p class="ending-stages-title">Choose a stage</p><div class="ending-stage-grid"></div>';
@@ -325,14 +405,14 @@
     const home = document.createElement("a");
     home.className = "choice-btn gray-btn";
     home.href = opts.homeHref || "home.php";
-    home.textContent = "Home";
+    home.textContent = opts.homeLabel || "Home";
     if (typeof opts.onHome === "function") {
       home.addEventListener("click", (event) => {
         event.preventDefault();
         opts.onHome();
       });
     }
-    buttons.appendChild(home);
+    utilityGroup.appendChild(home);
     content.appendChild(buttons);
     if (stageList) content.appendChild(stageList);
     screen.appendChild(content);

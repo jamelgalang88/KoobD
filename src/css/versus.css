@@ -1,0 +1,630 @@
+/* Versus Mode (versus.php, versus_play.php, versus_match.php).
+   The landing and summary pages follow the app's light look; the lobby and
+   the arena are a deep indigo game screen. Indigo is "you", rose is the
+   opponent, mint is a win. Flat colours and transforms only: no blur and no
+   glow, so slower tablets keep up. */
+:root{
+  --vs-ink:#1b2440;
+  --vs-soft:#56607f;
+  --vs-line:#cfd7e6;
+  --vs-indigo:#4f63d6;
+  --vs-indigo-dark:#3f51c4;
+  --vs-rose:#e0475f;
+  --vs-mint:#1d8f6a;
+  --vs-night:#141a3a;
+  --vs-night-2:#1f2756;
+}
+
+/* --- Shared -------------------------------------------------------------------------- */
+.vs-kicker{display:inline-block;color:var(--vs-indigo);font-size:11.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+.vs-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border:1px solid transparent;border-radius:12px;font:inherit;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.vs-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.vs-btn-primary{background:var(--vs-indigo);color:#fff;box-shadow:0 2px 6px rgba(79,99,214,.3);}
+.vs-btn-primary:hover{background:var(--vs-indigo-dark);}
+.vs-btn-primary:disabled{background:#aab3d8;box-shadow:none;cursor:not-allowed;}
+.vs-btn-ghost{border-color:var(--vs-line);background:#fff;color:var(--vs-ink);}
+.vs-btn-ghost:hover{background:#f2f4ff;}
+.vs-btn:focus-visible,.vs-choice:focus-visible,.vs-back:focus-visible,.vs-answer:focus-visible,.vs-key:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+.vs-error{margin:10px 0 0;color:#b4465f;font-size:13.5px;font-weight:800;}
+.vs-error[hidden]{display:none;}
+.vs-hint{margin:6px 0 0;color:var(--vs-soft);font-size:12.5px;font-weight:700;}
+.vs-label{display:block;margin-bottom:6px;color:var(--vs-soft);font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.vs-empty{margin:0;padding:16px;border:1px dashed var(--vs-line);border-radius:14px;color:var(--vs-soft);font-weight:700;}
+.vs-muted{color:#8a93b2;font-size:11px;font-weight:800;}
+.vs-avatar{display:inline-grid;flex:none;place-items:center;width:44px;height:44px;overflow:hidden;border-radius:50%;background:linear-gradient(180deg,var(--a,#dfe6ff),var(--b,#d3f5e6));box-shadow:inset 0 0 0 2px rgba(255,255,255,.8);}
+.vs-avatar img{width:84%;height:84%;object-fit:contain;}
+.vs-avatar.is-sm{width:36px;height:36px;}
+.vs-avatar.is-lg{width:84px;height:84px;}
+.vs-back{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 10px 0 4px;border:0;border-radius:10px;background:none;color:var(--vs-soft);font:inherit;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;}
+.vs-back:hover{background:#eef1fa;color:var(--vs-ink);}
+.vs-back svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+
+/* --- Landing (versus.php) ------------------------------------------------------------- */
+.vs-landing{display:flex;flex-direction:column;gap:16px;max-width:960px;margin:0 auto;}
+.vs-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 24px;border-radius:20px;background:linear-gradient(120deg,var(--vs-night),#3b3f8a);color:#fff;box-shadow:0 4px 14px rgba(20,30,60,.12);}
+.vs-hero .vs-kicker{color:#9fb0ff;}
+.vs-hero h1{margin:4px 0 6px;font-size:clamp(26px,3vw,34px);line-height:1.1;font-weight:1000;}
+.vs-hero p{max-width:520px;margin:0;color:#d9defa;font-size:14px;font-weight:700;line-height:1.5;}
+.vs-hero-art{display:flex;flex:none;gap:8px;}
+.vs-hero-tile{display:grid;place-items:center;width:62px;height:62px;border-radius:14px;background:#fff;color:var(--vs-night);font-size:34px;font-weight:1000;box-shadow:0 4px 0 #c9d2f0;transform:rotate(-6deg);}
+.vs-hero-tile.is-b{background:#ffd166;transform:rotate(6deg) translateY(8px);box-shadow:0 4px 0 #e0a500;}
+.vs-choices{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.vs-choices[hidden]{display:none;}
+.vs-choice{display:flex;align-items:center;gap:14px;min-height:96px;padding:18px;border:1px solid var(--vs-line);border-radius:18px;background:#fff;color:var(--vs-ink);font:inherit;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(20,30,60,.08),0 4px 14px rgba(20,30,60,.06);}
+.vs-choice:hover{border-color:rgba(79,99,214,.5);}
+.vs-choice-icon{display:grid;flex:none;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--vs-indigo);color:#fff;}
+.vs-choice.is-join .vs-choice-icon{background:var(--vs-mint);}
+.vs-choice-icon svg,.vs-choice-go{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.vs-choice-text{display:flex;flex:1;flex-direction:column;gap:4px;}
+.vs-choice-text strong{font-size:18px;font-weight:1000;}
+.vs-choice-text span{color:var(--vs-soft);font-size:13px;font-weight:700;}
+.vs-choice-go{flex:none;color:#9aa3c4;}
+.vs-panel{padding:18px 20px 20px;border:1px solid var(--vs-line);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(20,30,60,.08),0 4px 14px rgba(20,30,60,.06);}
+.vs-panel[hidden]{display:none;}
+.vs-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.vs-panel-head h2{margin:0;color:var(--vs-ink);font-size:20px;font-weight:1000;}
+.vs-form{display:flex;flex-direction:column;gap:16px;max-width:520px;}
+.vs-form .vs-btn{align-self:flex-start;min-width:180px;}
+.vs-field{margin:0;padding:0;border:0;}
+.vs-field legend{margin-bottom:8px;color:var(--vs-ink);font-size:14px;font-weight:900;}
+.vs-segment{display:flex;padding:4px;border:1px solid var(--vs-line);border-radius:14px;background:#f3f5fa;}
+.vs-segment label{flex:1;}
+.vs-segment input{position:absolute;opacity:0;pointer-events:none;}
+.vs-segment span{display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 10px;border-radius:10px;color:#46527a;font-size:14px;font-weight:900;cursor:pointer;}
+.vs-segment input:checked + span{background:var(--vs-indigo);color:#fff;box-shadow:0 1px 3px rgba(20,30,60,.2);}
+.vs-segment input:focus-visible + span{outline:3px solid rgba(79,99,214,.45);outline-offset:1px;}
+.vs-code-input{width:100%;max-width:260px;min-height:56px;padding:0 16px;border:1px solid var(--vs-line);border-radius:12px;background:#fff;color:var(--vs-ink);font:900 26px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.24em;text-transform:uppercase;}
+.vs-code-input:focus{border-color:var(--vs-indigo);outline:none;box-shadow:0 0 0 3px rgba(79,99,214,.18);}
+.vs-history h2{margin:4px 0 10px;color:var(--vs-ink);font-size:18px;font-weight:1000;}
+.vs-history-list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;}
+.vs-history-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--vs-line);border-radius:14px;background:#fff;color:var(--vs-ink);text-decoration:none;}
+.vs-history-row:hover{border-color:rgba(79,99,214,.45);}
+.vs-history-who{display:flex;flex:1;min-width:0;flex-direction:column;}
+.vs-history-who strong{font-size:14.5px;font-weight:900;}
+.vs-history-who span{color:var(--vs-soft);font-size:12px;font-weight:700;}
+.vs-history-score{font-size:18px;font-weight:1000;font-variant-numeric:tabular-nums;}
+.vs-outcome{min-width:72px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;text-align:center;}
+.vs-outcome.is-won{background:#e3f6ec;color:var(--vs-mint);}
+.vs-outcome.is-lost{background:#fdeef1;color:#b4465f;}
+.vs-outcome.is-abandoned{background:#eef1fa;color:var(--vs-soft);}
+
+/* --- Lobby and arena: the game screen ---------------------------------------------------- */
+body.vs-play{margin:0;min-height:100vh;min-height:100dvh;background:linear-gradient(160deg,var(--vs-night),var(--vs-night-2));color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+/* Only the match holds the page still; the waiting room scrolls when it needs to. */
+body.vs-play.vs-in-game{overflow:hidden;overscroll-behavior:none;}
+/* The waiting room: centred when it fits, scrolling (touch or wheel) from the
+   top when the screen is shorter than the card - nothing is ever cut off. */
+.vs-room{display:flex;justify-content:center;align-items:flex-start;min-height:100vh;min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));box-sizing:border-box;}
+.vs-room-card{margin:auto 0;}
+.vs-room[hidden],.vs-game[hidden]{display:none;}
+.vs-room-card{width:min(640px,100%);padding:22px;border:1px solid rgba(255,255,255,.12);border-radius:22px;background:rgba(255,255,255,.06);box-sizing:border-box;}
+.vs-room-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.vs-room-top .vs-kicker{color:#9fb0ff;}
+.vs-room-back{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 12px 0 6px;border-radius:10px;color:#d9defa;font-weight:900;text-decoration:none;}
+.vs-room-back:hover{background:rgba(255,255,255,.08);}
+.vs-room-back svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.vs-room-code{padding:16px;border-radius:16px;background:#fff;color:var(--vs-ink);}
+.vs-code-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;}
+.vs-code-row strong{font:1000 clamp(34px,7vw,46px)/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.18em;}
+.vs-room-rules{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
+.vs-chip{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.1);color:#d9defa;font-size:13px;font-weight:700;}
+.vs-chip strong{color:#fff;font-weight:900;}
+.vs-room-players{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:12px;}
+.vs-vs{align-self:center;}
+.vs-slot{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:170px;padding:16px 10px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(255,255,255,.05);text-align:center;}
+.vs-slot.is-me{border-color:rgba(159,176,255,.6);}
+.vs-slot strong{font-size:16px;font-weight:900;}
+.vs-slot-role{color:#aeb6dd;font-size:12px;font-weight:700;}
+.vs-slot-avatar{display:grid;place-items:center;width:84px;height:84px;overflow:hidden;border-radius:50%;background:linear-gradient(180deg,var(--a,#dfe6ff),var(--b,#d3f5e6));}
+.vs-slot-avatar img{width:84%;height:84%;object-fit:contain;}
+.vs-slot-avatar.is-empty{border:2px dashed rgba(255,255,255,.3);background:none;}
+.vs-spinner{width:26px;height:26px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:vsSpin 1s linear infinite;}
+@keyframes vsSpin{to{transform:rotate(360deg);}}
+.vs-ready{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.12);color:#d9defa;font-size:11.5px;font-weight:900;}
+.vs-ready.is-on{background:#2fbf86;color:#fff;}
+.vs-vs{color:#ffd166;font-size:24px;font-weight:1000;}
+.vs-room-status{min-height:20px;margin:14px 0 10px;color:#d9defa;font-size:14px;font-weight:700;text-align:center;}
+.vs-room-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
+.vs-room-actions .vs-btn{min-width:150px;}
+.vs-room .vs-btn-ghost{border-color:rgba(255,255,255,.25);background:transparent;color:#fff;}
+.vs-room .vs-btn-ghost:hover{background:rgba(255,255,255,.08);}
+.vs-room .vs-error{color:#ffb3c0;text-align:center;}
+/* Copy code sits on the white code card: the light page's button style. */
+.vs-room .vs-room-code .vs-btn-ghost{border-color:var(--vs-line);background:#fff;color:var(--vs-ink);}
+.vs-room .vs-room-code .vs-btn-ghost:hover{background:#f2f4ff;}
+
+/* The match: bar on top, arena, controls. The whole screen, never scrolling,
+   steady when a phone's address bar comes and goes (dvh). */
+.vs-game{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+.vs-hud{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;padding:8px 14px;}
+.vs-hud-player{display:flex;align-items:center;gap:10px;min-width:0;}
+.vs-hud-player.is-them{flex-direction:row-reverse;text-align:right;}
+.vs-hud-name{display:flex;min-width:0;flex-direction:column;}
+.vs-hud-name strong{overflow:hidden;font-size:15px;font-weight:900;text-overflow:ellipsis;white-space:nowrap;}
+.vs-hud-name span{color:#aeb6dd;font-size:11.5px;font-weight:700;}
+.vs-hud-player.is-me .vs-avatar{box-shadow:0 0 0 3px var(--vs-indigo);}
+.vs-hud-player.is-them .vs-avatar{box-shadow:0 0 0 3px var(--vs-rose);}
+.vs-hud-middle{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.vs-hud-score{display:flex;align-items:center;gap:12px;}
+.vs-score-num{display:grid;place-items:center;min-width:42px;height:42px;border-radius:12px;background:var(--vs-rose);font-size:24px;font-weight:1000;font-variant-numeric:tabular-nums;}
+.vs-score-num.is-me{background:var(--vs-indigo);}
+.vs-score-mid{display:flex;flex-direction:column;align-items:center;line-height:1.2;}
+.vs-score-mid strong{font-size:13px;font-weight:900;}
+.vs-score-mid span{color:#aeb6dd;font-size:11px;font-weight:700;}
+.vs-word{display:flex;gap:6px;}
+.vs-slot-letter{display:grid;place-items:center;width:38px;height:44px;border-bottom:4px solid rgba(255,255,255,.35);border-radius:8px 8px 4px 4px;background:rgba(255,255,255,.08);color:#fff;font-size:24px;font-weight:1000;}
+.vs-slot-letter.is-filled{border-bottom-color:#7fd6a8;background:#fff;color:var(--vs-night);}
+.vs-slot-letter.is-next{border-bottom-color:#ffd166;background:rgba(255,209,102,.18);}
+.vs-slot-letter.is-pop{animation:vsPop .35s ease-out;}
+@keyframes vsPop{0%{transform:scale(1.35);}100%{transform:none;}}
+.vs-word.is-shake{animation:vsShake .35s ease;}
+@keyframes vsShake{20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+/* The arena sits in the middle of its row without sizing it (the row takes
+   what is left between the bar and the controls; the arena fits inside). */
+.vs-stage-wrap{position:relative;min-height:0;overflow:hidden;}
+.vs-stage{position:absolute;left:50%;top:50%;overflow:hidden;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);transform:translate(-50%,-50%);}
+.vs-stage canvas{display:block;}
+.vs-prompt{position:absolute;padding:4px 10px;border-radius:999px;background:#ffd166;color:var(--vs-night);font-size:12px;font-weight:900;white-space:nowrap;transform:translate(-50%,-100%);pointer-events:none;}
+.vs-prompt[hidden]{display:none;}
+.vs-toast{position:absolute;left:50%;top:12px;padding:8px 14px;border-radius:12px;background:#fff;color:var(--vs-ink);font-size:14px;font-weight:900;transform:translateX(-50%);}
+.vs-toast.is-warn{background:#fff4f6;color:#b4465f;}
+.vs-toast[hidden]{display:none;}
+.vs-flyer{position:fixed;z-index:50;display:grid;place-items:center;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:12px;background:#ffd166;color:var(--vs-night);font-size:30px;font-weight:1000;transition:transform .45s cubic-bezier(.3,.7,.3,1),opacity .45s ease;pointer-events:none;}
+.vs-overlay{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(14,18,44,.55);}
+.vs-overlay[hidden]{display:none;}
+#vsCountdown span{color:#fff;font-size:clamp(44px,9vw,96px);font-weight:1000;}
+.vs-question-card,.vs-banner-card{width:min(520px,100%);max-height:100%;overflow-y:auto;padding:20px;border-radius:18px;background:#fff;color:var(--vs-ink);box-sizing:border-box;text-align:center;}
+.vs-question-card h2{margin:6px 0 14px;font-size:clamp(17px,2.4vw,22px);line-height:1.35;font-weight:900;}
+.vs-question-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.vs-answer{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border:2px solid var(--vs-line);border-radius:12px;background:#fff;color:var(--vs-ink);font:inherit;font-size:15px;font-weight:800;text-align:left;cursor:pointer;}
+.vs-answer:hover:not(:disabled){border-color:var(--vs-indigo);background:#f2f4ff;}
+.vs-answer:disabled{cursor:default;opacity:.7;}
+.vs-answer.is-right{border-color:var(--vs-mint);background:#e3f6ec;opacity:1;}
+.vs-answer.is-wrong{border-color:var(--vs-rose);background:#fdeef1;opacity:1;}
+.vs-answer-key{display:grid;flex:none;place-items:center;width:28px;height:28px;border-radius:8px;background:#eef1fa;color:var(--vs-indigo);font-size:13px;font-weight:900;}
+.vs-question-note{min-height:20px;margin:12px 0 0;color:var(--vs-soft);font-size:13.5px;font-weight:800;}
+.vs-banner-card h2{margin:6px 0;font-size:clamp(22px,3.4vw,32px);font-weight:1000;}
+.vs-banner-card p{margin:6px 0;color:var(--vs-soft);font-weight:700;}
+.vs-banner-score{color:var(--vs-ink) !important;font-size:30px;font-weight:1000 !important;font-variant-numeric:tabular-nums;}
+.vs-banner.is-win .vs-banner-card{border-top:6px solid #2fbf86;}
+.vs-banner.is-lose .vs-banner-card{border-top:6px solid var(--vs-rose);}
+.vs-banner.is-match .vs-btn{margin-top:8px;}
+/* The opponent's connection dropped: a slim bar along the arena's top, so it
+   never hides a question or a banner. */
+.vs-away{inset:10px 10px auto 10px;display:block;padding:10px 14px;border-radius:12px;background:rgba(224,71,95,.94);color:#fff;font-size:14px;font-weight:900;text-align:center;}
+.vs-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px 10px;}
+.vs-keys-hint{margin:0;color:#aeb6dd;font-size:12.5px;font-weight:700;text-align:center;}
+.vs-keys-hint kbd{display:inline-block;min-width:20px;margin:0 2px;padding:1px 6px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font:800 11.5px/1.5 inherit;}
+.vs-pad{display:flex;gap:10px;}
+.vs-key{display:none;place-items:center;width:68px;height:68px;padding:0;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:14px;font-weight:900;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
+.vs-key svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+.vs-key.is-down{background:rgba(255,255,255,.3);transform:scale(.95);}
+.vs-key.is-jump{background:var(--vs-indigo);border-color:transparent;}
+.vs-key.is-collect{width:auto;min-width:96px;padding:0 14px;background:#ffd166;border-color:transparent;color:var(--vs-night);}
+.vs-key[hidden]{display:none !important;}
+.vs-controls.is-touch .vs-key{display:grid;}
+.vs-controls.is-touch .vs-keys-hint{display:none;}
+.vs-leave{position:fixed;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));z-index:20;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#d9defa;cursor:pointer;}
+.vs-leave svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;}
+.vs-rotate{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));z-index:30;padding:8px 14px;border-radius:999px;background:#ffd166;color:var(--vs-night);font-size:13px;font-weight:900;transform:translateX(-50%);}
+.vs-rotate[hidden]{display:none;}
+
+/* Short landscape screens (phones held sideways): a slim bar, the controls
+   at the sides of the arena instead of under it. */
+@media (orientation:landscape) and (max-height:520px){
+  .vs-hud{padding:4px 52px 4px 10px;gap:8px;}
+  .vs-hud .vs-avatar{width:32px;height:32px;}
+  .vs-hud-name span{display:none;}
+  .vs-score-num{min-width:32px;height:32px;font-size:18px;border-radius:9px;}
+  .vs-slot-letter{width:28px;height:32px;font-size:18px;}
+  .vs-hud-middle{flex-direction:row;gap:12px;}
+  .vs-game{grid-template-rows:auto 1fr;}
+  .vs-away{padding:6px 10px;font-size:12px;}
+  .vs-controls.is-touch{position:fixed;inset:auto 0 0 0;padding:0 calc(10px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));pointer-events:none;}
+  .vs-controls.is-touch .vs-pad{pointer-events:auto;}
+  .vs-controls.is-touch .vs-key{width:58px;height:58px;background:rgba(20,26,58,.55);}
+  .vs-controls.is-touch .vs-key.is-jump{background:rgba(79,99,214,.85);}
+  .vs-controls.is-touch .vs-key.is-collect{background:#ffd166;}
+}
+
+/* Portrait phones: the arena fits the width; controls under it. */
+@media (orientation:portrait) and (max-width:760px){
+  .vs-hud{grid-template-columns:1fr 1fr;padding:8px 52px 8px 10px;}
+  .vs-hud-middle{grid-column:1 / -1;grid-row:2;}
+  .vs-slot-letter{width:30px;height:36px;font-size:19px;}
+  .vs-room-players{gap:8px;}
+  .vs-slot{min-height:0;padding:12px 6px;}
+  .vs-slot-avatar{width:60px;height:60px;}
+  .vs-slot strong{font-size:14px;}
+  .vs-vs{font-size:18px;}
+  .vs-question-choices{grid-template-columns:1fr;}
+}
+@media (max-width:640px){
+  .vs-choices{grid-template-columns:1fr;}
+  .vs-hero{padding:18px;}
+  .vs-hero-art{display:none;}
+  .vs-form .vs-btn{align-self:stretch;}
+  .vs-room-card{padding:16px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .vs-spinner,.vs-slot-letter.is-pop,.vs-word.is-shake{animation:none;}
+  .vs-flyer{transition:none;}
+}
+
+/* --- Match summary (versus_match.php) --------------------------------------------------- */
+.vs-summary{display:flex;flex-direction:column;gap:16px;max-width:1000px;margin:0 auto;}
+.vs-summary > .vs-back{align-self:flex-start;}
+.vs-result{padding:22px;border:1px solid var(--vs-line);border-radius:20px;background:#fff;text-align:center;box-shadow:0 1px 2px rgba(20,30,60,.08),0 4px 14px rgba(20,30,60,.06);}
+.vs-result.is-win{border-top:6px solid #2fbf86;}
+.vs-result.is-lose{border-top:6px solid var(--vs-rose);}
+.vs-result h1{margin:4px 0 14px;color:var(--vs-ink);font-size:clamp(28px,4vw,40px);font-weight:1000;}
+.vs-result-players{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;}
+.vs-result-player{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--vs-soft);font-size:12.5px;font-weight:700;}
+.vs-result-player strong{color:var(--vs-ink);font-size:17px;font-weight:900;}
+.vs-result-player.is-winner .vs-avatar{box-shadow:0 0 0 4px #2fbf86;}
+.vs-winner-tag{margin-top:4px;padding:3px 10px;border-radius:999px;background:#e3f6ec;color:var(--vs-mint);font-weight:900;}
+.vs-result-score{color:var(--vs-ink);font-size:clamp(34px,6vw,52px);font-weight:1000;font-variant-numeric:tabular-nums;}
+.vs-result-score span{margin:0 8px;color:#aab3d8;}
+.vs-facts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px 0;padding:0;list-style:none;}
+.vs-facts li{display:flex;flex-direction:column;min-width:120px;padding:8px 12px;border-radius:12px;background:#f3f5fa;}
+.vs-facts span{color:var(--vs-soft);font-size:11.5px;font-weight:800;}
+.vs-facts strong{color:var(--vs-ink);font-size:14px;font-weight:900;}
+.vs-result-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
+.vs-rematch-offer{margin:10px 0 0;color:var(--vs-mint);font-weight:900;}
+.vs-rematch-offer[hidden]{display:none;}
+.vs-stats h2,.vs-rounds h2{margin:4px 0 10px;color:var(--vs-ink);font-size:18px;font-weight:1000;}
+.vs-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.vs-stat-card{padding:16px;border:1px solid var(--vs-line);border-radius:18px;background:#fff;}
+.vs-stat-card.is-me{border-color:rgba(79,99,214,.45);}
+.vs-stat-card header{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:var(--vs-ink);font-size:16px;}
+.vs-you{padding:2px 8px;border-radius:999px;background:#eef1fa;color:var(--vs-indigo);font-size:11px;font-weight:900;}
+.vs-stat-group + .vs-stat-group{margin-top:12px;padding-top:12px;border-top:1px solid #e3e8f3;}
+.vs-stat-group h3{margin:0 0 6px;color:var(--vs-indigo);font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.vs-stat-group dl{margin:0;}
+.vs-stat-group dl div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;}
+.vs-stat-group dt{color:var(--vs-soft);font-size:13.5px;font-weight:700;}
+.vs-stat-group dd{margin:0;color:var(--vs-ink);font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;}
+.vs-table-wrap{overflow-x:auto;border:1px solid var(--vs-line);border-radius:14px;background:#fff;}
+.vs-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+.vs-table th{padding:10px 12px;background:#f3f5fa;color:var(--vs-soft);font-size:12px;font-weight:900;text-align:left;white-space:nowrap;}
+.vs-table td{padding:10px 12px;border-top:1px solid #e3e8f3;color:var(--vs-ink);font-weight:700;}
+.vs-table tr.is-mine td:first-child{box-shadow:inset 4px 0 0 var(--vs-indigo);}
+@media (max-width:760px){
+  .vs-stat-grid{grid-template-columns:1fr;}
+  .vs-result-players{grid-template-columns:1fr auto 1fr;gap:8px;}
+  .vs-result .vs-avatar.is-lg{width:64px;height:64px;}
+  .vs-table thead{display:none;}
+  .vs-table,.vs-table tbody,.vs-table tr,.vs-table td{display:block;}
+  .vs-table tr{padding:8px 12px;border-top:1px solid #e3e8f3;}
+  .vs-table td{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border:0;}
+  .vs-table td::before{content:attr(data-label);color:var(--vs-soft);font-size:12px;font-weight:800;}
+  .vs-table tr.is-mine td:first-child{box-shadow:none;}
+  .vs-table tr.is-mine{box-shadow:inset 4px 0 0 var(--vs-indigo);}
+}
+
+/* --- The whole screen is the game ---------------------------------------------------------
+   The canvas covers the screen (js/versus-game.js draws the sky and ground to
+   its edges around the arena); the score bar floats over the sky at the top
+   and the controls float over the game at the bottom. */
+.vs-game{display:block;padding:0;}
+.vs-game .vs-hud{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(8px + env(safe-area-inset-top)) calc(56px + env(safe-area-inset-right)) 18px calc(12px + env(safe-area-inset-left));background:linear-gradient(180deg,rgba(14,18,44,.72),rgba(14,18,44,0));}
+.vs-game .vs-stage-wrap{position:absolute;inset:0;padding:0;}
+.vs-game .vs-stage{left:0;top:0;width:100%;height:100%;border-radius:0;box-shadow:none;transform:none;}
+.vs-game .vs-controls{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:flex-end;justify-content:space-between;padding:0 calc(16px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));pointer-events:none;}
+.vs-game .vs-controls .vs-pad,.vs-game .vs-keys-hint{pointer-events:auto;}
+.vs-game .vs-keys-hint{align-self:flex-end;margin:0 auto;padding:6px 14px;border-radius:999px;background:rgba(14,18,44,.62);}
+.vs-game .vs-leave{z-index:7;background:rgba(14,18,44,.55);}
+.vs-rotate{top:calc(78px + env(safe-area-inset-top));bottom:auto;}
+
+/* Touch controls: round game buttons. Move on the left; Jump, and Collect
+   beside it in an arc, on the right. Translucent, so the arena shows
+   through; sized to the screen. */
+.vs-game{--k:clamp(56px,12vmin,74px);}
+.vs-game .vs-pad{gap:12px;align-items:flex-end;}
+.vs-game .vs-key{width:var(--k);height:var(--k);border:2px solid rgba(255,255,255,.4);border-radius:50%;background:rgba(14,18,44,.42);box-shadow:0 3px 0 rgba(0,0,0,.28);}
+.vs-game .vs-key svg{width:calc(var(--k) * .44);height:calc(var(--k) * .44);stroke-width:3;}
+.vs-game .vs-key.is-down{background:rgba(255,255,255,.3);box-shadow:0 1px 0 rgba(0,0,0,.28);transform:translateY(2px);}
+.vs-game .vs-key.is-jump{width:calc(var(--k) * 1.18);height:calc(var(--k) * 1.18);border-color:rgba(255,255,255,.6);background:rgba(79,99,214,.88);}
+.vs-game .vs-key.is-jump.is-down{background:#3f51c4;}
+/* Collect: a bright tile showing the letter within reach. */
+.vs-game .vs-key.is-collect{display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:calc(var(--k) * 1.18);height:calc(var(--k) * 1.18);margin-bottom:calc(var(--k) * .55);padding:0;border:3px solid #fff;background:#ffd166;color:#141a3a;box-shadow:0 4px 0 #c99500;animation:vsCollectIn .18s ease-out;}
+.vs-game .vs-controls.is-touch .vs-key.is-collect:not([hidden]){display:flex;}
+.vs-collect-letter{font-size:calc(var(--k) * .48);font-weight:1000;line-height:1;}
+.vs-collect-label{font-size:10.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+@keyframes vsCollectIn{from{transform:scale(.6);opacity:0;}to{transform:none;opacity:1;}}
+@media (prefers-reduced-motion:reduce){.vs-game .vs-key.is-collect{animation:none;}}
+
+/* Move: a pill to slide along (the swipe control) - a light-blue track with
+   an arrow at each end and a white knob in the middle that follows the
+   finger and springs back when let go. The arrow on the side being run to
+   lights up. Sized from --k like the round buttons. */
+.vs-swipe{display:none;}
+.vs-controls.is-touch .vs-swipe{display:flex;}
+.vs-game .vs-swipe{position:relative;align-items:center;justify-content:space-between;width:calc(var(--k) * 2.7);height:calc(var(--k) * .96);box-sizing:border-box;padding:0 calc(var(--k) * .14);border:3px solid #73d4ff;border-radius:999px;background:rgba(14,18,44,.42);box-shadow:0 3px 0 rgba(0,0,0,.28);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;cursor:grab;}
+.vs-swipe-arrow{width:calc(var(--k) * .5);height:calc(var(--k) * .5);fill:none;stroke:#e6f6ff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+.vs-swipe.is-left .vs-swipe-arrow.is-left,
+.vs-swipe.is-right .vs-swipe-arrow.is-right{stroke:#73d4ff;opacity:1;}
+.vs-swipe-knob{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:calc(var(--k) * .8);height:calc(var(--k) * .8);box-sizing:border-box;margin:calc(var(--k) * -.4) 0 0 calc(var(--k) * -.4);border:3px solid #22477f;border-radius:50%;background:#fff;color:#22477f;box-shadow:0 2px 0 rgba(0,0,0,.25);transform:translateX(var(--knob-x,0px));transition:transform .14s ease-out;pointer-events:none;}
+.vs-swipe-knob svg{width:calc(var(--k) * .42);height:calc(var(--k) * .42);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.vs-swipe.is-held{cursor:grabbing;border-color:#a8e4ff;}
+.vs-swipe.is-held .vs-swipe-knob{transition:none;background:#eef7ff;}
+html.koobd-lite .vs-swipe-knob{transition:none;}
+/* Small phones on their side: a shorter pill, closer to the corner, so it
+   stays clear of where the players start. */
+@media (orientation:landscape) and (max-width:640px) and (max-height:400px){
+  .vs-game #vsControls.is-touch{padding-left:calc(8px + env(safe-area-inset-left));padding-right:calc(8px + env(safe-area-inset-right));padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+  .vs-game .vs-swipe{width:calc(var(--k) * 2.1);height:calc(var(--k) * .84);padding:0 calc(var(--k) * .08);}
+  .vs-swipe-arrow{width:calc(var(--k) * .38);height:calc(var(--k) * .38);}
+  .vs-swipe-knob{width:calc(var(--k) * .7);height:calc(var(--k) * .7);margin:calc(var(--k) * -.35) 0 0 calc(var(--k) * -.35);}
+}
+@media (prefers-reduced-motion:reduce){.vs-swipe-knob{transition:none;}}
+
+/* Phones held sideways: a one-line score bar. */
+@media (orientation:landscape) and (max-height:520px){
+  .vs-game .vs-hud{padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:10px;}
+  .vs-game .vs-controls.is-touch{position:absolute;inset:auto 0 0 0;padding:0 calc(16px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));}
+  .vs-game .vs-controls.is-touch .vs-key{width:var(--k);height:var(--k);background:rgba(14,18,44,.42);}
+  .vs-game .vs-controls.is-touch .vs-key.is-jump{width:calc(var(--k) * 1.18);height:calc(var(--k) * 1.18);background:rgba(79,99,214,.88);}
+  .vs-game .vs-controls.is-touch .vs-key.is-collect{width:calc(var(--k) * 1.18);height:calc(var(--k) * 1.18);background:#ffd166;}
+}
+
+/* Short screens (a phone on its side): a tighter waiting room so most of it
+   fits; the rest scrolls. */
+@media (max-height:520px){
+  .vs-room{padding-top:max(10px,env(safe-area-inset-top));padding-bottom:max(10px,env(safe-area-inset-bottom));}
+  .vs-room-card{width:min(720px,100%);padding:12px 16px;}
+  .vs-room-top{margin-bottom:8px;}
+  .vs-room-back{min-height:36px;}
+  .vs-room-code{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:10px 14px;}
+  .vs-room-code .vs-label{flex:none;}
+  .vs-room-code .vs-code-row{flex:1 1 auto;}
+  .vs-room-code .vs-hint{flex-basis:100%;margin:2px 0 0;}
+  .vs-code-row strong{font-size:30px;}
+  .vs-room-rules{margin:8px 0;}
+  .vs-chip{min-height:28px;font-size:12px;}
+  .vs-slot{flex-direction:row;justify-content:center;min-height:0;padding:8px 10px;gap:10px;text-align:left;}
+  .vs-slot-avatar{width:52px;height:52px;}
+  .vs-room-status{margin:8px 0 6px;}
+}
+
+/* Leave the match? The game's own dialog over the arena. */
+.vs-confirm{width:min(380px,calc(100vw - 32px));max-height:calc(100dvh - 24px);margin:auto;padding:0;border:0;border-radius:20px;background:transparent;color:#fff;overflow:auto;}
+.vs-confirm::backdrop{background:rgba(8,10,28,.62);}
+.vs-confirm-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 20px 18px;border:1px solid rgba(255,255,255,.14);border-radius:20px;background:linear-gradient(180deg,#252d63,#1a2150);box-shadow:0 18px 40px rgba(0,0,0,.4);text-align:center;}
+.vs-confirm-icon{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:rgba(224,71,95,.16);color:#ff8fa1;}
+.vs-confirm-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.vs-confirm h2{margin:4px 0 0;font-size:20px;font-weight:1000;}
+.vs-confirm p{margin:0 0 8px;color:#c9d0f3;font-size:14px;font-weight:700;line-height:1.45;}
+.vs-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.vs-confirm .vs-btn{width:100%;min-height:48px;}
+.vs-confirm-stay{background:#fff;color:var(--vs-night);}
+.vs-confirm-stay:hover{background:#eef1ff;}
+.vs-confirm-leave{background:var(--vs-rose);color:#fff;}
+.vs-confirm-leave:hover{background:#c93a51;}
+.vs-confirm .vs-btn:focus-visible{outline:3px solid #9fb0ff;outline-offset:2px;}
+html:not(.koobd-lite) .vs-confirm[open] .vs-confirm-card{animation:vs-confirm-in .16s ease-out;}
+@keyframes vs-confirm-in{from{opacity:0;transform:translateY(8px) scale(.97);}to{opacity:1;transform:none;}}
+@media (prefers-reduced-motion:reduce){.vs-confirm[open] .vs-confirm-card{animation:none;}}
+/* Short screens (a phone on its side): tighter. */
+@media (max-height:420px){
+  .vs-confirm-card{gap:4px;padding:14px 16px 12px;}
+  .vs-confirm-icon{width:40px;height:40px;}
+  .vs-confirm-icon svg{width:20px;height:20px;}
+  .vs-confirm h2{font-size:18px;}
+  .vs-confirm p{margin-bottom:6px;}
+}
+
+/* Opponent disconnected: a notice just under the score bar (which sits over
+   the arena), never on top of it. */
+.vs-game .vs-away{inset:auto;top:calc(var(--vs-hud-h,64px) + 4px);left:50%;width:max-content;max-width:calc(100% - 32px);box-sizing:border-box;transform:translateX(-50%);border-radius:999px;}
+
+/* --- Hearts and hints ------------------------------------------------------------------------
+   Three hearts under each player's name (a wrong letter breaks one), and the
+   word's hint under the word slots: one line, tap to read all of it. */
+.vs-hearts{display:flex;gap:3px;margin-top:4px;}
+.vs-hud-player.is-them .vs-hearts{justify-content:flex-end;}
+.vs-heart{width:20px;height:20px;flex:none;}
+.vs-heart path{stroke-width:1.6;stroke-linejoin:round;}
+.vs-heart.is-full path{fill:#ff5d73;stroke:#fff;}
+.vs-heart.is-empty path,.vs-heart.is-breaking path{fill:rgba(255,255,255,.12);stroke:rgba(255,255,255,.5);}
+.vs-heart.is-breaking{animation:vsHeartBreak .7s ease-out;}
+.vs-hearts.is-low .vs-heart.is-full{animation:vsHeartBeat 1.1s ease-in-out infinite;}
+@keyframes vsHeartBreak{
+  0%{transform:scale(1);}
+  25%{transform:scale(1.45) rotate(-12deg);}
+  50%{transform:scale(1.2) rotate(10deg);}
+  100%{transform:none;}
+}
+@keyframes vsHeartBeat{0%,100%{transform:none;}50%{transform:scale(1.15);}}
+html.koobd-lite .vs-heart{animation:none !important;}
+
+.vs-clue{display:flex;align-items:center;gap:8px;width:max-content;max-width:min(560px,100%);min-height:44px;box-sizing:border-box;padding:6px 14px;border:1px solid rgba(255,209,102,.55);border-radius:14px;background:rgba(14,18,44,.72);color:#fff;font:inherit;font-size:14px;font-weight:700;line-height:1.3;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.vs-clue[hidden]{display:none;}
+.vs-clue.is-blank{visibility:hidden;}
+.vs-clue svg{width:18px;height:18px;flex:none;fill:none;stroke:#ffd166;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.vs-clue-label{flex:none;color:#ffd166;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.vs-clue-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vs-clue.is-open .vs-clue-text{white-space:normal;}
+.vs-clue:focus-visible{outline:3px solid #ffd166;outline-offset:2px;}
+.vs-game .vs-clue{grid-column:1 / -1;justify-self:center;}
+
+/* Losing a heart: the arena's edge flashes red once. */
+.vs-stage.is-hurt::after{content:'';position:absolute;inset:0;z-index:4;border:6px solid rgba(224,71,95,.9);pointer-events:none;animation:vsHurt .55s ease-out forwards;}
+@keyframes vsHurt{from{opacity:1;}to{opacity:0;}}
+
+.vs-toast.is-info{background:#eef6ff;color:#22477f;}
+.vs-game .vs-key.is-collect.is-tried{background:#dfe3f3;border-color:#fff;box-shadow:0 4px 0 #9aa3c7;color:#5b6488;}
+.vs-game .vs-controls.is-touch .vs-key.is-collect.is-tried{background:#dfe3f3;}
+
+/* The end of a round or match: what happened, then what to do next. */
+.vs-banner-hearts{display:flex;justify-content:center;gap:6px;margin:8px 0 2px;}
+.vs-banner-hearts .vs-heart{width:30px;height:30px;}
+.vs-banner-hearts .vs-heart.is-empty path{fill:#fde3e8;stroke:var(--vs-rose);}
+.vs-banner-next{color:var(--vs-indigo) !important;font-size:14px;}
+.vs-banner-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:12px;}
+.vs-banner-actions .vs-btn{flex:1 1 150px;max-width:220px;}
+.vs-banner.is-match .vs-banner-actions .vs-btn{margin-top:0;}
+.vs-banner-link{display:inline-flex;align-items:center;min-height:44px;margin-top:4px;color:var(--vs-indigo);font-size:14px;font-weight:900;text-decoration:none;}
+.vs-banner-link:hover{text-decoration:underline;}
+
+/* Phones held sideways: the hint on its own slim line under the score. */
+@media (orientation:landscape) and (max-height:520px){
+  .vs-hud .vs-clue{margin-top:-2px;}
+  .vs-clue{min-height:34px;padding:4px 12px;font-size:12.5px;max-width:min(520px,60vw);}
+  .vs-clue-label{display:none;}
+  .vs-heart{width:16px;height:16px;}
+  .vs-hearts{margin-top:2px;gap:2px;}
+  .vs-banner-hearts .vs-heart{width:24px;height:24px;}
+  .vs-banner-card{padding:12px 16px;}
+  .vs-banner-card h2{margin:2px 0;}
+  .vs-banner-card p{margin:3px 0;}
+  .vs-banner-score{font-size:24px;}
+  .vs-banner-actions{margin-top:6px;}
+}
+/* Upright phones: the hint fits the width. */
+@media (orientation:portrait) and (max-width:760px){
+  .vs-game .vs-clue{grid-row:3;width:100%;font-size:13px;}
+  .vs-heart{width:18px;height:18px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .vs-heart,.vs-stage.is-hurt::after{animation:none !important;}
+}
+.vs-banner-offer{flex-basis:100%;margin:0 !important;color:#167450 !important;font-weight:900 !important;}
+
+/* --- Recent matches: one card, the record on top, rows divided by lines ----------------- */
+.vs-history{overflow:hidden;border:1px solid var(--vs-line);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(20,30,60,.06),0 6px 20px rgba(20,30,60,.05);}
+.vs-history-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:18px 20px;border-bottom:1px solid #e6ebf4;}
+.vs-history h2{margin:0;font-size:17px;}
+.vs-record{display:flex;gap:6px;margin:0;}
+.vs-record > div{display:flex;flex-direction:column;align-items:center;min-width:66px;padding:6px 10px;border-radius:12px;background:#f4f6fb;}
+.vs-record dt{color:var(--vs-soft);font-size:10.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
+.vs-record dd{margin:2px 0 0;color:var(--vs-ink);font-size:17px;font-weight:1000;font-variant-numeric:tabular-nums;}
+.vs-record .is-won dd{color:#167450;}
+.vs-record .is-lost dd{color:#b4465f;}
+.vs-history .vs-empty{margin:16px 20px 20px;}
+.vs-history-list{gap:0;}
+.vs-history-list li + li{border-top:1px solid #eef1f7;}
+.vs-history-row{position:relative;gap:14px;min-height:68px;padding:12px 20px;border:0;border-radius:0;transition:background-color .15s ease;}
+.vs-history-row::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:#c8cfe0;}
+.vs-history-row.is-won::before{background:#2fbf86;}
+.vs-history-row.is-lost::before{background:var(--vs-rose);}
+.vs-history-row:hover{border-color:transparent;background:#f7f9fd;}
+.vs-history-row:focus-visible{outline:3px solid rgba(79,99,214,.45);outline-offset:-3px;}
+.vs-history .vs-avatar.is-sm{width:42px;height:42px;}
+.vs-history-who{gap:3px;}
+.vs-history-who strong{overflow:hidden;color:var(--vs-ink);font-size:15px;font-weight:900;text-overflow:ellipsis;white-space:nowrap;}
+.vs-history-vs{color:var(--vs-soft);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+.vs-history-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--vs-soft);font-size:12.5px;font-weight:700;}
+.vs-history-lang{padding:1px 8px;border-radius:999px;background:#eef1fa;color:#46527a;font-size:11px;font-weight:900;}
+.vs-history-score{display:flex;align-items:center;gap:6px;min-width:76px;justify-content:center;font-size:20px;font-weight:1000;font-variant-numeric:tabular-nums;}
+.vs-history-score i{color:#a3acc4;font-style:normal;font-weight:700;}
+.vs-history-row.is-won .vs-history-score b:first-child,.vs-history-row.is-lost .vs-history-score b:last-child{color:var(--vs-ink);}
+.vs-history-score b{color:#8a93ad;font-weight:1000;}
+.vs-history-result{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:84px;}
+.vs-history-note{color:var(--vs-soft);font-size:11px;font-weight:800;}
+.vs-history-go{flex:none;width:18px;height:18px;fill:none;stroke:#a3acc4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s ease;}
+.vs-history-row:hover .vs-history-go{stroke:var(--vs-indigo);transform:translateX(2px);}
+html.koobd-lite .vs-history-row,html.koobd-lite .vs-history-go{transition:none;}
+@media (prefers-reduced-motion:reduce){.vs-history-row,.vs-history-go{transition:none;}}
+@media (max-width:640px){
+  .vs-history-head{padding:14px 16px;}
+  .vs-record{width:100%;}
+  .vs-record > div{flex:1;min-width:0;padding:6px 4px;}
+  .vs-history-row{gap:10px;padding:12px 14px 12px 16px;}
+  .vs-history .vs-avatar.is-sm{width:38px;height:38px;}
+  .vs-history-score{min-width:0;font-size:17px;gap:3px;}
+  .vs-history-result{min-width:0;}
+  .vs-outcome{min-width:58px;padding:4px 8px;}
+  .vs-history-go{display:none;}
+}
+@media (max-width:380px){
+  .vs-history-row{flex-wrap:wrap;}
+  .vs-history-who{flex-basis:calc(100% - 52px);}
+  .vs-history-score{margin-left:52px;}
+  .vs-history-result{flex-direction:row;margin-left:auto;}
+}
+.vs-history-who strong span{color:inherit;font-size:inherit;font-weight:inherit;}
+.vs-history-who strong .vs-history-vs{color:var(--vs-soft);font-size:12px;font-weight:800;}
+.vs-history-meta .vs-history-lang{color:#46527a;font-size:11px;font-weight:900;}
+.vs-record dt{white-space:nowrap;}
+@media (max-width:380px){.vs-record dt{font-size:9.5px;letter-spacing:.03em;}}
+
+/* --- Create Lobby: option cards and a match preview ------------------------------------- */
+.vs-create{padding:20px 22px 22px;}
+.vs-panel-titles{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.vs-panel-sub{margin:0;color:var(--vs-soft);font-size:13px;font-weight:700;}
+.vs-create .vs-panel-head{align-items:flex-start;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e8ecf5;}
+.vs-create .vs-back{margin-top:2px;}
+.vs-create-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start;}
+.vs-create-settings{display:flex;flex-direction:column;gap:20px;min-width:0;}
+.vs-setting{min-width:0;margin:0;padding:0;border:0;}
+.vs-setting-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:0;}
+.vs-setting-head strong{display:block;color:var(--vs-ink);font-size:15px;font-weight:900;}
+.vs-setting-head small{display:block;margin-top:1px;color:var(--vs-soft);font-size:12.5px;font-weight:700;}
+.vs-setting-icon{display:grid;flex:none;place-items:center;width:36px;height:36px;border-radius:11px;background:#eef1ff;color:var(--vs-indigo);}
+.vs-setting-icon svg,.vs-preview svg,.vs-create-note svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.vs-options{display:grid;gap:10px;}
+.vs-options.is-two{grid-template-columns:repeat(2,minmax(0,1fr));}
+.vs-options.is-three{grid-template-columns:repeat(3,minmax(0,1fr));}
+.vs-options.is-four{grid-template-columns:repeat(4,minmax(0,1fr));}
+.vs-option{position:relative;display:block;min-width:0;}
+.vs-option input{position:absolute;opacity:0;pointer-events:none;}
+.vs-option-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:68px;height:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid #dfe4f0;border-radius:14px;background:#fff;color:var(--vs-ink);cursor:pointer;transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease;}
+.vs-option-card b{font-size:14.5px;font-weight:900;}
+.vs-option-card small{color:var(--vs-soft);font-size:12px;font-weight:700;}
+.vs-option-card:hover{border-color:#b9c3ea;background:#fafbff;}
+.vs-option-card::after{content:'';position:absolute;top:10px;right:10px;width:18px;height:18px;box-sizing:border-box;border:1.5px solid #cdd4e6;border-radius:50%;background:#fff;}
+.vs-option input:checked + .vs-option-card{border-color:var(--vs-indigo);background:#f3f5ff;box-shadow:0 0 0 3px rgba(79,99,214,.12);}
+.vs-option input:checked + .vs-option-card::after{border:0;background:var(--vs-indigo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/12px no-repeat;}
+.vs-option input:focus-visible + .vs-option-card{outline:3px solid rgba(79,99,214,.45);outline-offset:2px;}
+.vs-option-tag{padding:1px 7px;border-radius:6px;background:#e7efff;color:#2459b8;font-size:10.5px;font-weight:900;letter-spacing:.04em;}
+.vs-option-tag.is-fil{background:#e6f6ee;color:#167450;}
+.vs-meter{display:inline-flex;align-items:flex-end;gap:3px;height:16px;margin-bottom:2px;}
+.vs-meter i{width:5px;border-radius:2px;background:#dde2f0;}
+.vs-meter i:nth-child(1){height:7px;}
+.vs-meter i:nth-child(2){height:11px;}
+.vs-meter i:nth-child(3){height:16px;}
+.vs-meter i.on{background:var(--vs-indigo);}
+.vs-meter.is-mixed i:nth-child(1){background:#2fbf86;}
+.vs-meter.is-mixed i:nth-child(2){background:#f0a500;}
+.vs-meter.is-mixed i:nth-child(3){background:var(--vs-rose);}
+
+.vs-create-summary{position:sticky;top:16px;display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid #e1e6f3;border-radius:16px;background:linear-gradient(180deg,#f6f7ff,#fff 70%);}
+.vs-preview{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;}
+.vs-preview li{display:flex;align-items:center;gap:10px;min-height:36px;padding:4px 0;border-bottom:1px dashed #e3e7f2;color:var(--vs-ink);font-size:14px;font-weight:800;}
+.vs-preview li:last-child{border-bottom:0;}
+.vs-preview svg{flex:none;color:var(--vs-indigo);}
+.vs-create-go{width:100%;min-height:50px;font-size:15px;}
+.vs-create .vs-error{margin:0;}
+.vs-create-note{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;color:var(--vs-soft);font-size:12.5px;font-weight:700;text-align:center;}
+.vs-create-note svg{width:16px;height:16px;}
+html.koobd-lite .vs-option-card{transition:none;}
+@media (prefers-reduced-motion:reduce){.vs-option-card{transition:none;}}
+@media (max-width:900px){
+  .vs-create-grid{grid-template-columns:1fr;}
+  .vs-create-summary{position:static;}
+}
+@media (max-width:640px){
+  .vs-create{padding:16px;}
+  .vs-options.is-four{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .vs-options.is-three{gap:8px;}
+  .vs-options.is-three .vs-option-card{padding:10px;}
+  .vs-options.is-three .vs-option-card::after{top:8px;right:8px;width:16px;height:16px;}
+}
+@media (max-width:340px){
+  .vs-options.is-three{grid-template-columns:1fr;}
+  .vs-options.is-three .vs-option-card{min-height:56px;}
+}
+.vs-create .vs-back{min-height:44px;}
+/* Narrow cards (phones): the text centred under the check, never under it. */
+@media (max-width:640px){
+  .vs-options .vs-option-card{padding-right:30px;}
+  .vs-options.is-three .vs-option-card{align-items:center;padding:26px 8px 10px;text-align:center;}
+  .vs-options.is-three .vs-option-card b{font-size:14px;}
+}
+/* Fewer words: cards are just the choice, centred. */
+.vs-create .vs-panel-head{align-items:center;margin-bottom:16px;padding-bottom:14px;}
+.vs-create .vs-back{margin-top:0;}
+.vs-setting-head{margin-bottom:8px;}
+.vs-setting-icon{width:32px;height:32px;border-radius:10px;}
+.vs-create .vs-option-card{justify-content:center;min-height:56px;}

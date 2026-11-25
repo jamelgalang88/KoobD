@@ -1,19 +1,38 @@
 <?php
 require_once('auth.php');
-$user = koobdRequireAuth(true);
+$reviewCode = strtoupper(trim((string)($_GET['code'] ?? '')));
+$isSubmissionReview = $reviewCode !== '';
+$user = $isSubmissionReview ? koobdRequireTeacherAuth(true) : koobdRequireAuth(true);
 $storyDbId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if ($storyDbId <= 0) {
-    header("Location: teacher_stories.php");
-    exit();
+if ($isSubmissionReview) {
+    $submission = koobdTeacherStorySubmissionByCode($reviewCode);
+    if (!$submission) {
+        header('Location: approve_stories.php?error=invalid_code');
+        exit();
+    }
+    $storyDbId = (int)$submission['id'];
+    $story = koobdTeacherStoryById($storyDbId);
+} else {
+    if ($storyDbId <= 0) {
+        header("Location: teacher_stories.php");
+        exit();
+    }
+    $story = koobdTeacherStoryById($storyDbId);
+    if (!$story || (int)$story['teacher_id'] !== (int)$user['id']) {
+        header("Location: teacher_stories.php");
+        exit();
+    }
 }
-
-$story = koobdTeacherStoryById($storyDbId);
-if (!$story || (int)$story['teacher_id'] !== (int)$user['id']) {
-    header("Location: teacher_stories.php");
+if (!$story) {
+    header($isSubmissionReview ? 'Location: approve_stories.php' : 'Location: teacher_stories.php');
     exit();
 }
 $playerProfile = koobdResolvedProfile($user);
+$isUpdatedPending = $isSubmissionReview
+    && $story['status'] === 'pending_approval'
+    && (int)($story['approved_version'] ?? 0) > 0
+    && (int)($story['version_number'] ?? 1) > (int)$story['approved_version'];
 
 // The persisted JSON list order is the editor's current page order. Keep that
 // order intact; stable IDs and derived displayOrder values are not sequencing
@@ -48,7 +67,7 @@ $pagesForPlayer = koobdStoryPagesForPlayer($previewPages);
   <link rel="stylesheet" href="<?= koobdAsset('css/mobile.css') ?>">
 </head>
 <body class="story-page teacher-story-player-page teacher-story-preview-mode">
-  <a class="top-right teacher-story-top-right-link" href="teacher_story_editor.php?id=<?= (int)$storyDbId ?><?= koobdCleanId($_GET['page'] ?? '') !== '' ? '&amp;page=' . rawurlencode(koobdCleanId($_GET['page'])) : '' ?>">Continue Editing</a>
+  <a class="top-right teacher-story-top-right-link" href="<?= $isSubmissionReview ? 'approve_stories.php?code=' . rawurlencode($reviewCode) : 'teacher_story_editor.php?id=' . (int)$storyDbId . (koobdCleanId($_GET['page'] ?? '') !== '' ? '&amp;page=' . rawurlencode(koobdCleanId($_GET['page'])) : '') ?>"><?= $isSubmissionReview ? 'Exit Review' : 'Continue Editing' ?></a>
 
   <main class="platformer-story-stage koobd-story<?= ($previewPages[0]['pageType'] ?? '') === 'platformer' ? '' : ' hidden' ?>" id="platformerStoryStage" aria-label="Platformer page"><div class="platformer-story-background" id="platformerStoryBackground"></div><div class="platformer-story-world" id="platformerStoryWorld"><div class="platformer-story-ground" id="platformerStoryGround"></div><div class="platformer-story-platforms" id="platformerStoryPlatforms"></div><img class="platformer-story-player" id="platformerStoryPlayer" style="--platformer-player-scale:<?= max(0.7, min(1.25, ((int)$playerProfile['scale']) / 100)) ?>" src="<?= htmlspecialchars($playerProfile['asset']) ?>" alt="<?= htmlspecialchars($playerProfile['name']) ?>"><div class="platformer-story-npcs" id="platformerStoryNpcs" translate="no"></div></div><div class="platformer-story-hud"><span class="teacher-story-player-badge">Preview</span><div class="platformer-story-progress" id="platformerStoryProgress" role="slider" aria-label="Navigate the platformer world" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><span id="platformerStoryProgressFill"></span><button type="button" id="platformerStoryProgressThumb" aria-label="Navigate platformer world"></button></div><span class="platformer-story-mode" id="platformerStoryMode"></span></div><div class="platformer-story-controls"><div class="platformer-move-pad"><button id="platformerMoveLeft" class="platformer-control">&#8592;</button><button id="platformerMoveRight" class="platformer-control">&#8594;</button></div><div class="platformer-action-pad"><button id="platformerChatButton" class="platformer-control chat hidden">Chat</button><button id="platformerJumpButton" class="platformer-control jump">&#8593;</button></div></div><div class="platformer-story-dialogue hidden" id="platformerDialogue"><div class="platformer-story-dialogue-stage"><div class="platformer-story-dialogue-figure left" id="platformerDialogueFigureLeft"></div><div class="platformer-story-dialogue-card" translate="no"><div class="platformer-story-dialogue-name" id="platformerDialogueName"></div><div class="platformer-story-dialogue-text" id="platformerDialogueText"></div><div class="platformer-story-dialogue-choices" id="platformerDialogueChoices"></div><p class="platformer-story-dialogue-hint" id="platformerDialogueHint" translate="yes">Tap to continue</p></div><div class="platformer-story-dialogue-figure right" id="platformerDialogueFigureRight"></div></div></div></main>
   <div class="vn-wrapper teacher-story-vn<?= ($previewPages[0]['pageType'] ?? '') === 'platformer' ? ' hidden' : '' ?>">
@@ -62,6 +81,7 @@ $pagesForPlayer = koobdStoryPagesForPlayer($previewPages);
     <div class="teacher-story-scene-meta">
       <div class="teacher-story-player-badges">
         <span class="teacher-story-player-badge"><?= htmlspecialchars(ucfirst($story['status'])) ?></span>
+        <?php if ($isUpdatedPending): ?><span class="teacher-story-player-badge is-updated-version">Updated Version - Pending Approval</span><?php endif; ?>
         <span class="teacher-story-player-badge"><?= (int)$story['page_count'] ?> page<?= (int)$story['page_count'] === 1 ? '' : 's' ?></span>
       </div>
       <div class="teacher-story-player-mode" id="teacherStoryMode">Page 1</div>
@@ -83,16 +103,26 @@ $pagesForPlayer = koobdStoryPagesForPlayer($previewPages);
   <?php
   $playerConfig = [
     'mode' => 'preview',
+    'reviewMode' => $isSubmissionReview,
+    'reviewStatus' => $story['status'],
+    'isUpdatedVersion' => $isUpdatedPending,
+    'versionNumber' => (int)($story['version_number'] ?? 1),
+    'approvedVersion' => (int)($story['approved_version'] ?? 0),
+    'submissionCode' => $isSubmissionReview ? $reviewCode : '',
+    'approvalCsrfToken' => $isSubmissionReview ? (string)($_SESSION['story_approval_csrf'] ?? '') : '',
+    'approvalHref' => 'approve_stories.php',
+    'exitReviewHref' => $isSubmissionReview ? 'approve_stories.php?code=' . rawurlencode($reviewCode) : '',
     // The ending screen offers a way back to the editor.
     // ...at the page the test started from.
-    'editorHref' => 'teacher_story_editor.php?id=' . (int)$storyDbId . (koobdCleanId($_GET['page'] ?? '') !== '' ? '&page=' . rawurlencode(koobdCleanId($_GET['page'])) : ''),
+    'editorHref' => $isSubmissionReview ? '' : 'teacher_story_editor.php?id=' . (int)$storyDbId . (koobdCleanId($_GET['page'] ?? '') !== '' ? '&page=' . rawurlencode(koobdCleanId($_GET['page'])) : ''),
     'title' => $story['title'],
     'initialPage' => 0,
     'startPageKey' => koobdCleanId($_GET['page'] ?? ''),
     'pages' => $pagesForPlayer,
     'textStyle' => koobdStoryTextStyle($story),
     'lesson' => $story['lesson'] ?? '',
-    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset']],
+    // The reader's character walks and jumps with its animation sheet, when it has one.
+    'playerProfile' => ['name' => $playerProfile['name'], 'asset' => $playerProfile['asset'], 'animationAsset' => koobdCharacterSheet($playerProfile['key'])],
   ];
   ?>
   <script>
@@ -103,8 +133,13 @@ $pagesForPlayer = koobdStoryPagesForPlayer($previewPages);
   <script src="<?= koobdAsset('js/platform-library.js') ?>"></script>
   <script src="<?= koobdAsset('js/rich-text.js') ?>"></script>
   <script src="<?= koobdAsset('js/platform-story-compiler.js') ?>"></script>
+  <script src="<?= koobdAsset('js/character-animation.js') ?>"></script>
   <script src="<?= koobdAsset('js/platformer-story-player.js') ?>"></script>
   <script src="<?= koobdAsset('js/story-shared.js') ?>"></script>
   <script src="<?= koobdAsset('js/teacher-story-player.js') ?>"></script>
+  <?php // Tap a word to hear it, and practise saying it (js/story-words.js). ?>
+  <link rel="stylesheet" href="<?= koobdAsset('css/koobd-speech.css') ?>">
+  <script src="<?= koobdAsset('js/koobd-speech.js') ?>"></script>
+  <script src="<?= koobdAsset('js/story-words.js') ?>"></script>
 </body>
 </html>
